@@ -146,6 +146,34 @@ const riftboundNavItems: NavItem[] = [
     },
 ];
 
+const onepieceNavItems: NavItem[] = [
+    {
+        title: 'Scanner',
+        href: '/onepiece/scanner',
+        icon: Camera,
+    },
+    {
+        title: 'Inventar',
+        href: '/onepiece/inventory',
+        icon: Package,
+    },
+    {
+        title: 'Sammlung',
+        href: '/onepiece/collection',
+        icon: Heart,
+    },
+    {
+        title: 'Kartendatenbank',
+        href: '/onepiece/cards',
+        icon: Database,
+    },
+    {
+        title: 'Printings',
+        href: '/onepiece/printings',
+        icon: Sparkles,
+    },
+];
+
 const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
@@ -210,6 +238,7 @@ export function AppSidebar() {
                 <NavGroup label="Flesh and Blood" items={fabNavItems} />
                 <NavGroup label="Magic: The Gathering" items={mtgNavItems} />
                 <NavGroup label="Riftbound" items={riftboundNavItems} />
+                <NavGroup label="One Piece" items={onepieceNavItems} />
                 {customGames?.map((game) => (
                     <NavGroup key={game.id} label={game.name} items={getCustomGameNavItems(game)} />
                 ))}

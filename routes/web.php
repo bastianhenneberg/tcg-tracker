@@ -13,6 +13,10 @@ use App\Http\Controllers\Mtg\MtgCollectionController;
 use App\Http\Controllers\Mtg\MtgInventoryController;
 use App\Http\Controllers\Mtg\MtgScannerController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Op\OpCardController;
+use App\Http\Controllers\Op\OpCollectionController;
+use App\Http\Controllers\Op\OpInventoryController;
+use App\Http\Controllers\Op\OpScannerController;
 use App\Http\Controllers\Riftbound\RiftboundCardController;
 use App\Http\Controllers\Riftbound\RiftboundCollectionController;
 use App\Http\Controllers\Riftbound\RiftboundInventoryController;
@@ -146,6 +150,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('cards/{card}', [RiftboundCardController::class, 'show'])->name('cards.show');
         Route::get('printings', [RiftboundCardController::class, 'printings'])->name('printings');
         Route::get('printings/{printing}', [RiftboundCardController::class, 'printing'])->name('printings.show');
+    });
+
+    // One Piece Card Game
+    Route::prefix('onepiece')->name('op.')->group(function () {
+        // Scanner (Search-based)
+        Route::get('scanner', [OpScannerController::class, 'index'])->name('scanner');
+        Route::post('scanner/confirm', [OpScannerController::class, 'confirm'])->name('scanner.confirm');
+        Route::post('scanner/confirm-bulk', [OpScannerController::class, 'confirmBulk'])->name('scanner.confirm-bulk');
+        Route::post('scanner/lot', [OpScannerController::class, 'createLot'])->name('scanner.create-lot');
+        Route::post('scanner/settings', [OpScannerController::class, 'saveSettings'])->name('scanner.save-settings');
+        Route::get('scanner/settings', [OpScannerController::class, 'getSettings'])->name('scanner.get-settings');
+
+        // Inventory
+        Route::get('inventory', [OpInventoryController::class, 'index'])->name('inventory');
+        Route::post('inventory', [OpInventoryController::class, 'store'])->name('inventory.store');
+        Route::patch('inventory/{item}', [OpInventoryController::class, 'update'])->name('inventory.update');
+        Route::delete('inventory/{item}', [OpInventoryController::class, 'destroy'])->name('inventory.destroy');
+        Route::post('inventory/mark-sold', [OpInventoryController::class, 'markSold'])->name('inventory.mark-sold');
+        Route::post('inventory/move-to-collection', [OpInventoryController::class, 'moveToCollection'])->name('inventory.move-to-collection');
+        Route::post('inventory/delete-multiple', [OpInventoryController::class, 'deleteMultiple'])->name('inventory.delete-multiple');
+
+        // Collection
+        Route::get('collection', [OpCollectionController::class, 'index'])->name('collection');
+        Route::patch('collection/{item}', [OpCollectionController::class, 'update'])->name('collection.update');
+        Route::delete('collection/{item}', [OpCollectionController::class, 'destroy'])->name('collection.destroy');
+        Route::post('collection/delete-multiple', [OpCollectionController::class, 'deleteMultiple'])->name('collection.delete-multiple');
+
+        // Card Database
+        Route::get('cards', [OpCardController::class, 'index'])->name('cards');
+        Route::get('cards/{card}', [OpCardController::class, 'show'])->name('cards.show');
+        Route::get('printings', [OpCardController::class, 'printings'])->name('printings');
+        Route::get('printings/{printing}', [OpCardController::class, 'printing'])->name('printings.show');
     });
 
     // Notifications

@@ -6,6 +6,7 @@ use App\Models\Fab\FabPrinting;
 use App\Models\Game;
 use App\Models\GameAttribute;
 use App\Models\GameFormat;
+use App\Models\Op\OpPrinting;
 use Illuminate\Database\Seeder;
 
 class GamesSeeder extends Seeder
@@ -59,6 +60,21 @@ class GamesSeeder extends Seeder
 
         $this->seedRiftboundAttributes($riftbound);
         $this->seedRiftboundFormats($riftbound);
+
+        // Create One Piece Card Game as official game
+        $onepiece = Game::updateOrCreate(
+            ['slug' => 'onepiece'],
+            [
+                'name' => 'One Piece Card Game',
+                'description' => 'The official One Piece trading card game by Bandai.',
+                'logo_url' => null,
+                'is_official' => true,
+                'user_id' => null,
+            ]
+        );
+
+        $this->seedOnePieceAttributes($onepiece);
+        $this->seedOnePieceFormats($onepiece);
     }
 
     private function seedFabAttributes(Game $game): void
@@ -415,6 +431,101 @@ class GamesSeeder extends Seeder
                 'description' => 'Limited format where players build decks from sealed product.',
                 'is_active' => true,
                 'sort_order' => 2,
+            ],
+        ];
+
+        foreach ($formats as $format) {
+            GameFormat::updateOrCreate(
+                ['game_id' => $game->id, 'slug' => $format['slug']],
+                $format
+            );
+        }
+    }
+
+    private function seedOnePieceAttributes(Game $game): void
+    {
+        // Rarities for One Piece
+        $sortOrder = 0;
+        foreach (OpPrinting::RARITIES as $key => $label) {
+            GameAttribute::updateOrCreate(
+                ['game_id' => $game->id, 'type' => GameAttribute::TYPE_RARITY, 'key' => $key],
+                ['label' => $label, 'sort_order' => $sortOrder++]
+            );
+        }
+
+        // One Piece doesn't have traditional foiling, but has Alternate Art
+        $variants = [
+            'S' => 'Standard',
+            'AA' => 'Alternate Art',
+            'SP' => 'Special Art',
+            'M' => 'Manga Art',
+        ];
+
+        $sortOrder = 0;
+        foreach ($variants as $key => $label) {
+            GameAttribute::updateOrCreate(
+                ['game_id' => $game->id, 'type' => GameAttribute::TYPE_FOILING, 'key' => $key],
+                ['label' => $label, 'sort_order' => $sortOrder++]
+            );
+        }
+
+        // Languages
+        $sortOrder = 0;
+        foreach (OpPrinting::LANGUAGES as $key => $label) {
+            GameAttribute::updateOrCreate(
+                ['game_id' => $game->id, 'type' => GameAttribute::TYPE_LANGUAGE, 'key' => $key],
+                ['label' => $label, 'sort_order' => $sortOrder++]
+            );
+        }
+
+        // Conditions (standard TCG conditions)
+        $conditions = [
+            'NM' => 'Near Mint',
+            'LP' => 'Lightly Played',
+            'MP' => 'Moderately Played',
+            'HP' => 'Heavily Played',
+            'DM' => 'Damaged',
+        ];
+
+        $sortOrder = 0;
+        foreach ($conditions as $key => $label) {
+            GameAttribute::updateOrCreate(
+                ['game_id' => $game->id, 'type' => GameAttribute::TYPE_CONDITION, 'key' => $key],
+                ['label' => $label, 'sort_order' => $sortOrder++]
+            );
+        }
+    }
+
+    private function seedOnePieceFormats(Game $game): void
+    {
+        $formats = [
+            [
+                'slug' => 'standard',
+                'name' => 'Standard',
+                'description' => 'Standard competitive format. 50-card deck with 1 Leader. Max 4 copies per card.',
+                'is_active' => true,
+                'sort_order' => 0,
+            ],
+            [
+                'slug' => 'flagship',
+                'name' => 'Flagship',
+                'description' => 'Official tournament format with additional rules and restrictions.',
+                'is_active' => true,
+                'sort_order' => 1,
+            ],
+            [
+                'slug' => 'treasure-cup',
+                'name' => 'Treasure Cup',
+                'description' => 'Regional tournament format.',
+                'is_active' => true,
+                'sort_order' => 2,
+            ],
+            [
+                'slug' => 'sealed',
+                'name' => 'Sealed',
+                'description' => 'Limited format where players build decks from sealed product.',
+                'is_active' => true,
+                'sort_order' => 3,
             ],
         ];
 
