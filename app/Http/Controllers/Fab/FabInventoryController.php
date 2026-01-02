@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Fab;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessInventoryAction;
+use App\Models\Custom\CustomInventory;
 use App\Models\Fab\FabCollection;
 use App\Models\Fab\FabInventory;
 use App\Models\Fab\FabPrinting;
@@ -18,34 +19,121 @@ class FabInventoryController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = FabInventory::where('user_id', Auth::id())
+        // FAB inventory query
+        $fabQuery = FabInventory::where('user_id', Auth::id())
             ->with(['printing.card', 'printing.set', 'lot.box'])
+            ->whereNull('sold_at');
+
+        // Custom inventory query
+        $customQuery = CustomInventory::where('user_id', Auth::id())
+            ->with(['printing.card.linkedFabCard.printings', 'lot.box'])
             ->whereNull('sold_at');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('printing.card', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+            $fabQuery->where(function ($q) use ($search) {
+                $q->whereHas('printing.card', fn ($c) => $c->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('printing', fn ($p) => $p->where('collector_number', 'like', "%{$search}%"));
+            });
+            $customQuery->where(function ($q) use ($search) {
+                $q->whereHas('printing.card', fn ($c) => $c->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('printing', fn ($p) => $p->where('collector_number', 'like', "%{$search}%")
+                        ->orWhere('set_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(COALESCE(set_name, ''), COALESCE(collector_number, '')) LIKE ?", ["%{$search}%"]));
+            });
         }
 
         if ($request->filled('condition')) {
-            $query->where('condition', $request->input('condition'));
+            $fabQuery->where('condition', $request->input('condition'));
+            $customQuery->where('condition', $request->input('condition'));
         }
 
         if ($request->filled('lot')) {
-            $query->where('lot_id', $request->input('lot'));
+            $fabQuery->where('lot_id', $request->input('lot'));
+            $customQuery->where('lot_id', $request->input('lot'));
         }
 
         if ($request->filled('rarity')) {
-            $query->whereHas('printing', fn ($q) => $q->where('rarity', $request->input('rarity')));
+            $fabQuery->whereHas('printing', fn ($q) => $q->where('rarity', $request->input('rarity')));
+            $customQuery->whereHas('printing', fn ($q) => $q->where('rarity', $request->input('rarity')));
         }
 
         if ($request->filled('foiling')) {
-            $query->whereHas('printing', fn ($q) => $q->where('foiling', $request->input('foiling')));
+            $fabQuery->whereHas('printing', fn ($q) => $q->where('foiling', $request->input('foiling')));
+            $customQuery->whereHas('printing', fn ($q) => $q->where('foiling', $request->input('foiling')));
         }
 
-        $inventory = $query->orderByDesc('created_at')->paginate(24)->withQueryString();
+        // Get both inventories and normalize
+        $fabItems = $fabQuery->orderByDesc('created_at')->get()->map(fn ($item) => [
+            'id' => $item->id,
+            'is_custom' => false,
+            'printing_id' => $item->fab_printing_id,
+            'card_id' => $item->printing->fab_card_id,
+            'card_name' => $item->printing->card->name,
+            'set_name' => $item->printing->set->name ?? $item->printing->set->external_id,
+            'collector_number' => $item->printing->collector_number,
+            'rarity' => $item->printing->rarity,
+            'rarity_label' => $item->printing->rarity_label,
+            'foiling' => $item->printing->foiling,
+            'foiling_label' => $item->printing->foiling_label,
+            'image_url' => $item->printing->image_url,
+            'condition' => $item->condition,
+            'condition_label' => FabInventory::CONDITIONS[$item->condition] ?? $item->condition,
+            'language' => $item->language,
+            'price' => $item->price,
+            'lot_id' => $item->lot_id,
+            'lot_number' => $item->lot?->lot_number,
+            'box_name' => $item->lot?->box?->name,
+            'position_in_lot' => $item->position_in_lot,
+            'created_at' => $item->created_at->toIso8601String(),
+        ]);
 
-        $statsQuery = FabInventory::where('user_id', Auth::id());
+        $customItems = $customQuery->orderByDesc('created_at')->get()->map(fn ($item) => [
+            'id' => $item->id,
+            'is_custom' => true,
+            'printing_id' => $item->custom_printing_id,
+            'card_id' => $item->printing->custom_card_id,
+            'card_name' => $item->printing->card->name,
+            'set_name' => $item->printing->set_name ?? 'Custom',
+            'collector_number' => ($item->printing->set_name ?? '').($item->printing->collector_number ?? '') ?: '-',
+            'rarity' => $item->printing->rarity,
+            'rarity_label' => $item->printing->rarity ? (FabPrinting::RARITIES[$item->printing->rarity] ?? $item->printing->rarity) : null,
+            'foiling' => $item->printing->foiling,
+            'foiling_label' => $item->printing->foiling ? (FabPrinting::FOILINGS[$item->printing->foiling] ?? $item->printing->foiling) : null,
+            // Image priority: custom > parent > null
+            'image_url' => $item->printing->image_url ?? $item->printing->card->linkedFabCard?->printings?->first()?->image_url,
+            'condition' => $item->condition,
+            'condition_label' => CustomInventory::CONDITIONS[$item->condition] ?? $item->condition,
+            'language' => $item->language,
+            'price' => $item->price,
+            'lot_id' => $item->lot_id,
+            'lot_number' => $item->lot?->lot_number,
+            'box_name' => $item->lot?->box?->name,
+            'position_in_lot' => $item->position_in_lot,
+            'created_at' => $item->created_at->toIso8601String(),
+        ]);
+
+        // Merge and sort by created_at
+        $allItems = $fabItems->concat($customItems)
+            ->sortByDesc('created_at')
+            ->values();
+
+        // Manual pagination
+        $page = $request->input('page', 1);
+        $perPage = 24;
+        $total = $allItems->count();
+        $items = $allItems->forPage($page, $perPage)->values();
+
+        $inventory = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $fabStatsQuery = FabInventory::where('user_id', Auth::id());
+        $customStatsQuery = CustomInventory::where('user_id', Auth::id());
 
         return Inertia::render('fab/inventory', [
             'inventory' => $inventory,
@@ -54,8 +142,8 @@ class FabInventoryController extends Controller
             'rarities' => FabPrinting::RARITIES,
             'foilings' => FabPrinting::FOILINGS,
             'stats' => [
-                'total' => (clone $statsQuery)->whereNull('sold_at')->count(),
-                'sold' => (clone $statsQuery)->whereNotNull('sold_at')->count(),
+                'total' => (clone $fabStatsQuery)->whereNull('sold_at')->count() + (clone $customStatsQuery)->whereNull('sold_at')->count(),
+                'sold' => (clone $fabStatsQuery)->whereNotNull('sold_at')->count() + (clone $customStatsQuery)->whereNotNull('sold_at')->count(),
             ],
         ]);
     }
@@ -259,6 +347,33 @@ class FabInventoryController extends Controller
 
         foreach ($affectedLotIds as $lotId) {
             FabInventory::renumberPositionsInLot($lotId);
+        }
+
+        return back();
+    }
+
+    public function deleteMultipleCustom(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:custom_inventory,id'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        $affectedLotIds = CustomInventory::whereIn('id', $ids)
+            ->where('user_id', Auth::id())
+            ->pluck('lot_id')
+            ->unique()
+            ->filter()
+            ->toArray();
+
+        CustomInventory::whereIn('id', $ids)
+            ->where('user_id', Auth::id())
+            ->delete();
+
+        foreach ($affectedLotIds as $lotId) {
+            CustomInventory::renumberPositionsInLot($lotId);
         }
 
         return back();

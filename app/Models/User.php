@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Fab\FabCollection;
 use App\Models\Fab\FabInventory;
+use App\Models\Riftbound\RiftboundCollection;
+use App\Models\Riftbound\RiftboundInventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -26,6 +28,8 @@ class User extends Authenticatable
         'email',
         'password',
         'scanner_settings',
+        'mtg_scanner_settings',
+        'riftbound_scanner_settings',
     ];
 
     /**
@@ -52,6 +56,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'scanner_settings' => 'array',
+            'mtg_scanner_settings' => 'array',
+            'riftbound_scanner_settings' => 'array',
         ];
     }
 
@@ -73,5 +79,15 @@ class User extends Authenticatable
     public function fabCollection(): HasMany
     {
         return $this->hasMany(FabCollection::class);
+    }
+
+    public function riftboundInventory(): HasMany
+    {
+        return $this->hasMany(RiftboundInventory::class);
+    }
+
+    public function riftboundCollection(): HasMany
+    {
+        return $this->hasMany(RiftboundCollection::class);
     }
 }

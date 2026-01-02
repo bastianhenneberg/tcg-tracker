@@ -398,6 +398,7 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 ## Inertia + React
 
 - Use `router.visit()` or `<Link>` for navigation instead of traditional links.
+- **WICHTIG: Immer Inertia.js verwenden!** Keine direkten API-Calls (fetch/axios) außer es geht wirklich nicht anders. Für POST/PUT/DELETE immer `router.post()`, `router.put()`, `router.delete()` mit Flash-Daten verwenden. Controller sollten `RedirectResponse` mit `->with('key', $data)` zurückgeben, nicht `JsonResponse`.
 
 <code-snippet name="Inertia Client Navigation" lang="react">
 

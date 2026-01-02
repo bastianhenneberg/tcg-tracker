@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Fab;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessInventoryAction;
 use App\Models\Box;
+use App\Models\Custom\CustomInventory;
+use App\Models\Custom\CustomPrinting;
 use App\Models\Fab\FabInventory;
 use App\Models\Fab\FabPrinting;
 use App\Models\Lot;
@@ -40,21 +42,10 @@ class FabScannerController extends Controller
 
         $ollamaStatus = $this->ollamaService->getStatus();
 
-        // Search results als Prop
+        // Search results als Prop (already mapped in service)
         $searchResults = [];
         if ($request->filled('q') && strlen($request->input('q')) >= 2) {
-            $results = $this->cardMatcherService->search($request->input('q'), 20);
-            $searchResults = $results->map(fn ($p) => [
-                'id' => $p->id,
-                'card_name' => $p->card->name,
-                'set_name' => $p->set->name ?? $p->set->external_id,
-                'collector_number' => $p->collector_number,
-                'rarity' => $p->rarity,
-                'rarity_label' => $p->rarity_label,
-                'foiling' => $p->foiling,
-                'foiling_label' => $p->foiling_label,
-                'image_url' => $p->image_url,
-            ])->values();
+            $searchResults = $this->cardMatcherService->search($request->input('q'), 20)->values();
         }
 
         // User scanner settings
@@ -113,20 +104,49 @@ class FabScannerController extends Controller
 
         $matchResult = $this->cardMatcherService->findMatch($recognition['data']);
 
+        $matchData = null;
+        if ($matchResult['match']) {
+            if ($matchResult['is_custom']) {
+                // Custom card printing
+                $printing = $matchResult['match'];
+                // Image priority: custom > parent > null
+                $imageUrl = $printing->image_url ?? $printing->card->linkedFabCard?->printings?->first()?->image_url;
+                // Combine set + number for collector number (e.g., "2HP" + "454" = "2HP454")
+                $collectorNumber = ($printing->set_name ?? '').($printing->collector_number ?? '');
+                $matchData = [
+                    'id' => $printing->id,
+                    'card_name' => $printing->card->name,
+                    'set_name' => $printing->set_name ?? 'Custom',
+                    'collector_number' => $collectorNumber ?: '-',
+                    'rarity' => $printing->rarity,
+                    'rarity_label' => $printing->rarity ? FabPrinting::RARITIES[$printing->rarity] ?? $printing->rarity : null,
+                    'foiling' => $printing->foiling,
+                    'foiling_label' => $printing->foiling ? FabPrinting::FOILINGS[$printing->foiling] ?? $printing->foiling : null,
+                    'image_url' => $imageUrl,
+                    'is_custom' => true,
+                ];
+            } else {
+                // Regular FAB printing
+                $printing = $matchResult['match'];
+                $matchData = [
+                    'id' => $printing->id,
+                    'card_name' => $printing->card->name,
+                    'set_name' => $printing->set->name ?? $printing->set->external_id,
+                    'collector_number' => $printing->collector_number,
+                    'rarity' => $printing->rarity,
+                    'rarity_label' => $printing->rarity_label,
+                    'foiling' => $printing->foiling,
+                    'foiling_label' => $printing->foiling_label,
+                    'image_url' => $printing->image_url,
+                    'is_custom' => false,
+                ];
+            }
+        }
+
         return back()->with('scanner', [
             'success' => true,
             'recognition' => $recognition['data'],
-            'match' => $matchResult['match'] ? [
-                'id' => $matchResult['match']->id,
-                'card_name' => $matchResult['match']->card->name,
-                'set_name' => $matchResult['match']->set->name ?? $matchResult['match']->set->external_id,
-                'collector_number' => $matchResult['match']->collector_number,
-                'rarity' => $matchResult['match']->rarity,
-                'rarity_label' => $matchResult['match']->rarity_label,
-                'foiling' => $matchResult['match']->foiling,
-                'foiling_label' => $matchResult['match']->foiling_label,
-                'image_url' => $matchResult['match']->image_url,
-            ] : null,
+            'match' => $matchData,
             'confidence' => $matchResult['confidence'],
             'alternatives' => $matchResult['alternatives']->map(fn ($p) => [
                 'id' => $p->id,
@@ -146,7 +166,9 @@ class FabScannerController extends Controller
     {
         $validated = $request->validate([
             'lot_id' => ['required', 'exists:lots,id'],
-            'fab_printing_id' => ['required', 'exists:fab_printings,id'],
+            'fab_printing_id' => ['nullable', 'exists:fab_printings,id', 'required_without:custom_printing_id'],
+            'custom_printing_id' => ['nullable', 'exists:custom_printings,id', 'required_without:fab_printing_id'],
+            'is_custom' => ['nullable', 'boolean'],
             'condition' => ['required', 'string', 'in:'.implode(',', array_keys(FabInventory::CONDITIONS))],
             'language' => ['nullable', 'string', 'in:'.implode(',', array_keys(FabInventory::LANGUAGES))],
             'price' => ['nullable', 'numeric', 'min:0'],
@@ -155,6 +177,42 @@ class FabScannerController extends Controller
         $lot = Lot::findOrFail($validated['lot_id']);
         $this->authorize('view', $lot);
 
+        $isCustom = $validated['is_custom'] ?? ! empty($validated['custom_printing_id']);
+
+        if ($isCustom) {
+            // Custom card inventory
+            $customPrinting = CustomPrinting::where('id', $validated['custom_printing_id'])
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            $position = CustomInventory::where('lot_id', $validated['lot_id'])->max('position_in_lot') ?? 0;
+
+            $inventoryItem = CustomInventory::create([
+                'user_id' => Auth::id(),
+                'lot_id' => $validated['lot_id'],
+                'custom_printing_id' => $customPrinting->id,
+                'condition' => $validated['condition'],
+                'language' => $validated['language'] ?? 'EN',
+                'price' => $validated['price'] ?? null,
+                'position_in_lot' => $position + 1,
+            ]);
+
+            $inventoryItem->load('printing.card');
+
+            return back()->with('scanner', [
+                'success' => true,
+                'confirmed' => [
+                    'id' => $inventoryItem->id,
+                    'card_name' => $inventoryItem->printing->card->name,
+                    'position' => $inventoryItem->position_in_lot,
+                    'condition' => $inventoryItem->condition,
+                    'is_custom' => true,
+                ],
+                'lot_count' => CustomInventory::where('lot_id', $validated['lot_id'])->count(),
+            ]);
+        }
+
+        // Regular FAB inventory
         $position = FabInventory::where('lot_id', $validated['lot_id'])->max('position_in_lot') ?? 0;
 
         $inventoryItem = FabInventory::create([
@@ -176,6 +234,7 @@ class FabScannerController extends Controller
                 'card_name' => $inventoryItem->printing->card->name,
                 'position' => $inventoryItem->position_in_lot,
                 'condition' => $inventoryItem->condition,
+                'is_custom' => false,
             ],
             'lot_count' => FabInventory::where('lot_id', $validated['lot_id'])->count(),
         ]);
@@ -276,7 +335,7 @@ class FabScannerController extends Controller
         ]);
     }
 
-    public function saveSettings(Request $request): JsonResponse
+    public function saveSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'template' => ['nullable', 'array'],
@@ -299,7 +358,7 @@ class FabScannerController extends Controller
         $user->scanner_settings = array_merge($currentSettings, $validated);
         $user->save();
 
-        return response()->json(['success' => true]);
+        return back();
     }
 
     public function getSettings(): JsonResponse

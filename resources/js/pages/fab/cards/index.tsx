@@ -78,17 +78,17 @@ export default function FabCardsIndex({ cards, filters, formats }: Props) {
                             <div>
                                 <div className="flex items-center gap-2 font-medium">
                                     {row.original.name}
-                                    {pitchColor && (
-                                        <span
-                                            className={`inline-block h-3 w-3 rounded-full ${
-                                                pitchColor === 'red'
-                                                    ? 'bg-red-500'
-                                                    : pitchColor === 'yellow'
-                                                      ? 'bg-yellow-500'
-                                                      : 'bg-blue-500'
-                                            }`}
-                                        />
-                                    )}
+                                    <span
+                                        className={`inline-block h-3 w-3 rounded-full ${
+                                            pitchColor === 'red'
+                                                ? 'bg-red-500'
+                                                : pitchColor === 'yellow'
+                                                  ? 'bg-yellow-500'
+                                                  : pitchColor === 'blue'
+                                                    ? 'bg-blue-500'
+                                                    : 'bg-gray-300 dark:bg-gray-600'
+                                        }`}
+                                    />
                                 </div>
                                 {row.original.printings?.[0]?.collector_number && (
                                     <div className="text-muted-foreground text-sm">

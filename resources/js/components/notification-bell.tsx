@@ -6,9 +6,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Link, router } from '@inertiajs/react';
-import { Bell, Check, CheckCheck } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import { Bell, CheckCheck } from 'lucide-react';
+import { useState } from 'react';
 
 interface Notification {
     id: string;
@@ -20,66 +20,27 @@ interface Notification {
     created_at: string;
 }
 
+interface PageProps {
+    notifications: {
+        items: Notification[];
+        unread_count: number;
+    };
+}
+
 export function NotificationBell() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { notifications } = usePage<PageProps>().props;
     const [open, setOpen] = useState(false);
 
-    const fetchNotifications = useCallback(async () => {
-        try {
-            const response = await fetch('/notifications');
-            const data = await response.json();
-            setNotifications(data.notifications);
-            setUnreadCount(data.unread_count);
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchNotifications();
-
-        // Poll for new notifications every 10 seconds
-        const interval = setInterval(fetchNotifications, 10000);
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
-
-    const getCsrfToken = (): string => {
-        return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    const markAsRead = (id: string) => {
+        router.post(`/notifications/${id}/read`, {}, {
+            preserveScroll: true,
+        });
     };
 
-    const markAsRead = async (id: string) => {
-        try {
-            await fetch(`/notifications/${id}/read`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Content-Type': 'application/json',
-                },
-            });
-            setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-            );
-            setUnreadCount((prev) => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Failed to mark notification as read:', error);
-        }
-    };
-
-    const markAllAsRead = async () => {
-        try {
-            await fetch('/notifications/read-all', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Content-Type': 'application/json',
-                },
-            });
-            setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Failed to mark all notifications as read:', error);
-        }
+    const markAllAsRead = () => {
+        router.post('/notifications/read-all', {}, {
+            preserveScroll: true,
+        });
     };
 
     const handleNotificationClick = (notification: Notification) => {
@@ -116,12 +77,12 @@ export function NotificationBell() {
                     className="relative group h-9 w-9 cursor-pointer"
                 >
                     <Bell className="!size-5 opacity-80 group-hover:opacity-100" />
-                    {unreadCount > 0 && (
+                    {notifications.unread_count > 0 && (
                         <Badge
                             variant="destructive"
                             className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs"
                         >
-                            {unreadCount > 9 ? '9+' : unreadCount}
+                            {notifications.unread_count > 9 ? '9+' : notifications.unread_count}
                         </Badge>
                     )}
                 </Button>
@@ -129,7 +90,7 @@ export function NotificationBell() {
             <DropdownMenuContent className="w-80" align="end">
                 <div className="flex items-center justify-between border-b px-3 py-2">
                     <span className="font-medium">Benachrichtigungen</span>
-                    {unreadCount > 0 && (
+                    {notifications.unread_count > 0 && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -142,12 +103,12 @@ export function NotificationBell() {
                     )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
+                    {notifications.items.length === 0 ? (
                         <div className="p-4 text-center text-muted-foreground text-sm">
                             Keine Benachrichtigungen
                         </div>
                     ) : (
-                        notifications.map((notification) => (
+                        notifications.items.map((notification) => (
                             <DropdownMenuItem
                                 key={notification.id}
                                 className={`flex cursor-pointer items-start gap-3 p-3 ${

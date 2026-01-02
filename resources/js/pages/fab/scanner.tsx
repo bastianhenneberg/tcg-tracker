@@ -1,3 +1,4 @@
+import { CardImage } from '@/components/card-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,9 +19,11 @@ import {
     LANGUAGES,
     getRarityLabel,
     getFoilingLabel,
+    getPitchColor,
 } from '@/types/fab';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Camera, CheckCircle, Flashlight, Loader2, Pause, Play, Plus, Search, Settings, Settings2, Timer, Upload, XCircle, ZoomIn } from 'lucide-react';
+import { toast } from 'sonner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -45,6 +48,7 @@ interface CardMatch {
     foiling: string | null;
     foiling_label?: string;
     image_url: string | null;
+    is_custom?: boolean;
 }
 
 interface ScannedCard {
@@ -52,11 +56,20 @@ interface ScannedCard {
     card_name: string;
     position: number;
     condition: string;
+    is_custom?: boolean;
+}
+
+interface RecognitionResult {
+    card_name?: string;
+    set_code?: string;
+    collector_number?: string;
+    foiling?: string;
 }
 
 interface ScannerFlash {
     success: boolean;
     error?: string;
+    recognition?: RecognitionResult;
     match?: CardMatch;
     alternatives?: CardMatch[];
     confirmed?: ScannedCard;
@@ -177,6 +190,35 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     const [selectedLanguage, setSelectedLanguage] = useState<LanguageKey>(initialSettings.bulkMode.defaultLanguage);
     const [confirming, setConfirming] = useState(false);
 
+    // Not found state - when recognition worked but no match in database
+    const [notFoundRecognition, setNotFoundRecognition] = useState<RecognitionResult | null>(null);
+
+    // Custom card dialog state
+    const [showCustomCardDialog, setShowCustomCardDialog] = useState(false);
+    const [customCardForm, setCustomCardForm] = useState({
+        name: '',
+        set_name: '',
+        collector_number: '',
+        rarity: '',
+        foiling: '',
+        language: 'DE',
+        linked_fab_card_id: null as number | null,
+        linked_fab_card_name: '',
+        linked_fab_card_pitch: null as number | null,
+        linked_fab_card_collector_number: null as string | null,
+    });
+    const [creatingCustomCard, setCreatingCustomCard] = useState(false);
+    const [fabCardSearchQuery, setFabCardSearchQuery] = useState('');
+    const [fabCardSearchResults, setFabCardSearchResults] = useState<{
+        id: number;
+        name: string;
+        pitch: number | null;
+        collector_number: string | null;
+        image_url: string | null;
+    }[]>([]);
+    const [searchingFabCards, setSearchingFabCards] = useState(false);
+    const [hoveredFabCard, setHoveredFabCard] = useState<{ image_url: string | null } | null>(null);
+
     // Scanned cards in current lot
     const [scannedCards, setScannedCards] = useState<ScannedCard[]>([]);
     const [lotCardCount, setLotCardCount] = useState(0);
@@ -233,9 +275,19 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     // Handle flash messages from backend
     useEffect(() => {
         console.log('Flash data received:', flash);
+        console.log('Flash details:', {
+            hasFlash: !!flash,
+            success: flash?.success,
+            hasMatch: !!flash?.match,
+            hasRecognition: !!flash?.recognition,
+            recognition: flash?.recognition,
+            alternativesLength: flash?.alternatives?.length,
+        });
         if (!flash) return;
 
         if (flash.match) {
+            // Clear not found state when we have a match
+            setNotFoundRecognition(null);
             // In bulk mode, add to pending cards list
             if (bulkMode.enabled) {
                 const newPendingCard: PendingCard = {
@@ -262,10 +314,21 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                 stopCamera();
             }
         } else if (flash.alternatives?.length) {
+            // Clear not found state when we have alternatives
+            setNotFoundRecognition(null);
             setSearchResults(flash.alternatives);
             if (!bulkMode.enabled) {
                 stopCamera();
             }
+        } else if (flash.success && flash.recognition) {
+            // Recognition worked but no match found in database
+            console.log('Setting notFoundRecognition:', flash.recognition);
+            setNotFoundRecognition(flash.recognition);
+            if (!bulkMode.enabled) {
+                stopCamera();
+            }
+        } else {
+            console.log('No condition matched:', { success: flash.success, recognition: flash.recognition, match: flash.match, alternatives: flash.alternatives });
         }
 
         if (flash.confirmed) {
@@ -274,6 +337,9 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
             setSelectedCard(null);
             setSelectedCondition(bulkMode.defaultCondition);
             setConfirming(false);
+            toast.success(`${flash.confirmed.card_name} hinzugefügt`, {
+                description: `Position ${flash.confirmed.position} · ${flash.confirmed.condition}${flash.confirmed.is_custom ? ' · Custom' : ''}`,
+            });
             if (!bulkMode.enabled) {
                 searchInputRef.current?.focus();
             }
@@ -419,13 +485,9 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
         if (newBulkMode) settings.bulkMode = newBulkMode;
         if (newTemplate !== undefined) settings.template = newTemplate;
 
-        fetch('/fab/scanner/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
-            },
-            body: JSON.stringify(settings),
+        router.post('/fab/scanner/settings', settings, {
+            preserveState: true,
+            preserveScroll: true,
         });
     }, []);
 
@@ -576,13 +638,21 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
 
         // Send all cards to backend one by one
         for (const pending of pendingCards) {
+            const confirmData: Record<string, unknown> = {
+                lot_id: selectedLotId,
+                condition: pending.condition,
+                language: pending.language,
+            };
+
+            if (pending.card.is_custom) {
+                confirmData.custom_printing_id = pending.card.id;
+                confirmData.is_custom = true;
+            } else {
+                confirmData.fab_printing_id = pending.card.id;
+            }
+
             await new Promise<void>((resolve) => {
-                router.post('/fab/scanner/confirm', {
-                    lot_id: selectedLotId,
-                    fab_printing_id: pending.card.id,
-                    condition: pending.condition,
-                    language: pending.language,
-                }, {
+                router.post('/fab/scanner/confirm', confirmData, {
                     preserveState: true,
                     preserveScroll: true,
                     onFinish: () => resolve(),
@@ -789,12 +859,21 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
         if (!selectedCard || !selectedLotId) return;
 
         setConfirming(true);
-        router.post('/fab/scanner/confirm', {
+
+        const confirmData: Record<string, unknown> = {
             lot_id: selectedLotId,
-            fab_printing_id: selectedCard.id,
             condition: selectedCondition,
             language: selectedLanguage,
-        }, {
+        };
+
+        if (selectedCard.is_custom) {
+            confirmData.custom_printing_id = selectedCard.id;
+            confirmData.is_custom = true;
+        } else {
+            confirmData.fab_printing_id = selectedCard.id;
+        }
+
+        router.post('/fab/scanner/confirm', confirmData, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -913,11 +992,19 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                                     setSearchResults([]);
                                                 }}
                                             >
-                                                {result.image_url && (
-                                                    <img src={result.image_url} alt={result.card_name} className="h-12 w-auto rounded" />
-                                                )}
+                                                <CardImage
+                                                    src={result.image_url}
+                                                    alt={result.card_name}
+                                                    className="h-12 w-9 rounded object-cover"
+                                                    placeholderClassName="h-12 w-9 rounded"
+                                                />
                                                 <div className="flex-1">
-                                                    <div className="font-medium">{result.card_name}</div>
+                                                    <div className="font-medium flex items-center gap-1">
+                                                        {result.card_name}
+                                                        {result.is_custom && (
+                                                            <Badge variant="secondary" className="text-[10px] px-1">Custom</Badge>
+                                                        )}
+                                                    </div>
                                                     <div className="text-muted-foreground text-xs">
                                                         {result.set_name} - {result.collector_number}
                                                     </div>
@@ -1448,7 +1535,7 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {[1, 2, 3, 5, 8, 10].map((s) => (
+                                                    {[3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
                                                         <SelectItem key={s} value={s.toString()}>
                                                             {s}s
                                                         </SelectItem>
@@ -1516,15 +1603,19 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                 {selectedCard ? (
                                     <div className="space-y-4">
                                         <div className="flex gap-4">
-                                            {selectedCard.image_url && (
-                                                <img
-                                                    src={selectedCard.image_url}
-                                                    alt={selectedCard.card_name}
-                                                    className="h-48 w-auto rounded-lg shadow"
-                                                />
-                                            )}
+                                            <CardImage
+                                                src={selectedCard.image_url}
+                                                alt={selectedCard.card_name}
+                                                className="h-48 w-36 rounded-lg shadow object-cover"
+                                                placeholderClassName="h-48 w-36 rounded-lg"
+                                            />
                                             <div className="flex-1 space-y-2">
-                                                <h3 className="text-xl font-bold">{selectedCard.card_name}</h3>
+                                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                                    {selectedCard.card_name}
+                                                    {selectedCard.is_custom && (
+                                                        <Badge variant="secondary" className="text-xs">Custom</Badge>
+                                                    )}
+                                                </h3>
                                                 <p className="text-muted-foreground">
                                                     {selectedCard.set_name} - {selectedCard.collector_number}
                                                 </p>
@@ -1574,6 +1665,106 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                             Zum Inventar hinzufügen (Enter)
                                         </Button>
                                     </div>
+                                ) : notFoundRecognition ? (
+                                    <div className="space-y-4">
+                                        <div className="rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
+                                            <div className="flex items-start gap-3">
+                                                <XCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                                                        Karte nicht in Datenbank
+                                                    </h4>
+                                                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                                                        Die KI hat die Karte erkannt, aber sie wurde nicht in der Kartendatenbank gefunden.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <h4 className="font-medium text-sm">Erkannte Daten:</h4>
+                                            <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
+                                                {notFoundRecognition.card_name && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-muted-foreground">Kartenname:</span>
+                                                        <span className="font-medium">{notFoundRecognition.card_name}</span>
+                                                    </div>
+                                                )}
+                                                {notFoundRecognition.set_code && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-muted-foreground">Set-Code:</span>
+                                                        <span className="font-mono font-medium">{notFoundRecognition.set_code}</span>
+                                                    </div>
+                                                )}
+                                                {notFoundRecognition.collector_number && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-muted-foreground">Nummer:</span>
+                                                        <span className="font-mono font-medium">{notFoundRecognition.collector_number}</span>
+                                                    </div>
+                                                )}
+                                                {notFoundRecognition.foiling && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-muted-foreground">Foiling:</span>
+                                                        <span className="font-medium">{notFoundRecognition.foiling}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Versuche die Karte manuell zu suchen oder lege sie als eigene Karte an.
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => {
+                                                        const query = notFoundRecognition.card_name ?? notFoundRecognition.collector_number ?? '';
+                                                        handleSearchChange(query);
+                                                        setNotFoundRecognition(null);
+                                                        searchInputRef.current?.focus();
+                                                    }}
+                                                >
+                                                    <Search className="mr-2 h-4 w-4" />
+                                                    Manuell suchen
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className="flex-1"
+                                                    onClick={() => {
+                                                        // Pre-fill form with recognition data
+                                                        setCustomCardForm({
+                                                            name: notFoundRecognition?.card_name ?? '',
+                                                            set_name: notFoundRecognition?.set_code ?? '',
+                                                            collector_number: notFoundRecognition?.collector_number ?? '',
+                                                            rarity: '',
+                                                            foiling: notFoundRecognition?.foiling ?? '',
+                                                            language: 'DE',
+                                                            linked_fab_card_id: null,
+                                                            linked_fab_card_name: '',
+                                                            linked_fab_card_pitch: null,
+                                                            linked_fab_card_collector_number: null,
+                                                        });
+                                                        setFabCardSearchQuery('');
+                                                        setFabCardSearchResults([]);
+                                                        setShowCustomCardDialog(true);
+                                                    }}
+                                                >
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    Als eigene Karte
+                                                </Button>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="w-full"
+                                                onClick={() => setNotFoundRecognition(null)}
+                                            >
+                                                Schließen
+                                            </Button>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="py-8 text-center text-muted-foreground">
                                         <Camera className="mx-auto mb-2 h-12 w-12 opacity-50" />
@@ -1604,15 +1795,19 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                                     replacingCardId === pending.id ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : ''
                                                 }`}
                                             >
-                                                {pending.card.image_url && (
-                                                    <img
-                                                        src={pending.card.image_url}
-                                                        alt={pending.card.card_name}
-                                                        className="h-16 w-auto rounded"
-                                                    />
-                                                )}
+                                                <CardImage
+                                                    src={pending.card.image_url}
+                                                    alt={pending.card.card_name}
+                                                    className="h-16 w-12 rounded object-cover"
+                                                    placeholderClassName="h-16 w-12 rounded"
+                                                />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium truncate">{pending.card.card_name}</p>
+                                                    <p className="font-medium truncate flex items-center gap-1">
+                                                        {pending.card.card_name}
+                                                        {pending.card.is_custom && (
+                                                            <Badge variant="secondary" className="text-[10px] px-1 shrink-0">Custom</Badge>
+                                                        )}
+                                                    </p>
                                                     <p className="text-xs text-muted-foreground truncate">
                                                         {pending.card.set_name} - {pending.card.collector_number}
                                                     </p>
@@ -1902,6 +2097,322 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                         <Button onClick={saveTemplate} disabled={!templateImage}>
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Speichern
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Custom Card Dialog */}
+            <Dialog open={showCustomCardDialog} onOpenChange={setShowCustomCardDialog}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Eigene Karte anlegen</DialogTitle>
+                        <DialogDescription>
+                            Lege eine eigene Karte an, die nicht in der Datenbank vorhanden ist.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="custom-card-name">Kartenname (wie auf der Karte) *</Label>
+                            <Input
+                                id="custom-card-name"
+                                value={customCardForm.name}
+                                onChange={(e) => setCustomCardForm({ ...customCardForm, name: e.target.value })}
+                                placeholder="z.B. 'Realitätsbrechung'"
+                            />
+                        </div>
+
+                        {/* Link to main card */}
+                        <div className="space-y-2">
+                            <Label>Hauptkarte verknüpfen (optional)</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Wenn dies eine Übersetzung/Variante einer existierenden Karte ist
+                            </p>
+                            {customCardForm.linked_fab_card_id ? (
+                                <div className="flex items-center gap-2 p-2 rounded border bg-muted/50">
+                                    <span
+                                        className={`inline-block h-3 w-3 rounded-full shrink-0 ${
+                                            getPitchColor(customCardForm.linked_fab_card_pitch) === 'red'
+                                                ? 'bg-red-500'
+                                                : getPitchColor(customCardForm.linked_fab_card_pitch) === 'yellow'
+                                                  ? 'bg-yellow-500'
+                                                  : getPitchColor(customCardForm.linked_fab_card_pitch) === 'blue'
+                                                    ? 'bg-blue-500'
+                                                    : 'bg-gray-400'
+                                        }`}
+                                    />
+                                    <span className="flex-1 text-sm">
+                                        {customCardForm.linked_fab_card_name}
+                                        {customCardForm.linked_fab_card_collector_number && (
+                                            <span className="text-muted-foreground ml-1">
+                                                ({customCardForm.linked_fab_card_collector_number})
+                                            </span>
+                                        )}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setCustomCardForm({
+                                            ...customCardForm,
+                                            linked_fab_card_id: null,
+                                            linked_fab_card_name: '',
+                                            linked_fab_card_pitch: null,
+                                            linked_fab_card_collector_number: null,
+                                        })}
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <Input
+                                        value={fabCardSearchQuery}
+                                        onChange={async (e) => {
+                                            setFabCardSearchQuery(e.target.value);
+                                            if (e.target.value.length >= 2) {
+                                                setSearchingFabCards(true);
+                                                try {
+                                                    const res = await fetch(`/custom-cards/fab-cards/search?q=${encodeURIComponent(e.target.value)}`);
+                                                    const data = await res.json();
+                                                    setFabCardSearchResults(data);
+                                                } catch {
+                                                    setFabCardSearchResults([]);
+                                                } finally {
+                                                    setSearchingFabCards(false);
+                                                }
+                                            } else {
+                                                setFabCardSearchResults([]);
+                                            }
+                                        }}
+                                        placeholder="Suche nach englischem Kartennamen..."
+                                    />
+                                    {fabCardSearchResults.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                            {fabCardSearchResults.map((card) => {
+                                                const pitchColor = getPitchColor(card.pitch);
+                                                return (
+                                                    <button
+                                                        key={card.id}
+                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                                                        onClick={() => {
+                                                            setCustomCardForm({
+                                                                ...customCardForm,
+                                                                linked_fab_card_id: card.id,
+                                                                linked_fab_card_name: card.name,
+                                                                linked_fab_card_pitch: card.pitch,
+                                                                linked_fab_card_collector_number: card.collector_number,
+                                                            });
+                                                            setFabCardSearchQuery('');
+                                                            setFabCardSearchResults([]);
+                                                            setHoveredFabCard(null);
+                                                        }}
+                                                        onMouseEnter={() => setHoveredFabCard(card)}
+                                                        onMouseLeave={() => setHoveredFabCard(null)}
+                                                    >
+                                                        <span
+                                                            className={`inline-block h-3 w-3 rounded-full shrink-0 ${
+                                                                pitchColor === 'red'
+                                                                    ? 'bg-red-500'
+                                                                    : pitchColor === 'yellow'
+                                                                      ? 'bg-yellow-500'
+                                                                      : pitchColor === 'blue'
+                                                                        ? 'bg-blue-500'
+                                                                        : 'bg-gray-400'
+                                                            }`}
+                                                        />
+                                                        <span className="flex-1">{card.name}</span>
+                                                        {card.collector_number && (
+                                                            <span className="text-muted-foreground text-xs">
+                                                                {card.collector_number}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    {/* Image preview on hover */}
+                                    {hoveredFabCard?.image_url && (
+                                        <div className="absolute right-0 top-full mt-1 z-20 pointer-events-none">
+                                            <img
+                                                src={hoveredFabCard.image_url}
+                                                alt="Vorschau"
+                                                className="h-48 w-auto rounded-lg shadow-xl border"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-card-set">Set</Label>
+                                <Input
+                                    id="custom-card-set"
+                                    value={customCardForm.set_name}
+                                    onChange={(e) => setCustomCardForm({ ...customCardForm, set_name: e.target.value })}
+                                    placeholder="z.B. '2HP' oder 'History Pack 2'"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-card-number">Kartennummer</Label>
+                                <Input
+                                    id="custom-card-number"
+                                    value={customCardForm.collector_number}
+                                    onChange={(e) => setCustomCardForm({ ...customCardForm, collector_number: e.target.value })}
+                                    placeholder="z.B. '154'"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-card-language">Sprache</Label>
+                                <Select
+                                    value={customCardForm.language}
+                                    onValueChange={(v) => setCustomCardForm({ ...customCardForm, language: v })}
+                                >
+                                    <SelectTrigger id="custom-card-language">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="DE">Deutsch</SelectItem>
+                                        <SelectItem value="EN">Englisch</SelectItem>
+                                        <SelectItem value="FR">Französisch</SelectItem>
+                                        <SelectItem value="ES">Spanisch</SelectItem>
+                                        <SelectItem value="IT">Italienisch</SelectItem>
+                                        <SelectItem value="JP">Japanisch</SelectItem>
+                                        <SelectItem value="CN">Chinesisch</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-card-rarity">Seltenheit</Label>
+                                <Select
+                                    value={customCardForm.rarity}
+                                    onValueChange={(v) => setCustomCardForm({ ...customCardForm, rarity: v })}
+                                >
+                                    <SelectTrigger id="custom-card-rarity">
+                                        <SelectValue placeholder="..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="C">Common</SelectItem>
+                                        <SelectItem value="R">Rare</SelectItem>
+                                        <SelectItem value="S">Super Rare</SelectItem>
+                                        <SelectItem value="M">Majestic</SelectItem>
+                                        <SelectItem value="L">Legendary</SelectItem>
+                                        <SelectItem value="F">Fabled</SelectItem>
+                                        <SelectItem value="P">Promo</SelectItem>
+                                        <SelectItem value="T">Token</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-card-foiling">Foiling</Label>
+                                <Select
+                                    value={customCardForm.foiling}
+                                    onValueChange={(v) => setCustomCardForm({ ...customCardForm, foiling: v })}
+                                >
+                                    <SelectTrigger id="custom-card-foiling">
+                                        <SelectValue placeholder="..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(FOILINGS).map(([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowCustomCardDialog(false)}>
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (!customCardForm.name.trim()) {
+                                    alert('Bitte gib einen Kartennamen ein.');
+                                    return;
+                                }
+
+                                setCreatingCustomCard(true);
+                                router.post('/custom-cards', {
+                                    game_id: 1, // FAB game ID
+                                    linked_fab_card_id: customCardForm.linked_fab_card_id,
+                                    name: customCardForm.name,
+                                    set_name: customCardForm.set_name || null,
+                                    collector_number: customCardForm.collector_number || null,
+                                    rarity: customCardForm.rarity || null,
+                                    foiling: customCardForm.foiling || null,
+                                    language: customCardForm.language,
+                                }, {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                    onSuccess: (page) => {
+                                        const flash = page.props.flash as { customCard?: {
+                                            id: number;
+                                            card_name: string;
+                                            set_name: string | null;
+                                            collector_number: string | null;
+                                            rarity: string | null;
+                                            foiling: string | null;
+                                        } };
+                                        const customCard = flash?.customCard;
+
+                                        if (customCard) {
+                                            setSelectedCard({
+                                                id: customCard.id,
+                                                card_name: customCard.card_name,
+                                                set_name: customCard.set_name ?? 'Custom',
+                                                collector_number: customCard.collector_number ?? '-',
+                                                rarity: customCard.rarity,
+                                                foiling: customCard.foiling,
+                                                image_url: null,
+                                                is_custom: true,
+                                            });
+                                            toast.success(`Karte "${customCard.card_name}" erstellt`);
+                                        } else {
+                                            // Card was created but no flash data - still show success
+                                            toast.success(`Karte "${customCardForm.name}" erstellt`);
+                                        }
+
+                                        setShowCustomCardDialog(false);
+                                        setNotFoundRecognition(null);
+                                        setCustomCardForm({
+                                            name: '',
+                                            set_name: '',
+                                            collector_number: '',
+                                            rarity: '',
+                                            foiling: '',
+                                            language: 'DE',
+                                            linked_fab_card_id: null,
+                                            linked_fab_card_name: '',
+                                            linked_fab_card_pitch: null,
+                                            linked_fab_card_collector_number: null,
+                                        });
+                                        setFabCardSearchQuery('');
+                                        setFabCardSearchResults([]);
+                                    },
+                                    onError: (errors) => {
+                                        console.error('Error creating custom card:', errors);
+                                        toast.error('Fehler beim Erstellen der Karte');
+                                    },
+                                    onFinish: () => {
+                                        setCreatingCustomCard(false);
+                                    },
+                                });
+                            }}
+                            disabled={creatingCustomCard || !customCardForm.name.trim()}
+                        >
+                            {creatingCustomCard ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Plus className="mr-2 h-4 w-4" />
+                            )}
+                            Karte anlegen
                         </Button>
                     </DialogFooter>
                 </DialogContent>

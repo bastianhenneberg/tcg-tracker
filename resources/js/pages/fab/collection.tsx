@@ -1,3 +1,4 @@
+import { CardImage } from '@/components/card-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -5,6 +6,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { index as playsetRulesIndex } from '@/routes/playset-rules';
 import { type BreadcrumbItem } from '@/types';
 import {
     type FabCollection,
@@ -14,16 +16,30 @@ import {
     getLanguageLabel,
     getRarityLabel,
     getFoilingLabel,
+    getPitchColor,
 } from '@/types/fab';
 import { Head, Link, router } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Trash2 } from 'lucide-react';
+import { Check, Plus, Settings, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+interface GameFormat {
+    id: number;
+    slug: string;
+    name: string;
+}
+
+interface PlaysetInfo {
+    card_name: string;
+    owned: number;
+    max: number;
+    complete: boolean;
+}
+
 interface Props {
     collection: PaginatedData<FabCollection>;
-    filters: FabCollectionFilters;
+    filters: FabCollectionFilters & { format?: string; playset?: string };
     conditions: Record<string, string>;
     rarities: Record<string, string>;
     foilings: Record<string, string>;
@@ -31,6 +47,8 @@ interface Props {
         unique_cards: number;
         total_cards: number;
     };
+    formats: GameFormat[];
+    playsetData: Record<string, PlaysetInfo>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -44,9 +62,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function FabCollectionIndex({ collection, filters, conditions, rarities, foilings, stats }: Props) {
+export default function FabCollectionIndex({ collection, filters, conditions, rarities, foilings, stats, formats, playsetData }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    // Helper to get playset info for a card
+    const getPlaysetInfo = (cardName: string): PlaysetInfo | null => {
+        return playsetData[cardName] ?? null;
+    };
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
         router.get(
@@ -95,12 +118,10 @@ export default function FabCollectionIndex({ collection, filters, conditions, ra
         if (selectedIds.length === 0) return;
         if (!confirm(`${selectedIds.length} Karte(n) wirklich aus der Sammlung löschen?`)) return;
 
-        selectedIds.forEach((id) => {
-            router.delete(`/fab/collection/${id}`, {
-                preserveScroll: true,
-            });
+        router.post('/fab/collection/delete-multiple', { ids: selectedIds }, {
+            preserveScroll: true,
+            onSuccess: () => setSelectedIds([]),
         });
-        setSelectedIds([]);
     };
 
     const columns: ColumnDef<FabCollection>[] = useMemo(
@@ -125,23 +146,40 @@ export default function FabCollectionIndex({ collection, filters, conditions, ra
             {
                 accessorKey: 'name',
                 header: 'Karte',
-                cell: ({ row }) => (
-                    <div className="flex items-center gap-3">
-                        {row.original.printing?.image_url && (
-                            <img
-                                src={row.original.printing.image_url}
+                cell: ({ row }) => {
+                    const pitch = row.original.printing?.card?.pitch ?? null;
+                    const pitchColor = getPitchColor(pitch);
+                    return (
+                        <div className="flex items-center gap-3">
+                            <CardImage
+                                src={row.original.printing?.image_url}
                                 alt={row.original.printing?.card?.name ?? ''}
                                 className="h-12 w-auto rounded"
+                                placeholderClassName="h-12 w-9 rounded"
                             />
-                        )}
-                        <div>
-                            <div className="font-medium">{row.original.printing?.card?.name}</div>
-                            <div className="text-muted-foreground text-sm">
-                                {row.original.printing?.collector_number}
+                            <div>
+                                <div className="flex items-center gap-2 font-medium">
+                                    {row.original.printing?.card?.name}
+                                    <span
+                                        className={`inline-block h-3 w-3 rounded-full ${
+                                            pitchColor === 'red'
+                                                ? 'bg-red-500'
+                                                : pitchColor === 'yellow'
+                                                  ? 'bg-yellow-500'
+                                                  : pitchColor === 'blue'
+                                                    ? 'bg-blue-500'
+                                                    : 'bg-gray-400'
+                                        }`}
+                                        title={pitchColor ? `Pitch ${pitch}` : 'Kein Pitch'}
+                                    />
+                                </div>
+                                <div className="text-muted-foreground text-sm">
+                                    {row.original.printing?.collector_number}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ),
+                    );
+                },
             },
             {
                 accessorKey: 'quantity',
@@ -150,6 +188,29 @@ export default function FabCollectionIndex({ collection, filters, conditions, ra
                     <Badge variant="secondary">{row.original.quantity}x</Badge>
                 ),
             },
+            ...(filters.format ? [{
+                id: 'playset',
+                header: 'Playset',
+                cell: ({ row }: { row: { original: FabCollection } }) => {
+                    const cardName = row.original.printing?.card?.name;
+                    if (!cardName) return '-';
+                    const playset = getPlaysetInfo(cardName);
+                    if (!playset) return '-';
+
+                    const isComplete = playset.complete;
+                    return (
+                        <div className="flex items-center gap-1">
+                            <Badge
+                                variant={isComplete ? 'default' : 'outline'}
+                                className={isComplete ? 'bg-green-600 hover:bg-green-700' : ''}
+                            >
+                                {playset.owned}/{playset.max}
+                                {isComplete && <Check className="ml-1 h-3 w-3" />}
+                            </Badge>
+                        </div>
+                    );
+                },
+            }] : []),
             {
                 accessorKey: 'condition',
                 header: 'Zustand',
@@ -193,12 +254,20 @@ export default function FabCollectionIndex({ collection, filters, conditions, ra
                             {stats.unique_cards} verschiedene Karten, {stats.total_cards} insgesamt
                         </p>
                     </div>
-                    <Button asChild>
-                        <Link href="/fab/inventory">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Vom Inventar hinzufügen
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href={playsetRulesIndex().url}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Playset-Regeln
+                            </Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href="/fab/inventory">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Vom Inventar hinzufügen
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
@@ -269,6 +338,58 @@ export default function FabCollectionIndex({ collection, filters, conditions, ra
                             </SelectContent>
                         </Select>
                     </div>
+                </div>
+
+                {/* Playset Filter Section */}
+                <div className="flex flex-col gap-4 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Playset-Ansicht:</span>
+                        <Select
+                            value={filters.format ?? 'none'}
+                            onValueChange={(value) =>
+                                handleFilterChange('format', value === 'none' ? undefined : value)
+                            }
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Format wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Kein Format</SelectItem>
+                                {formats.map((format) => (
+                                    <SelectItem key={format.id} value={String(format.id)}>
+                                        {format.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {filters.format && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Zeige:</span>
+                            <Select
+                                value={filters.playset ?? 'all'}
+                                onValueChange={(value) =>
+                                    handleFilterChange('playset', value === 'all' ? undefined : value)
+                                }
+                            >
+                                <SelectTrigger className="w-[160px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Alle Playsets</SelectItem>
+                                    <SelectItem value="incomplete">Unvollständig</SelectItem>
+                                    <SelectItem value="complete">Vollständig</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
+                    {!filters.format && (
+                        <p className="text-sm text-muted-foreground">
+                            Wähle ein Format um Playset-Status zu sehen
+                        </p>
+                    )}
                 </div>
 
                 {selectedIds.length > 0 && (

@@ -2,37 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        $notifications = Auth::user()
-            ->notifications()
-            ->latest()
-            ->limit(20)
-            ->get()
-            ->map(fn ($n) => [
-                'id' => $n->id,
-                'action' => $n->data['action'] ?? null,
-                'message' => $n->data['message'] ?? '',
-                'url' => $n->data['url'] ?? null,
-                'meta' => $n->data['meta'] ?? [],
-                'read' => $n->read_at !== null,
-                'created_at' => $n->created_at->diffForHumans(),
-            ]);
-
-        $unreadCount = Auth::user()->unreadNotifications()->count();
-
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $unreadCount,
-        ]);
-    }
-
-    public function markAsRead(string $id): JsonResponse
+    public function markAsRead(string $id): RedirectResponse
     {
         $notification = Auth::user()
             ->notifications()
@@ -43,13 +18,13 @@ class NotificationController extends Controller
             $notification->markAsRead();
         }
 
-        return response()->json(['success' => true]);
+        return back();
     }
 
-    public function markAllAsRead(): JsonResponse
+    public function markAllAsRead(): RedirectResponse
     {
         Auth::user()->unreadNotifications->markAsRead();
 
-        return response()->json(['success' => true]);
+        return back();
     }
 }

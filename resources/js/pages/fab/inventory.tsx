@@ -1,14 +1,15 @@
+import { CardImage } from '@/components/card-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
-    type FabInventory,
+    type NormalizedInventoryItem,
     type FabInventoryFilters,
     type PaginatedData,
     getConditionLabel,
@@ -16,27 +17,30 @@ import {
     getFoilingLabel,
     getLanguageLabel,
 } from '@/types/fab';
-import { printing as printingRoute } from '@/actions/App/Http/Controllers/Fab/FabCardController';
-import { Head, Link, router } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, Package, ShoppingCart, Heart, Trash2 } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { ChevronDown, ChevronRight, Eye, Package, ShoppingCart, Heart, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 interface GroupedInventory {
     key: string;
-    printingId: number;
     cardName: string;
     setName: string;
     collectorNumber: string;
     rarity: string | null;
+    rarityLabel: string | null;
     foiling: string | null;
+    foilingLabel: string | null;
     imageUrl: string | null;
-    items: FabInventory[];
+    isCustom: boolean;
+    printingId: number;
+    cardId: number;
+    items: NormalizedInventoryItem[];
     totalValue: number;
 }
 
 interface Props {
-    inventory: PaginatedData<FabInventory>;
+    inventory: PaginatedData<NormalizedInventoryItem>;
     filters: FabInventoryFilters;
     conditions: Record<string, string>;
     rarities: Record<string, string>;
@@ -60,26 +64,30 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function FabInventoryIndex({ inventory, filters, conditions, rarities, foilings, stats }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [selectedIds, setSelectedIds] = useState<{ id: number; isCustom: boolean }[]>([]);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-    // Group inventory items by printing
+    // Group inventory items by card + set + custom
     const groupedInventory = useMemo(() => {
         const groups = new Map<string, GroupedInventory>();
 
         inventory.data.forEach((item) => {
-            const key = `${item.fab_printing_id}`;
+            const key = `${item.is_custom ? 'custom' : 'fab'}-${item.card_name}-${item.set_name}-${item.collector_number}`;
 
             if (!groups.has(key)) {
                 groups.set(key, {
                     key,
-                    printingId: item.fab_printing_id,
-                    cardName: item.printing?.card?.name ?? 'Unbekannt',
-                    setName: item.printing?.set?.name ?? item.printing?.set?.external_id ?? '',
-                    collectorNumber: item.printing?.collector_number ?? '',
-                    rarity: item.printing?.rarity ?? null,
-                    foiling: item.printing?.foiling ?? null,
-                    imageUrl: item.printing?.image_url ?? null,
+                    cardName: item.card_name,
+                    setName: item.set_name,
+                    collectorNumber: item.collector_number,
+                    rarity: item.rarity,
+                    rarityLabel: item.rarity_label,
+                    foiling: item.foiling,
+                    foilingLabel: item.foiling_label,
+                    imageUrl: item.image_url,
+                    isCustom: item.is_custom,
+                    printingId: item.printing_id,
+                    cardId: item.card_id,
                     items: [],
                     totalValue: 0,
                 });
@@ -128,49 +136,66 @@ export default function FabInventoryIndex({ inventory, filters, conditions, rari
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedIds(inventory.data.map((item) => item.id));
+            setSelectedIds(inventory.data.map((item) => ({ id: item.id, isCustom: item.is_custom })));
         } else {
             setSelectedIds([]);
         }
     };
 
-    const handleSelectItem = (id: number, checked: boolean) => {
+    const handleSelectItem = (item: NormalizedInventoryItem, checked: boolean) => {
         if (checked) {
-            setSelectedIds([...selectedIds, id]);
+            setSelectedIds([...selectedIds, { id: item.id, isCustom: item.is_custom }]);
         } else {
-            setSelectedIds(selectedIds.filter((i) => i !== id));
+            setSelectedIds(selectedIds.filter((i) => !(i.id === item.id && i.isCustom === item.is_custom)));
         }
     };
 
     const handleSelectGroup = (group: GroupedInventory, checked: boolean) => {
-        const groupIds = group.items.map((item) => item.id);
+        const groupItems = group.items.map((item) => ({ id: item.id, isCustom: item.is_custom }));
         if (checked) {
-            setSelectedIds([...new Set([...selectedIds, ...groupIds])]);
+            const existing = selectedIds.filter(
+                (s) => !groupItems.some((g) => g.id === s.id && g.isCustom === s.isCustom)
+            );
+            setSelectedIds([...existing, ...groupItems]);
         } else {
-            setSelectedIds(selectedIds.filter((id) => !groupIds.includes(id)));
+            setSelectedIds(
+                selectedIds.filter((s) => !groupItems.some((g) => g.id === s.id && g.isCustom === s.isCustom))
+            );
         }
     };
 
+    const isItemSelected = (item: NormalizedInventoryItem) => {
+        return selectedIds.some((s) => s.id === item.id && s.isCustom === item.is_custom);
+    };
+
     const isGroupSelected = (group: GroupedInventory) => {
-        return group.items.every((item) => selectedIds.includes(item.id));
+        return group.items.every((item) => isItemSelected(item));
     };
 
     const isGroupPartiallySelected = (group: GroupedInventory) => {
-        const selectedCount = group.items.filter((item) => selectedIds.includes(item.id)).length;
+        const selectedCount = group.items.filter((item) => isItemSelected(item)).length;
         return selectedCount > 0 && selectedCount < group.items.length;
     };
 
     const handleMarkSold = () => {
-        if (selectedIds.length === 0) return;
-        router.post('/fab/inventory/mark-sold', { ids: selectedIds }, {
+        const fabIds = selectedIds.filter((s) => !s.isCustom).map((s) => s.id);
+        if (fabIds.length === 0) {
+            alert('Verkaufen ist aktuell nur für FAB-Karten möglich');
+            return;
+        }
+        router.post('/fab/inventory/mark-sold', { ids: fabIds }, {
             preserveScroll: true,
             onSuccess: () => setSelectedIds([]),
         });
     };
 
     const handleMoveToCollection = () => {
-        if (selectedIds.length === 0) return;
-        router.post('/fab/inventory/move-to-collection', { ids: selectedIds }, {
+        const fabIds = selectedIds.filter((s) => !s.isCustom).map((s) => s.id);
+        if (fabIds.length === 0) {
+            alert('In Sammlung verschieben ist aktuell nur für FAB-Karten möglich');
+            return;
+        }
+        router.post('/fab/inventory/move-to-collection', { ids: fabIds }, {
             preserveScroll: true,
             onSuccess: () => setSelectedIds([]),
         });
@@ -178,12 +203,36 @@ export default function FabInventoryIndex({ inventory, filters, conditions, rari
 
     const handleDelete = () => {
         if (selectedIds.length === 0) return;
+
+        const fabIds = selectedIds.filter((s) => !s.isCustom).map((s) => s.id);
+        const customIds = selectedIds.filter((s) => s.isCustom).map((s) => s.id);
+
         if (!confirm(`${selectedIds.length} Karte(n) wirklich löschen?`)) return;
 
-        router.post('/fab/inventory/delete-multiple', { ids: selectedIds }, {
-            preserveScroll: true,
-            onSuccess: () => setSelectedIds([]),
-        });
+        let pendingRequests = 0;
+        const clearSelectionIfDone = () => {
+            pendingRequests--;
+            if (pendingRequests <= 0) {
+                setSelectedIds([]);
+            }
+        };
+
+        if (fabIds.length > 0) {
+            pendingRequests++;
+            router.post('/fab/inventory/delete-multiple', { ids: fabIds }, {
+                preserveScroll: true,
+                onSuccess: clearSelectionIfDone,
+                onError: clearSelectionIfDone,
+            });
+        }
+        if (customIds.length > 0) {
+            pendingRequests++;
+            router.post('/fab/inventory/delete-multiple-custom', { ids: customIds }, {
+                preserveScroll: true,
+                onSuccess: clearSelectionIfDone,
+                onError: clearSelectionIfDone,
+            });
+        }
     };
 
     return (
@@ -309,6 +358,7 @@ export default function FabInventoryIndex({ inventory, filters, conditions, rari
                                 <TableHead>Foiling</TableHead>
                                 <TableHead>Sprache</TableHead>
                                 <TableHead>Wert</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -320,113 +370,123 @@ export default function FabInventoryIndex({ inventory, filters, conditions, rari
                                 </TableRow>
                             ) : (
                                 groupedInventory.map((group) => (
-                                    <Collapsible key={group.key} asChild open={expandedGroups.has(group.key)}>
-                                        <>
+                                    <React.Fragment key={group.key}>
+                                        <TableRow
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => toggleGroup(group.key)}
+                                        >
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={isGroupSelected(group)}
+                                                    ref={(el) => {
+                                                        if (el) {
+                                                            (el as HTMLButtonElement).indeterminate = isGroupPartiallySelected(group);
+                                                        }
+                                                    }}
+                                                    onCheckedChange={(checked) => handleSelectGroup(group, !!checked)}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                    {expandedGroups.has(group.key) ? (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <CardImage
+                                                        src={group.imageUrl}
+                                                        alt={group.cardName}
+                                                        className="h-12 w-auto rounded"
+                                                        placeholderClassName="h-12 w-9 rounded"
+                                                    />
+                                                    <div>
+                                                        <div className="flex items-center gap-2 font-medium">
+                                                            {group.cardName}
+                                                            {group.isCustom && (
+                                                                <Badge variant="secondary" className="text-xs">Custom</Badge>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-muted-foreground text-sm">
+                                                            {group.setName} - {group.collectorNumber}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">{group.items.length}x</Badge>
+                                            </TableCell>
+                                            <TableCell>{group.rarityLabel ?? getRarityLabel(group.rarity)}</TableCell>
+                                            <TableCell>{group.foilingLabel ?? getFoilingLabel(group.foiling)}</TableCell>
+                                            <TableCell>
+                                                {(() => {
+                                                    const languages = [...new Set(group.items.map(i => i.language))];
+                                                    if (languages.length === 1) {
+                                                        return getLanguageLabel(languages[0]);
+                                                    }
+                                                    return `${languages.length} Sprachen`;
+                                                })()}
+                                            </TableCell>
+                                            <TableCell>
+                                                {group.totalValue > 0 ? `${group.totalValue.toFixed(2)} €` : '-'}
+                                            </TableCell>
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => {
+                                                        if (group.isCustom) {
+                                                            router.visit('/custom-cards');
+                                                        } else {
+                                                            router.visit(`/fab/cards/${group.cardId}`);
+                                                        }
+                                                    }}
+                                                    title="Karte ansehen"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                        {expandedGroups.has(group.key) && group.items.map((item) => (
                                             <TableRow
-                                                className="cursor-pointer hover:bg-muted/50"
-                                                onClick={() => toggleGroup(group.key)}
+                                                key={`${item.is_custom ? 'c' : 'f'}-${item.id}`}
+                                                className="bg-muted/30 hover:bg-muted/50"
                                             >
                                                 <TableCell onClick={(e) => e.stopPropagation()}>
                                                     <Checkbox
-                                                        checked={isGroupSelected(group)}
-                                                        ref={(el) => {
-                                                            if (el) {
-                                                                (el as HTMLButtonElement).indeterminate = isGroupPartiallySelected(group);
-                                                            }
-                                                        }}
-                                                        onCheckedChange={(checked) => handleSelectGroup(group, !!checked)}
+                                                        checked={isItemSelected(item)}
+                                                        onCheckedChange={(checked) => handleSelectItem(item, !!checked)}
                                                     />
                                                 </TableCell>
-                                                <TableCell>
-                                                    <CollapsibleTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                            {expandedGroups.has(group.key) ? (
-                                                                <ChevronDown className="h-4 w-4" />
-                                                            ) : (
-                                                                <ChevronRight className="h-4 w-4" />
-                                                            )}
-                                                        </Button>
-                                                    </CollapsibleTrigger>
+                                                <TableCell></TableCell>
+                                                <TableCell className="pl-16">
+                                                    <span className="text-muted-foreground">└</span>
+                                                    {' '}Lot {item.lot_number ?? '-'}
+                                                    {item.box_name && (
+                                                        <span className="text-muted-foreground"> ({item.box_name})</span>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Link
-                                                        href={printingRoute.url(group.printingId)}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="flex items-center gap-3 hover:opacity-80"
-                                                    >
-                                                        {group.imageUrl && (
-                                                            <img
-                                                                src={group.imageUrl}
-                                                                alt={group.cardName}
-                                                                className="h-12 w-auto rounded"
-                                                            />
-                                                        )}
-                                                        <div>
-                                                            <div className="font-medium hover:underline">{group.cardName}</div>
-                                                            <div className="text-muted-foreground text-sm">
-                                                                {group.setName} - {group.collectorNumber}
-                                                            </div>
-                                                        </div>
-                                                    </Link>
+                                                    <Badge variant="outline">{getConditionLabel(item.condition)}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    Pos. {item.position_in_lot}
+                                                </TableCell>
+                                                <TableCell></TableCell>
+                                                <TableCell>
+                                                    {getLanguageLabel(item.language)}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary">{group.items.length}x</Badge>
+                                                    {item.price ? `${Number(item.price).toFixed(2)} €` : '-'}
                                                 </TableCell>
-                                                <TableCell>{getRarityLabel(group.rarity)}</TableCell>
-                                                <TableCell>{getFoilingLabel(group.foiling)}</TableCell>
-                                                <TableCell>
-                                                    {(() => {
-                                                        const languages = [...new Set(group.items.map(i => i.language))];
-                                                        if (languages.length === 1) {
-                                                            return getLanguageLabel(languages[0]);
-                                                        }
-                                                        return `${languages.length} Sprachen`;
-                                                    })()}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {group.totalValue > 0 ? `${group.totalValue.toFixed(2)} €` : '-'}
-                                                </TableCell>
+                                                <TableCell></TableCell>
                                             </TableRow>
-                                            <CollapsibleContent asChild>
-                                                <>
-                                                    {group.items.map((item) => (
-                                                        <TableRow
-                                                            key={item.id}
-                                                            className="bg-muted/30 hover:bg-muted/50"
-                                                        >
-                                                            <TableCell onClick={(e) => e.stopPropagation()}>
-                                                                <Checkbox
-                                                                    checked={selectedIds.includes(item.id)}
-                                                                    onCheckedChange={(checked) => handleSelectItem(item.id, !!checked)}
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell></TableCell>
-                                                            <TableCell className="pl-16">
-                                                                <span className="text-muted-foreground">└</span>
-                                                                {' '}Lot {item.lot?.lot_number ?? '-'}
-                                                                {item.lot?.box && (
-                                                                    <span className="text-muted-foreground"> ({item.lot.box.name})</span>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline">{getConditionLabel(item.condition)}</Badge>
-                                                            </TableCell>
-                                                            <TableCell className="text-muted-foreground text-sm">
-                                                                Pos. {item.position_in_lot}
-                                                            </TableCell>
-                                                            <TableCell></TableCell>
-                                                            <TableCell>
-                                                                {getLanguageLabel(item.language)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {item.price ? `${item.price.toFixed(2)} €` : '-'}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </>
-                                            </CollapsibleContent>
-                                        </>
-                                    </Collapsible>
+                                        ))}
+                                    </React.Fragment>
                                 ))
                             )}
                         </TableBody>

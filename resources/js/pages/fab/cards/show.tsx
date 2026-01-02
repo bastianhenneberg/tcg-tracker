@@ -14,15 +14,29 @@ import {
 } from '@/types/fab';
 import { Head, Link } from '@inertiajs/react';
 
+interface LinkedCustomCard {
+    id: number;
+    name: string;
+    printings: {
+        id: number;
+        set_name: string;
+        collector_number: string;
+        rarity: string | null;
+        foiling: string | null;
+        language: string | null;
+    }[];
+}
+
 interface Props {
     card: FabCard;
+    linkedCustomCards: LinkedCustomCard[];
     rarities: Record<string, string>;
     foilings: Record<string, string>;
     editions: Record<string, string>;
     languages: Record<string, string>;
 }
 
-export default function FabCardShow({ card }: Props) {
+export default function FabCardShow({ card, linkedCustomCards }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Flesh and Blood',
@@ -66,16 +80,14 @@ export default function FabCardShow({ card }: Props) {
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold">{card.name}</h1>
-                                {pitchColor && (
-                                    <span
-                                        className={`inline-block h-5 w-5 rounded-full ${
-                                            pitchColor === 'red'
-                                                ? 'bg-red-500'
-                                                : pitchColor === 'yellow'
-                                                  ? 'bg-yellow-500'
-                                                  : 'bg-blue-500'
-                                        }`}
-                                    />
+                                {pitchColor === 'red' && (
+                                    <span className="inline-block h-5 w-5 rounded-full bg-red-500" />
+                                )}
+                                {pitchColor === 'yellow' && (
+                                    <span className="inline-block h-5 w-5 rounded-full bg-yellow-500" />
+                                )}
+                                {pitchColor === 'blue' && (
+                                    <span className="inline-block h-5 w-5 rounded-full bg-blue-500" />
                                 )}
                             </div>
                             <p className="text-muted-foreground">{card.type_text}</p>
@@ -219,6 +231,58 @@ export default function FabCardShow({ card }: Props) {
                                     ))}
                                 </TableBody>
                             </Table>
+                        </CardContent>
+                    </CardUI>
+                )}
+
+                {/* Linked Custom Cards (Translations/Variants) */}
+                {linkedCustomCards && linkedCustomCards.length > 0 && (
+                    <CardUI>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <span>Eigene Varianten</span>
+                                <Badge variant="secondary" className="font-normal">Custom</Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {linkedCustomCards.map((customCard) => (
+                                    <div key={customCard.id} className="space-y-2">
+                                        <h4 className="font-medium text-sm flex items-center gap-2">
+                                            {customCard.name}
+                                            <Badge variant="outline" className="text-xs">Verknüpft</Badge>
+                                        </h4>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Set</TableHead>
+                                                    <TableHead>Nummer</TableHead>
+                                                    <TableHead>Seltenheit</TableHead>
+                                                    <TableHead>Foiling</TableHead>
+                                                    <TableHead>Sprache</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {customCard.printings.map((printing) => (
+                                                    <TableRow key={printing.id} className="bg-muted/30">
+                                                        <TableCell>{printing.set_name}</TableCell>
+                                                        <TableCell>{printing.collector_number}</TableCell>
+                                                        <TableCell>
+                                                            {printing.rarity && (
+                                                                <Badge variant="outline">
+                                                                    {printing.rarity} - {getRarityLabel(printing.rarity)}
+                                                                </Badge>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>{getFoilingLabel(printing.foiling)}</TableCell>
+                                                        <TableCell>{getLanguageLabel(printing.language)}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     </CardUI>
                 )}

@@ -129,6 +129,31 @@ export interface FabInventory {
     };
 }
 
+// Normalized inventory item (for combined FAB + Custom inventory display)
+export interface NormalizedInventoryItem {
+    id: number;
+    is_custom: boolean;
+    printing_id: number;
+    card_id: number;
+    card_name: string;
+    set_name: string;
+    collector_number: string;
+    rarity: string | null;
+    rarity_label: string | null;
+    foiling: string | null;
+    foiling_label: string | null;
+    image_url: string | null;
+    condition: ConditionKey;
+    condition_label: string;
+    language: LanguageKey;
+    price: number | null;
+    lot_id: number | null;
+    lot_number: string | null;
+    box_name: string | null;
+    position_in_lot: number | null;
+    created_at: string;
+}
+
 export interface FabCollection {
     id: number;
     user_id: number;

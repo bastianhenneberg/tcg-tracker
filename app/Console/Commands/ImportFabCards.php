@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Card;
-use App\Models\CardGame;
-use App\Models\CardPrinting;
-use App\Models\CardSet;
+use App\Models\Fab\FabCard;
+use App\Models\Fab\FabPrinting;
+use App\Models\Fab\FabSet;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
@@ -17,8 +16,6 @@ class ImportFabCards extends Command
                             {--fresh : Clear existing FaB data before import}';
 
     protected $description = 'Import Flesh and Blood cards from the flattened JSON file';
-
-    private CardGame $cardGame;
 
     /** @var array<string, int> */
     private array $setIds = [];
@@ -44,7 +41,7 @@ class ImportFabCards extends Command
             $this->clearExistingData();
         }
 
-        $this->createOrGetCardGame();
+        $this->preloadExistingData();
 
         $this->info('Reading JSON file...');
         $data = json_decode(file_get_contents($path), true);
@@ -66,9 +63,9 @@ class ImportFabCards extends Command
         $this->table(
             ['Entity', 'Count'],
             [
-                ['Sets', CardSet::where('card_game_id', $this->cardGame->id)->count()],
-                ['Cards', Card::where('card_game_id', $this->cardGame->id)->count()],
-                ['Printings', CardPrinting::whereHas('card', fn ($q) => $q->where('card_game_id', $this->cardGame->id))->count()],
+                ['Sets', FabSet::count()],
+                ['Cards', FabCard::count()],
+                ['Printings', FabPrinting::count()],
             ]
         );
 
@@ -77,30 +74,20 @@ class ImportFabCards extends Command
 
     private function clearExistingData(): void
     {
-        $cardGame = CardGame::where('slug', 'fab')->first();
-
-        if ($cardGame) {
-            $cardGame->delete();
-        }
+        // Delete in correct order due to foreign keys
+        FabPrinting::query()->delete();
+        FabCard::query()->delete();
+        FabSet::query()->delete();
     }
 
-    private function createOrGetCardGame(): void
+    private function preloadExistingData(): void
     {
-        $this->cardGame = CardGame::firstOrCreate(
-            ['slug' => 'fab'],
-            ['name' => 'Flesh and Blood', 'is_active' => true]
-        );
+        $this->info('Loading existing data into cache...');
 
-        $this->info("Using card game: {$this->cardGame->name}");
+        $this->setIds = FabSet::pluck('id', 'external_id')->toArray();
+        $this->cardIds = FabCard::pluck('id', 'external_id')->toArray();
 
-        // Pre-load existing sets and cards into memory for faster lookups
-        $this->setIds = CardSet::where('card_game_id', $this->cardGame->id)
-            ->pluck('id', 'external_id')
-            ->toArray();
-
-        $this->cardIds = Card::where('card_game_id', $this->cardGame->id)
-            ->pluck('id', 'external_id')
-            ->toArray();
+        $this->info(sprintf('Cached %d sets and %d cards', count($this->setIds), count($this->cardIds)));
     }
 
     private function importCards(array $data): void
@@ -128,7 +115,7 @@ class ImportFabCards extends Command
     {
         $setId = $this->getOrCreateSetId($item['set_id']);
         $cardId = $this->getOrCreateCardId($item);
-        $this->createPrinting($cardId, $setId, $item);
+        $this->createOrUpdatePrinting($cardId, $setId, $item);
     }
 
     private function getOrCreateSetId(string $externalId): int
@@ -137,11 +124,10 @@ class ImportFabCards extends Command
             return $this->setIds[$externalId];
         }
 
-        $set = CardSet::create([
-            'card_game_id' => $this->cardGame->id,
-            'external_id' => $externalId,
-            'name' => $externalId,
-        ]);
+        $set = FabSet::updateOrCreate(
+            ['external_id' => $externalId],
+            ['name' => $externalId]
+        );
 
         $this->setIds[$externalId] = $set->id;
 
@@ -152,33 +138,16 @@ class ImportFabCards extends Command
     {
         $externalId = $item['unique_id'];
 
-        if (isset($this->cardIds[$externalId])) {
-            return $this->cardIds[$externalId];
-        }
-
-        $card = Card::create([
-            'card_game_id' => $this->cardGame->id,
-            'external_id' => $externalId,
+        $cardData = [
             'name' => $item['name'],
-            'data' => $this->extractCardData($item),
-        ]);
-
-        $this->cardIds[$externalId] = $card->id;
-
-        return $card->id;
-    }
-
-    private function extractCardData(array $item): array
-    {
-        return [
             'color' => $item['color'] ?? null,
-            'pitch' => $item['pitch'] ?? null,
+            'pitch' => ! empty($item['pitch']) ? (int) $item['pitch'] : null,
             'cost' => $item['cost'] ?? null,
             'power' => $item['power'] ?? null,
             'defense' => $item['defense'] ?? null,
-            'health' => $item['health'] ?? null,
-            'intelligence' => $item['intelligence'] ?? null,
-            'arcane' => $item['arcane'] ?? null,
+            'health' => ! empty($item['health']) ? (int) $item['health'] : null,
+            'intelligence' => ! empty($item['intelligence']) ? (int) $item['intelligence'] : null,
+            'arcane' => ! empty($item['arcane']) ? (int) $item['arcane'] : null,
             'types' => $item['types'] ?? [],
             'traits' => $item['traits'] ?? [],
             'card_keywords' => $item['card_keywords'] ?? [],
@@ -187,28 +156,69 @@ class ImportFabCards extends Command
             'functional_text_plain' => $item['functional_text_plain'] ?? null,
             'type_text' => $item['type_text'] ?? null,
             'played_horizontally' => $item['played_horizontally'] ?? false,
+            // Blitz
             'blitz_legal' => $item['blitz_legal'] ?? false,
+            'blitz_banned' => $item['blitz_banned'] ?? false,
+            'blitz_suspended' => $item['blitz_suspended'] ?? false,
+            'blitz_living_legend' => $item['blitz_living_legend'] ?? false,
+            // Classic Constructed
             'cc_legal' => $item['cc_legal'] ?? false,
+            'cc_banned' => $item['cc_banned'] ?? false,
+            'cc_suspended' => $item['cc_suspended'] ?? false,
+            'cc_living_legend' => $item['cc_living_legend'] ?? false,
+            // Commoner
             'commoner_legal' => $item['commoner_legal'] ?? false,
+            'commoner_banned' => $item['commoner_banned'] ?? false,
+            'commoner_suspended' => $item['commoner_suspended'] ?? false,
+            // Living Legend
             'll_legal' => $item['ll_legal'] ?? false,
+            'll_banned' => $item['ll_banned'] ?? false,
+            'll_restricted' => $item['ll_restricted'] ?? false,
+            // Silver Age
+            'silver_age_legal' => $item['silver_age_legal'] ?? false,
+            'silver_age_banned' => $item['silver_age_banned'] ?? false,
+            // Ultimate Pit Fight
+            'upf_banned' => $item['upf_banned'] ?? false,
         ];
+
+        // If cached, update the existing card
+        if (isset($this->cardIds[$externalId])) {
+            FabCard::where('id', $this->cardIds[$externalId])->update($cardData);
+
+            return $this->cardIds[$externalId];
+        }
+
+        // Create or update the card
+        $card = FabCard::updateOrCreate(
+            ['external_id' => $externalId],
+            $cardData
+        );
+
+        $this->cardIds[$externalId] = $card->id;
+
+        return $card->id;
     }
 
-    private function createPrinting(int $cardId, int $setId, array $item): void
+    private function createOrUpdatePrinting(int $cardId, int $setId, array $item): void
     {
-        CardPrinting::firstOrCreate(
+        FabPrinting::updateOrCreate(
             [
-                'card_id' => $cardId,
                 'external_id' => $item['printing_unique_id'],
             ],
             [
-                'card_set_id' => $setId,
+                'fab_card_id' => $cardId,
+                'fab_set_id' => $setId,
                 'collector_number' => $item['id'] ?? null,
                 'rarity' => $item['rarity'] ?? null,
                 'foiling' => $item['foiling'] ?? null,
                 'language' => $this->extractLanguage($item),
+                'edition' => $item['edition'] ?? null,
                 'image_url' => $item['image_url'] ?? null,
-                'data' => $this->extractPrintingData($item),
+                'artists' => $item['artists'] ?? [],
+                'flavor_text' => $item['flavor_text'] ?? null,
+                'flavor_text_plain' => $item['flavor_text_plain'] ?? null,
+                'tcgplayer_product_id' => $item['tcgplayer_product_id'] ?? null,
+                'tcgplayer_url' => $item['tcgplayer_url'] ?? null,
             ]
         );
     }
@@ -238,20 +248,5 @@ class ImportFabCards extends Command
         }
 
         return 'EN';
-    }
-
-    private function extractPrintingData(array $item): array
-    {
-        return [
-            'edition' => $item['edition'] ?? null,
-            'expansion_slot' => $item['expansion_slot'] ?? false,
-            'artists' => $item['artists'] ?? [],
-            'art_variations' => $item['art_variations'] ?? [],
-            'flavor_text' => $item['flavor_text'] ?? null,
-            'flavor_text_plain' => $item['flavor_text_plain'] ?? null,
-            'image_rotation_degrees' => $item['image_rotation_degrees'] ?? 0,
-            'tcgplayer_product_id' => $item['tcgplayer_product_id'] ?? null,
-            'tcgplayer_url' => $item['tcgplayer_url'] ?? null,
-        ];
     }
 }

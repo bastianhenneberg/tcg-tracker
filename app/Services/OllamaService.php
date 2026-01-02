@@ -50,11 +50,21 @@ class OllamaService
     }
 
     /**
-     * Recognize a trading card from a base64-encoded image.
+     * Recognize a Flesh and Blood card from a base64-encoded image.
      *
      * @return array{success: bool, data?: array{game?: string, card_name?: string, set_code?: string, collector_number?: string, foiling?: string}, error?: string}
      */
     public function recognizeCard(string $base64Image): array
+    {
+        return $this->recognizeFabCard($base64Image);
+    }
+
+    /**
+     * Recognize a Flesh and Blood card from a base64-encoded image.
+     *
+     * @return array{success: bool, data?: array{game?: string, card_name?: string, set_code?: string, collector_number?: string, foiling?: string}, error?: string}
+     */
+    public function recognizeFabCard(string $base64Image): array
     {
         $prompt = <<<'PROMPT'
 You are a Flesh and Blood TCG card identification expert. This is a Flesh and Blood trading card.
@@ -74,6 +84,44 @@ Return ONLY this JSON (no other text):
 Look carefully at the bottom of the card for the set code and collector number.
 PROMPT;
 
+        return $this->doRecognition($base64Image, $prompt);
+    }
+
+    /**
+     * Recognize a Magic: The Gathering card from a base64-encoded image.
+     *
+     * @return array{success: bool, data?: array{card_name?: string, set_code?: string, collector_number?: string}, error?: string}
+     */
+    public function recognizeMtgCard(string $base64Image): array
+    {
+        $prompt = <<<'PROMPT'
+You are a Magic: The Gathering card identification expert. This is a Magic: The Gathering trading card.
+
+Analyze the card image and extract:
+1. Card name - the text at the top of the card
+2. Set code - 3-4 letter code at the bottom left (e.g., ONE, MOM, WOE, MKM, OTJ, BLB, DSK, FDN)
+3. Collector number - the number at the bottom (e.g., 123/271 or just 123)
+
+Return ONLY this JSON (no other text):
+{
+    "card_name": "exact card name from top of card",
+    "set_code": "3-4 letter set code from bottom",
+    "collector_number": "number from bottom of card (just the first number if it shows 123/271)"
+}
+
+Look carefully at the bottom of the card for the set code and collector number.
+PROMPT;
+
+        return $this->doRecognition($base64Image, $prompt);
+    }
+
+    /**
+     * Perform the actual recognition with given prompt.
+     *
+     * @return array{success: bool, data?: array, error?: string}
+     */
+    protected function doRecognition(string $base64Image, string $prompt): array
+    {
         try {
             // Use /api/chat for vision models (required for qwen2.5vl, etc.)
             $response = Http::timeout($this->timeout)

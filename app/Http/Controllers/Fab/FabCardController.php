@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Fab;
 
 use App\Http\Controllers\Controller;
+use App\Models\Custom\CustomCard;
 use App\Models\Fab\FabCard;
 use App\Models\Fab\FabPrinting;
 use App\Models\Fab\FabSet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,8 +56,30 @@ class FabCardController extends Controller
             'printings' => fn ($q) => $q->with('set')->orderBy('collector_number'),
         ]);
 
+        // Get linked custom cards (translations/variants) for current user
+        $linkedCustomCards = [];
+        if (Auth::check()) {
+            $linkedCustomCards = CustomCard::where('linked_fab_card_id', $card->id)
+                ->where('user_id', Auth::id())
+                ->with('printings')
+                ->get()
+                ->map(fn ($cc) => [
+                    'id' => $cc->id,
+                    'name' => $cc->name,
+                    'printings' => $cc->printings->map(fn ($p) => [
+                        'id' => $p->id,
+                        'set_name' => $p->set_name ?? 'Custom',
+                        'collector_number' => ($p->set_name ?? '').($p->collector_number ?? '') ?: '-',
+                        'rarity' => $p->rarity,
+                        'foiling' => $p->foiling,
+                        'language' => $p->language,
+                    ]),
+                ]);
+        }
+
         return Inertia::render('fab/cards/show', [
             'card' => $card,
+            'linkedCustomCards' => $linkedCustomCards,
             'rarities' => FabPrinting::RARITIES,
             'foilings' => FabPrinting::FOILINGS,
             'editions' => FabPrinting::EDITIONS,
