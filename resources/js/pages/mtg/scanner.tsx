@@ -201,9 +201,9 @@ export default function MtgScanner({ lots, boxes, ollamaStatus, conditions, sear
                 const newPendingCard: PendingCard = {
                     id: replacingCardId ?? `pending-${Date.now()}`,
                     card: flash.match,
-                    condition: selectedCondition,
-                    finish: selectedFinish,
-                    language: selectedLanguage,
+                    condition: bulkMode.defaultCondition,
+                    finish: bulkMode.defaultFinish,
+                    language: bulkMode.defaultLanguage,
                     capturedAt: new Date(),
                 };
 
@@ -217,6 +217,10 @@ export default function MtgScanner({ lots, boxes, ollamaStatus, conditions, sear
                 }
             } else {
                 setSelectedCard(flash.match);
+                // Apply bulk mode defaults for single card scan
+                setSelectedCondition(bulkMode.defaultCondition);
+                setSelectedFinish(bulkMode.defaultFinish);
+                setSelectedLanguage(bulkMode.defaultLanguage);
                 stopCamera();
             }
         } else if (flash.alternatives?.length) {

@@ -65,6 +65,39 @@ class FabScannerController extends Controller
             $scannerSettings['bulkMode']['defaultLanguage'] = 'EN';
         }
 
+        // Load inventory items for the first lot (or selected lot)
+        $selectedLotId = $request->input('lot_id', $lots->first()?->id);
+        $lotInventory = [];
+        if ($selectedLotId) {
+            $lotInventory = FabInventory::where('lot_id', $selectedLotId)
+                ->with('printing.card')
+                ->orderByDesc('position_in_lot')
+                ->get()
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'card_name' => $item->printing->card->name,
+                    'position' => $item->position_in_lot,
+                    'condition' => $item->condition,
+                    'is_custom' => false,
+                ])
+                ->values();
+
+            // Also load custom inventory items
+            $customInventory = CustomInventory::where('lot_id', $selectedLotId)
+                ->with('printing.card')
+                ->orderByDesc('position_in_lot')
+                ->get()
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'card_name' => $item->printing->card->name,
+                    'position' => $item->position_in_lot,
+                    'condition' => $item->condition,
+                    'is_custom' => true,
+                ]);
+
+            $lotInventory = $lotInventory->concat($customInventory)->sortByDesc('position')->values();
+        }
+
         return Inertia::render('fab/scanner', [
             'lots' => $lots,
             'boxes' => $boxes,
@@ -74,6 +107,8 @@ class FabScannerController extends Controller
             'searchResults' => $searchResults,
             'searchQuery' => $request->input('q', ''),
             'scannerSettings' => $scannerSettings,
+            'lotInventory' => $lotInventory,
+            'selectedLotId' => $selectedLotId,
         ]);
     }
 

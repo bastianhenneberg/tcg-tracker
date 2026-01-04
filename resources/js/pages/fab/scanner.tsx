@@ -127,6 +127,8 @@ interface Props {
     searchResults: CardMatch[];
     searchQuery: string;
     scannerSettings: ScannerSettings;
+    lotInventory: ScannedCard[];
+    selectedLotId: number | null;
 }
 
 interface CameraCapabilities {
@@ -166,12 +168,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function FabScanner({ lots, boxes, ollamaStatus, conditions, searchResults: initialSearchResults, searchQuery: initialSearchQuery, scannerSettings: initialSettings }: Props) {
+export default function FabScanner({ lots, boxes, ollamaStatus, conditions, searchResults: initialSearchResults, searchQuery: initialSearchQuery, scannerSettings: initialSettings, lotInventory: initialLotInventory, selectedLotId: initialSelectedLotId }: Props) {
     const { props } = usePage<{ flash?: { scanner?: ScannerFlash } }>();
     const flash = props.flash?.scanner;
 
     // Lot state
-    const [selectedLotId, setSelectedLotId] = useState<number | null>(lots[0]?.id ?? null);
+    const [selectedLotId, setSelectedLotId] = useState<number | null>(initialSelectedLotId ?? lots[0]?.id ?? null);
     const [showCreateLot, setShowCreateLot] = useState(false);
     const [newLotBoxId, setNewLotBoxId] = useState<string>('');
     const [newLotNotes, setNewLotNotes] = useState('');
@@ -220,8 +222,8 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     const [hoveredFabCard, setHoveredFabCard] = useState<{ image_url: string | null } | null>(null);
 
     // Scanned cards in current lot
-    const [scannedCards, setScannedCards] = useState<ScannedCard[]>([]);
-    const [lotCardCount, setLotCardCount] = useState(0);
+    const [scannedCards, setScannedCards] = useState<ScannedCard[]>(initialLotInventory);
+    const [lotCardCount, setLotCardCount] = useState(initialLotInventory.length);
 
     // Bulk mode state
     const [bulkMode, setBulkMode] = useState(initialSettings.bulkMode);
@@ -231,6 +233,7 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     const bulkCountdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
     const [replacingCardId, setReplacingCardId] = useState<string | null>(null);
+    const [editingPendingId, setEditingPendingId] = useState<string | null>(null);
     const [confirmingAll, setConfirmingAll] = useState(false);
 
     // Template editor state
@@ -272,6 +275,15 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
         setSearching(false);
     }, [initialSearchResults]);
 
+    // Update scanned cards when lot inventory changes (on lot switch)
+    useEffect(() => {
+        setScannedCards(initialLotInventory);
+        setLotCardCount(initialLotInventory.length);
+    }, [initialLotInventory]);
+
+    // Get the currently editing pending card
+    const editingPendingCard = editingPendingId ? pendingCards.find(p => p.id === editingPendingId) : null;
+
     // Handle flash messages from backend
     useEffect(() => {
         console.log('Flash data received:', flash);
@@ -293,9 +305,9 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                 const newPendingCard: PendingCard = {
                     id: replacingCardId ?? `pending-${Date.now()}`,
                     card: flash.match,
-                    condition: selectedCondition,
-                    foiling: selectedFoiling,
-                    language: selectedLanguage,
+                    condition: bulkMode.defaultCondition,
+                    foiling: bulkMode.defaultFoiling,
+                    language: bulkMode.defaultLanguage,
                     capturedAt: new Date(),
                 };
 
@@ -310,8 +322,17 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                     setPendingCards((prev) => [newPendingCard, ...prev]);
                 }
             } else {
-                setSelectedCard(flash.match);
+                // Single scan: also add to pending cards list
                 stopCamera();
+                const newPendingCard: PendingCard = {
+                    id: `pending-${Date.now()}`,
+                    card: flash.match,
+                    condition: bulkMode.defaultCondition,
+                    foiling: bulkMode.defaultFoiling,
+                    language: bulkMode.defaultLanguage,
+                    capturedAt: new Date(),
+                };
+                setPendingCards((prev) => [newPendingCard, ...prev]);
             }
         } else if (flash.alternatives?.length) {
             // Clear not found state when we have alternatives
@@ -938,7 +959,12 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                             <CardContent className="flex gap-2">
                                 <Select
                                     value={selectedLotId?.toString() ?? ''}
-                                    onValueChange={(v) => setSelectedLotId(parseInt(v))}
+                                    onValueChange={(v) => {
+                                        const newLotId = parseInt(v);
+                                        setSelectedLotId(newLotId);
+                                        // Reload page with new lot to fetch inventory
+                                        router.get('/fab/scanner', { lot_id: newLotId }, { preserveState: true, preserveScroll: true });
+                                    }}
                                 >
                                     <SelectTrigger className="flex-1">
                                         <SelectValue placeholder="Lot wählen..." />
@@ -1594,39 +1620,39 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                         {/* Selected Card */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Ausgewählte Karte</CardTitle>
+                                <CardTitle>Karte bearbeiten</CardTitle>
                                 <CardDescription>
-                                    1-5 für Zustand, Enter zum Bestätigen, Escape zum Abbrechen
+                                    Klicke auf eine Karte in der Warteschlange zum Bearbeiten
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {selectedCard ? (
+                                {editingPendingCard ? (
                                     <div className="space-y-4">
                                         <div className="flex gap-4">
                                             <CardImage
-                                                src={selectedCard.image_url}
-                                                alt={selectedCard.card_name}
+                                                src={editingPendingCard.card.image_url}
+                                                alt={editingPendingCard.card.card_name}
                                                 className="h-48 w-36 rounded-lg shadow object-cover"
                                                 placeholderClassName="h-48 w-36 rounded-lg"
                                             />
                                             <div className="flex-1 space-y-2">
                                                 <h3 className="text-xl font-bold flex items-center gap-2">
-                                                    {selectedCard.card_name}
-                                                    {selectedCard.is_custom && (
+                                                    {editingPendingCard.card.card_name}
+                                                    {editingPendingCard.card.is_custom && (
                                                         <Badge variant="secondary" className="text-xs">Custom</Badge>
                                                     )}
                                                 </h3>
                                                 <p className="text-muted-foreground">
-                                                    {selectedCard.set_name} - {selectedCard.collector_number}
+                                                    {editingPendingCard.card.set_name} - {editingPendingCard.card.collector_number}
                                                 </p>
                                                 <div className="flex gap-2">
-                                                    {selectedCard.rarity && (
+                                                    {editingPendingCard.card.rarity && (
                                                         <Badge variant="outline">
-                                                            {getRarityLabel(selectedCard.rarity)}
+                                                            {getRarityLabel(editingPendingCard.card.rarity)}
                                                         </Badge>
                                                     )}
                                                     <Badge variant="secondary">
-                                                        {getFoilingLabel(selectedCard.foiling)}
+                                                        {getFoilingLabel(editingPendingCard.card.foiling)}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -1634,36 +1660,86 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
 
                                         {/* Condition Selection */}
                                         <div className="space-y-2">
-                                            <Label>Zustand (1-5)</Label>
+                                            <Label>Zustand</Label>
                                             <div className="flex flex-wrap gap-2">
-                                                {(Object.entries(CONDITIONS) as [ConditionKey, string][]).map(([key, label], index) => (
+                                                {(Object.entries(CONDITIONS) as [ConditionKey, string][]).map(([key, label]) => (
                                                     <Button
                                                         key={key}
-                                                        variant={selectedCondition === key ? 'default' : 'outline'}
+                                                        variant={editingPendingCard.condition === key ? 'default' : 'outline'}
                                                         size="sm"
-                                                        onClick={() => setSelectedCondition(key)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updatePendingCardCondition(editingPendingCard.id, key);
+                                                        }}
                                                         className="flex-1"
                                                     >
-                                                        <span className="mr-1 text-xs opacity-60">{index + 1}</span>
                                                         {label}
                                                     </Button>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* Confirm Button */}
-                                        <Button
-                                            onClick={handleConfirm}
-                                            disabled={confirming || !selectedLotId}
-                                            className="w-full"
-                                        >
-                                            {confirming ? (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                            )}
-                                            Zum Inventar hinzufügen (Enter)
-                                        </Button>
+                                        {/* Foiling Selection */}
+                                        <div className="space-y-2">
+                                            <Label>Foiling</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(Object.entries(FOILINGS) as [FoilingKey, string][]).map(([key, label]) => (
+                                                    <Button
+                                                        key={key}
+                                                        variant={(editingPendingCard.foiling ?? editingPendingCard.card.foiling) === key ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updatePendingCardFoiling(editingPendingCard.id, key);
+                                                        }}
+                                                        className="flex-1"
+                                                    >
+                                                        {label}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Language Selection */}
+                                        <div className="space-y-2">
+                                            <Label>Sprache</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(Object.entries(LANGUAGES) as [LanguageKey, string][]).map(([key, label]) => (
+                                                    <Button
+                                                        key={key}
+                                                        variant={editingPendingCard.language === key ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updatePendingCardLanguage(editingPendingCard.id, key);
+                                                        }}
+                                                    >
+                                                        {key}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 pt-2">
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1"
+                                                onClick={() => setEditingPendingId(null)}
+                                            >
+                                                Fertig
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => {
+                                                    removePendingCard(editingPendingCard.id);
+                                                    setEditingPendingId(null);
+                                                }}
+                                            >
+                                                <XCircle className="mr-2 h-4 w-4" />
+                                                Entfernen
+                                            </Button>
+                                        </div>
                                     </div>
                                 ) : notFoundRecognition ? (
                                     <div className="space-y-4">
@@ -1774,8 +1850,8 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                             </CardContent>
                         </Card>
 
-                        {/* Pending Cards (Bulk Mode) */}
-                        {bulkMode.enabled && pendingCards.length > 0 && (
+                        {/* Pending Cards */}
+                        {pendingCards.length > 0 && (
                             <Card>
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center justify-between">
@@ -1791,9 +1867,10 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                         {pendingCards.map((pending, index) => (
                                             <div
                                                 key={pending.id}
-                                                className={`flex items-start gap-3 rounded-lg border p-2 ${
+                                                className={`flex items-start gap-3 rounded-lg border p-2 cursor-pointer transition-colors hover:bg-muted/50 ${
                                                     replacingCardId === pending.id ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : ''
-                                                }`}
+                                                } ${editingPendingId === pending.id ? 'border-primary bg-primary/5' : ''}`}
+                                                onClick={() => setEditingPendingId(editingPendingId === pending.id ? null : pending.id)}
                                             >
                                                 <CardImage
                                                     src={pending.card.image_url}
@@ -1893,7 +1970,7 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                             ) : (
                                                 <CheckCircle className="mr-2 h-4 w-4" />
                                             )}
-                                            Alle bestätigen ({pendingCards.length})
+                                            An Inventar senden ({pendingCards.length})
                                         </Button>
                                         <Button
                                             variant="outline"
