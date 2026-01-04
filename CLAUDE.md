@@ -1,3 +1,41 @@
+# TCG Tracker - Claude Instructions
+
+## Session Memory
+**WICHTIG:** Lies zu Beginn jeder Session die neueste Session-Datei in `.claude/sessions/` um den Kontext zu verstehen.
+
+Aktuelle Sessions:
+- `.claude/sessions/2026-01-04.md` - Unified Inventory Migration & Cleanup
+
+### Session Memory Regeln
+- Am Ende jeder Session: Erstelle/aktualisiere die Session-Datei mit Datum
+- Dokumentiere: Erledigte Aufgaben, offene Punkte, wichtige Entscheidungen
+- Nutze das Format aus bestehenden Session-Dateien
+
+---
+
+## Projekt-Architektur (Stand: 2026-01-04)
+
+### Unified Card System
+```
+UnifiedCard (game, name, type, etc.)
+    └── UnifiedPrinting (collector_number, set, rarity, finish, image_url)
+            └── UnifiedInventory (user_id, lot_id, condition, language, quantity, extra)
+```
+
+### Wichtige Patterns
+- **CardMatcherService:** Jedes Spiel hat eigenen Service (`FabCardMatcherService`, etc.)
+- **Scanner Flow:** Kamera → CardMatcher → UnifiedInventory (kein optimistisches UI-Update!)
+- **Navigation:** `prefetch: false` für dynamische Seiten (Inventory, Collection, Lots)
+
+### Routes
+- `/scanner?game={slug}` - Karten scannen
+- `/quick-add?game={slug}` - Manuelle Eingabe
+- `/g/{slug}/inventory` - Inventar
+- `/g/{slug}/collection` - Sammlung
+- `/g/{slug}/cards` - Kartendatenbank
+
+---
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
