@@ -1,3 +1,4 @@
+import { GameSwitcher, useSelectedGame } from '@/components/game-switcher';
 import { NavFooter } from '@/components/nav-footer';
 import { NavGroup, NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -9,31 +10,22 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Archive, BookOpen, Camera, Database, Folder, Gamepad2, Heart, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
+import { useMemo } from 'react';
 import AppLogo from './app-logo';
-
-interface CustomGame {
-    id: number;
-    name: string;
-    slug: string;
-}
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
-    },
-    {
-        title: 'Scanner',
-        href: '/scanner',
-        icon: Camera,
     },
     {
         title: 'Kartons',
@@ -46,7 +38,7 @@ const mainNavItems: NavItem[] = [
         icon: Layers,
     },
     {
-        title: 'Spiele',
+        title: 'Spiele verwalten',
         href: '/settings/games',
         icon: Gamepad2,
     },
@@ -58,55 +50,43 @@ const mainNavItems: NavItem[] = [
 ];
 
 // Helper to generate nav items for a game
-const getGameNavItems = (slug: string, hasCustomCards = true): NavItem[] => {
-    const items: NavItem[] = [
-        {
-            title: 'Scanner',
-            href: `/scanner?game=${slug}`,
-            icon: Camera,
-        },
-        {
-            title: 'Inventar',
-            href: `/g/${slug}/inventory`,
-            icon: Package,
-        },
-        {
-            title: 'Sammlung',
-            href: `/g/${slug}/collection`,
-            icon: Heart,
-        },
-        {
-            title: 'Kartendatenbank',
-            href: `/g/${slug}/cards`,
-            icon: Database,
-        },
-        {
-            title: 'Sets',
-            href: `/g/${slug}/sets`,
-            icon: Library,
-        },
-        {
-            title: 'Printings',
-            href: `/g/${slug}/printings`,
-            icon: Sparkles,
-        },
-    ];
-
-    if (hasCustomCards) {
-        items.push({
-            title: 'Eigene Karten',
-            href: `/custom-cards?game=${slug}`,
-            icon: PenSquare,
-        });
-    }
-
-    return items;
-};
-
-const fabNavItems = getGameNavItems('fab');
-const mtgNavItems = getGameNavItems('magic-the-gathering');
-const riftboundNavItems = getGameNavItems('riftbound');
-const onepieceNavItems = getGameNavItems('onepiece', false);
+const getGameNavItems = (slug: string): NavItem[] => [
+    {
+        title: 'Scanner',
+        href: `/scanner?game=${slug}`,
+        icon: Camera,
+    },
+    {
+        title: 'Inventar',
+        href: `/g/${slug}/inventory`,
+        icon: Package,
+    },
+    {
+        title: 'Sammlung',
+        href: `/g/${slug}/collection`,
+        icon: Heart,
+    },
+    {
+        title: 'Kartendatenbank',
+        href: `/g/${slug}/cards`,
+        icon: Database,
+    },
+    {
+        title: 'Sets',
+        href: `/g/${slug}/sets`,
+        icon: Library,
+    },
+    {
+        title: 'Printings',
+        href: `/g/${slug}/printings`,
+        icon: Sparkles,
+    },
+    {
+        title: 'Eigene Karten',
+        href: `/custom-cards?game=${slug}`,
+        icon: PenSquare,
+    },
+];
 
 const footerNavItems: NavItem[] = [
     {
@@ -122,7 +102,12 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { customGames } = usePage<{ customGames: CustomGame[] }>().props;
+    const { selectedGame, selectedSlug, setSelectedGame, allGames } = useSelectedGame();
+
+    const gameNavItems = useMemo(
+        () => getGameNavItems(selectedSlug),
+        [selectedSlug]
+    );
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -139,14 +124,15 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
+                <GameSwitcher
+                    selectedSlug={selectedSlug}
+                    onSelect={setSelectedGame}
+                    games={allGames}
+                />
+                <SidebarSeparator />
+                <NavGroup label={selectedGame.name} items={gameNavItems} />
+                <SidebarSeparator />
                 <NavMain items={mainNavItems} />
-                <NavGroup label="Flesh and Blood" items={fabNavItems} />
-                <NavGroup label="Magic: The Gathering" items={mtgNavItems} />
-                <NavGroup label="Riftbound" items={riftboundNavItems} />
-                <NavGroup label="One Piece" items={onepieceNavItems} />
-                {customGames?.map((game) => (
-                    <NavGroup key={game.id} label={game.name} items={getGameNavItems(game.slug)} />
-                ))}
             </SidebarContent>
 
             <SidebarFooter>
