@@ -17,9 +17,11 @@ class CardImportService
     public function __construct()
     {
         $this->registerMapper(new FabCardImportMapper);
-        // Add more mappers here as they are created:
-        // $this->registerMapper(new MtgCardImportMapper());
-        // $this->registerMapper(new OpCardImportMapper());
+        $this->registerMapper(new MtgCardImportMapper);
+        $this->registerMapper(new OpCardImportMapper);
+        $this->registerMapper(new RiftboundCardImportMapper);
+        $this->registerMapper(new PokemonCardImportMapper);
+        $this->registerMapper(new YugiohCardImportMapper);
     }
 
     public function registerMapper(CardImportMapperInterface $mapper): void
@@ -115,17 +117,40 @@ class CardImportService
     {
         $mapped = $mapper->mapCard($cardData);
         $identifier = $mapper->extractCardIdentifier($cardData);
+        $gameSlug = $mapper->getGameSlug();
 
-        // Try to find existing card by external ID or name
+        // Build query to find existing card by external IDs or name
         $existingCard = UnifiedCard::query()
             ->where('game', $mapped['game'])
-            ->where(function ($query) use ($identifier, $mapped) {
-                $query->whereJsonContains('external_ids->fab_id', $identifier)
-                    ->orWhere('name', $mapped['name']);
+            ->where(function ($query) use ($identifier, $mapped, $gameSlug) {
+                // Check game-specific external IDs
+                $externalIdKeys = match ($gameSlug) {
+                    'fab' => ['fab_id'],
+                    'mtg' => ['oracle_id', 'scryfall_id'],
+                    'onepiece' => ['op_id'],
+                    'riftbound' => ['riftbound_id'],
+                    'pokemon' => ['pokemon_tcg_id'],
+                    'yugioh' => ['ygoprodeck_id'],
+                    default => [],
+                };
+
+                foreach ($externalIdKeys as $key) {
+                    $query->orWhereJsonContains("external_ids->{$key}", $identifier);
+                }
+
+                // Fallback to name matching
+                $query->orWhere('name', $mapped['name']);
             })
             ->first();
 
         if ($existingCard) {
+            // Merge external_ids from different sources
+            $mergedExternalIds = array_merge(
+                $existingCard->external_ids ?? [],
+                $mapped['external_ids'] ?? []
+            );
+            $mapped['external_ids'] = $mergedExternalIds;
+
             $existingCard->update($mapped);
 
             return $existingCard;
@@ -179,6 +204,12 @@ class CardImportService
             throw new \InvalidArgumentException("File not found: {$filePath}");
         }
 
+        // For large files, use streaming
+        $fileSize = filesize($filePath);
+        if ($fileSize > 10 * 1024 * 1024) { // > 10MB
+            return $this->importFromLargeJsonFile($gameSlug, $filePath);
+        }
+
         $content = file_get_contents($filePath);
         $data = json_decode($content, true);
 
@@ -201,5 +232,76 @@ class CardImportService
         }
 
         throw new \InvalidArgumentException('Unknown data structure in JSON file');
+    }
+
+    /**
+     * Import from large JSON file using streaming.
+     */
+    public function importFromLargeJsonFile(string $gameSlug, string $filePath): array
+    {
+        $mapper = $this->getMapper($gameSlug);
+        if (! $mapper) {
+            throw new \InvalidArgumentException("No mapper found for game: {$gameSlug}");
+        }
+
+        $stats = ['cards' => 0, 'printings' => 0];
+
+        // Use JsonMachine for streaming large JSON files
+        // Fallback: Read and process in chunks using a simple streaming approach
+        $handle = fopen($filePath, 'r');
+        if (! $handle) {
+            throw new \InvalidArgumentException("Cannot open file: {$filePath}");
+        }
+
+        // Skip opening bracket
+        $buffer = '';
+        $inObject = false;
+        $depth = 0;
+        $chunk = [];
+        $chunkSize = 100;
+
+        while (! feof($handle)) {
+            $char = fgetc($handle);
+
+            if ($char === '{') {
+                $inObject = true;
+                $depth++;
+            }
+
+            if ($inObject) {
+                $buffer .= $char;
+            }
+
+            if ($char === '}') {
+                $depth--;
+                if ($depth === 0 && $inObject) {
+                    $inObject = false;
+                    $item = json_decode($buffer, true);
+                    $buffer = '';
+
+                    if ($item && $mapper->isValidCard($item)) {
+                        $chunk[] = $item;
+
+                        if (count($chunk) >= $chunkSize) {
+                            $chunkStats = $this->importCards($gameSlug, $chunk);
+                            $stats['cards'] += $chunkStats['cards'];
+                            $stats['printings'] += $chunkStats['printings'];
+                            $chunk = [];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Process remaining items
+        if (! empty($chunk)) {
+            $chunkStats = $this->importCards($gameSlug, $chunk);
+            $stats['cards'] += $chunkStats['cards'];
+            $stats['printings'] += $chunkStats['printings'];
+        }
+
+        fclose($handle);
+
+        return $stats;
     }
 }

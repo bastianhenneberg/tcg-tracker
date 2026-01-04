@@ -77,14 +77,14 @@ class FabCardImportMapper implements CardImportMapperInterface
             'cost' => $externalData['cost'] ?? null,
             'power' => $externalData['power'] ?? null,
             'defense' => $externalData['defense'] ?? null,
-            'health' => isset($externalData['health']) ? (int) $externalData['health'] : null,
+            'health' => $this->toIntOrNull($externalData['health'] ?? null),
             'colors' => $this->mapPitchToColors($externalData['pitch'] ?? null),
             'keywords' => $externalData['card_keywords'] ?? [],
             'legalities' => $this->mapLegalities($externalData),
             'game_specific' => array_filter([
-                'pitch' => $externalData['pitch'] ?? null,
-                'intelligence' => $externalData['intelligence'] ?? null,
-                'arcane' => $externalData['arcane'] ?? null,
+                'pitch' => $this->toIntOrNull($externalData['pitch'] ?? null),
+                'intelligence' => $this->toIntOrNull($externalData['intelligence'] ?? null),
+                'arcane' => $this->toIntOrNull($externalData['arcane'] ?? null),
                 'traits' => $externalData['traits'] ?? null,
                 'abilities_and_effects' => $externalData['abilities_and_effects'] ?? null,
                 'played_horizontally' => $externalData['played_horizontally'] ?? false,
@@ -192,13 +192,24 @@ class FabCardImportMapper implements CardImportMapperInterface
         return $line;
     }
 
-    protected function mapPitchToColors(?int $pitch): array
+    protected function toIntOrNull(mixed $value): ?int
     {
-        if ($pitch === null) {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    protected function mapPitchToColors(mixed $pitch): array
+    {
+        $pitchInt = $this->toIntOrNull($pitch);
+
+        if ($pitchInt === null) {
             return [];
         }
 
-        return match ($pitch) {
+        return match ($pitchInt) {
             1 => ['red'],
             2 => ['yellow'],
             3 => ['blue'],
