@@ -21,6 +21,7 @@ use App\Http\Controllers\Riftbound\RiftboundCardController;
 use App\Http\Controllers\Riftbound\RiftboundCollectionController;
 use App\Http\Controllers\Riftbound\RiftboundInventoryController;
 use App\Http\Controllers\Riftbound\RiftboundScannerController;
+use App\Http\Controllers\ScannerController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -49,6 +50,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('lots/{lot}', [LotController::class, 'show'])->name('lots.show');
     Route::patch('lots/{lot}', [LotController::class, 'update'])->name('lots.update');
     Route::delete('lots/{lot}', [LotController::class, 'destroy'])->name('lots.destroy');
+
+    // Unified Scanner (all games)
+    Route::prefix('scanner')->name('scanner.')->group(function () {
+        Route::get('/', [ScannerController::class, 'index'])->name('index');
+        Route::post('/recognize', [ScannerController::class, 'recognize'])->name('recognize');
+        Route::post('/confirm', [ScannerController::class, 'confirm'])->name('confirm');
+        Route::post('/confirm-bulk', [ScannerController::class, 'confirmBulk'])->name('confirm-bulk');
+        Route::post('/lot', [ScannerController::class, 'createLot'])->name('create-lot');
+        Route::post('/settings', [ScannerController::class, 'saveSettings'])->name('save-settings');
+    });
 
     // Flesh and Blood
     Route::prefix('fab')->name('fab.')->group(function () {

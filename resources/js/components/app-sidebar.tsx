@@ -31,6 +31,11 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Scanner',
+        href: '/scanner',
+        icon: Camera,
+    },
+    {
         title: 'Kartons',
         href: boxesIndex(),
         icon: Archive,
@@ -55,7 +60,7 @@ const mainNavItems: NavItem[] = [
 const fabNavItems: NavItem[] = [
     {
         title: 'Scanner',
-        href: '/fab/scanner',
+        href: '/scanner?game=fab',
         icon: Camera,
     },
     {
@@ -83,7 +88,7 @@ const fabNavItems: NavItem[] = [
 const mtgNavItems: NavItem[] = [
     {
         title: 'Scanner',
-        href: '/mtg/scanner',
+        href: '/scanner?game=magic-the-gathering',
         icon: Camera,
     },
     {
@@ -121,7 +126,7 @@ const mtgNavItems: NavItem[] = [
 const riftboundNavItems: NavItem[] = [
     {
         title: 'Scanner',
-        href: '/riftbound/scanner',
+        href: '/scanner?game=riftbound',
         icon: Camera,
     },
     {
@@ -149,7 +154,7 @@ const riftboundNavItems: NavItem[] = [
 const onepieceNavItems: NavItem[] = [
     {
         title: 'Scanner',
-        href: '/onepiece/scanner',
+        href: '/scanner?game=onepiece',
         icon: Camera,
     },
     {
@@ -194,7 +199,7 @@ export function AppSidebar() {
     const getCustomGameNavItems = (game: CustomGame): NavItem[] => [
         {
             title: 'Scanner',
-            href: `/games/${game.slug}/scanner`,
+            href: `/scanner?game=${game.slug}`,
             icon: Camera,
         },
         {

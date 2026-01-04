@@ -77,22 +77,6 @@ interface ScannerFlash {
     newLot?: { id: number; lot_number: string; box_name?: string };
 }
 
-interface Region {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-interface TemplateSettings {
-    referenceImage?: string;
-    regions?: {
-        cardName?: Region;
-        setCode?: Region;
-        collectorNumber?: Region;
-    };
-}
-
 interface BulkModeSettings {
     enabled: boolean;
     interval: number;
@@ -111,7 +95,6 @@ interface PendingCard {
 }
 
 interface ScannerSettings {
-    template: TemplateSettings | null;
     bulkMode: BulkModeSettings;
 }
 
@@ -235,16 +218,6 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     const [replacingCardId, setReplacingCardId] = useState<string | null>(null);
     const [editingPendingId, setEditingPendingId] = useState<string | null>(null);
     const [confirmingAll, setConfirmingAll] = useState(false);
-
-    // Template editor state
-    const [showTemplateEditor, setShowTemplateEditor] = useState(false);
-    const [templateSettings, setTemplateSettings] = useState<TemplateSettings | null>(initialSettings.template);
-    const [templateImage, setTemplateImage] = useState<string | null>(initialSettings.template?.referenceImage ?? null);
-    const [drawingRegion, setDrawingRegion] = useState<'cardName' | 'setCode' | 'collectorNumber' | null>(null);
-    const [regions, setRegions] = useState<TemplateSettings['regions']>(initialSettings.template?.regions ?? {});
-    const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
-    const templateCanvasRef = useRef<HTMLCanvasElement>(null);
-    const templateImageRef = useRef<HTMLImageElement | null>(null);
 
     // Camera state
     const [showCamera, setShowCamera] = useState(false);
@@ -501,120 +474,15 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
     }, []);
 
     // Save settings to backend
-    const saveSettings = useCallback((newBulkMode?: BulkModeSettings, newTemplate?: TemplateSettings | null) => {
+    const saveSettings = useCallback((newBulkMode?: BulkModeSettings) => {
         const settings: Partial<ScannerSettings> = {};
         if (newBulkMode) settings.bulkMode = newBulkMode;
-        if (newTemplate !== undefined) settings.template = newTemplate;
 
         router.post('/fab/scanner/settings', settings, {
             preserveState: true,
             preserveScroll: true,
         });
     }, []);
-
-    // Template editor functions
-    const handleTemplateImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const base64 = event.target?.result as string;
-            setTemplateImage(base64);
-            setRegions({});
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!drawingRegion || !templateCanvasRef.current) return;
-
-        const rect = templateCanvasRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        setDrawStart({ x, y });
-    };
-
-    const handleCanvasMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!drawingRegion || !drawStart || !templateCanvasRef.current) return;
-
-        const rect = templateCanvasRef.current.getBoundingClientRect();
-        const endX = (e.clientX - rect.left) / rect.width;
-        const endY = (e.clientY - rect.top) / rect.height;
-
-        const region: Region = {
-            x: Math.min(drawStart.x, endX),
-            y: Math.min(drawStart.y, endY),
-            width: Math.abs(endX - drawStart.x),
-            height: Math.abs(endY - drawStart.y),
-        };
-
-        setRegions((prev) => ({ ...prev, [drawingRegion]: region }));
-        setDrawStart(null);
-        setDrawingRegion(null);
-    };
-
-    const drawRegionsOnCanvas = useCallback(() => {
-        const canvas = templateCanvasRef.current;
-        const img = templateImageRef.current;
-        if (!canvas || !img || !templateImage) return;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        const colors = {
-            cardName: 'rgba(255, 0, 0, 0.5)',
-            setCode: 'rgba(0, 255, 0, 0.5)',
-            collectorNumber: 'rgba(0, 0, 255, 0.5)',
-        };
-
-        Object.entries(regions).forEach(([key, region]) => {
-            if (!region) return;
-            ctx.fillStyle = colors[key as keyof typeof colors];
-            ctx.fillRect(
-                region.x * canvas.width,
-                region.y * canvas.height,
-                region.width * canvas.width,
-                region.height * canvas.height
-            );
-            ctx.strokeStyle = colors[key as keyof typeof colors].replace('0.5', '1');
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-                region.x * canvas.width,
-                region.y * canvas.height,
-                region.width * canvas.width,
-                region.height * canvas.height
-            );
-        });
-    }, [regions, templateImage]);
-
-    // Redraw when regions change
-    useEffect(() => {
-        if (templateImage && templateCanvasRef.current) {
-            const img = new Image();
-            img.onload = () => {
-                templateImageRef.current = img;
-                const canvas = templateCanvasRef.current!;
-                canvas.width = img.width;
-                canvas.height = img.height;
-                drawRegionsOnCanvas();
-            };
-            img.src = templateImage;
-        }
-    }, [templateImage, drawRegionsOnCanvas]);
-
-    const saveTemplate = () => {
-        const newTemplate: TemplateSettings = {
-            referenceImage: templateImage ?? undefined,
-            regions,
-        };
-        setTemplateSettings(newTemplate);
-        saveSettings(undefined, newTemplate);
-        setShowTemplateEditor(false);
-    };
 
     // Pending cards management
     const removePendingCard = (id: string) => {
@@ -926,14 +794,6 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowTemplateEditor(true)}
-                        >
-                            <Settings className="mr-2 h-4 w-4" />
-                            Template
-                        </Button>
                         {ollamaStatus.available ? (
                             <Badge variant="outline" className="gap-1">
                                 <CheckCircle className="h-3 w-3 text-green-500" />
@@ -2070,110 +1930,6 @@ export default function FabScanner({ lots, boxes, ollamaStatus, conditions, sear
                                 <Plus className="mr-2 h-4 w-4" />
                             )}
                             Lot erstellen
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Template Editor Dialog */}
-            <Dialog open={showTemplateEditor} onOpenChange={setShowTemplateEditor}>
-                <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle>Karten-Template konfigurieren</DialogTitle>
-                        <DialogDescription>
-                            Lade ein Referenzbild und markiere die Bereiche für Kartenname, Set-Code und Kartennummer
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Referenzbild</Label>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => document.getElementById('template-upload')?.click()}
-                                >
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    Bild hochladen
-                                </Button>
-                                <input
-                                    id="template-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleTemplateImageUpload}
-                                />
-                                {templateImage && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setTemplateImage(null);
-                                            setRegions({});
-                                        }}
-                                    >
-                                        Entfernen
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-
-                        {templateImage && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label>Region markieren</Label>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant={drawingRegion === 'cardName' ? 'default' : 'outline'}
-                                            onClick={() => setDrawingRegion('cardName')}
-                                            className="flex-1"
-                                        >
-                                            <span className="mr-2 inline-block h-3 w-3 rounded-full bg-red-500" />
-                                            Kartenname
-                                            {regions.cardName && <CheckCircle className="ml-2 h-4 w-4" />}
-                                        </Button>
-                                        <Button
-                                            variant={drawingRegion === 'setCode' ? 'default' : 'outline'}
-                                            onClick={() => setDrawingRegion('setCode')}
-                                            className="flex-1"
-                                        >
-                                            <span className="mr-2 inline-block h-3 w-3 rounded-full bg-green-500" />
-                                            Set-Code
-                                            {regions.setCode && <CheckCircle className="ml-2 h-4 w-4" />}
-                                        </Button>
-                                        <Button
-                                            variant={drawingRegion === 'collectorNumber' ? 'default' : 'outline'}
-                                            onClick={() => setDrawingRegion('collectorNumber')}
-                                            className="flex-1"
-                                        >
-                                            <span className="mr-2 inline-block h-3 w-3 rounded-full bg-blue-500" />
-                                            Nummer
-                                            {regions.collectorNumber && <CheckCircle className="ml-2 h-4 w-4" />}
-                                        </Button>
-                                    </div>
-                                    {drawingRegion && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Ziehe ein Rechteck auf dem Bild um den Bereich &quot;{drawingRegion === 'cardName' ? 'Kartenname' : drawingRegion === 'setCode' ? 'Set-Code' : 'Nummer'}&quot; zu markieren
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="relative overflow-hidden rounded-lg border">
-                                    <canvas
-                                        ref={templateCanvasRef}
-                                        className={`max-h-96 w-full object-contain ${drawingRegion ? 'cursor-crosshair' : ''}`}
-                                        onMouseDown={handleCanvasMouseDown}
-                                        onMouseUp={handleCanvasMouseUp}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowTemplateEditor(false)}>
-                            Abbrechen
-                        </Button>
-                        <Button onClick={saveTemplate} disabled={!templateImage}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Speichern
                         </Button>
                     </DialogFooter>
                 </DialogContent>

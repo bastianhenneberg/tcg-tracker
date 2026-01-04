@@ -50,7 +50,6 @@ class FabScannerController extends Controller
 
         // User scanner settings
         $scannerSettings = $user->scanner_settings ?? [
-            'template' => null,
             'bulkMode' => [
                 'enabled' => false,
                 'interval' => 3,
@@ -373,12 +372,6 @@ class FabScannerController extends Controller
     public function saveSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'template' => ['nullable', 'array'],
-            'template.referenceImage' => ['nullable', 'string'],
-            'template.regions' => ['nullable', 'array'],
-            'template.regions.cardName' => ['nullable', 'array'],
-            'template.regions.setCode' => ['nullable', 'array'],
-            'template.regions.collectorNumber' => ['nullable', 'array'],
             'bulkMode' => ['nullable', 'array'],
             'bulkMode.enabled' => ['nullable', 'boolean'],
             'bulkMode.interval' => ['nullable', 'integer', 'min:1', 'max:30'],
@@ -389,6 +382,9 @@ class FabScannerController extends Controller
 
         $user = Auth::user();
         $currentSettings = $user->scanner_settings ?? [];
+
+        // Remove old template settings if present
+        unset($currentSettings['template']);
 
         $user->scanner_settings = array_merge($currentSettings, $validated);
         $user->save();
