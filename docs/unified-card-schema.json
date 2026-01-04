@@ -1,0 +1,501 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Unified TCG Card Schema",
+  "description": "A universal schema for trading card game cards supporting FAB, MTG, One Piece, Riftbound, Pokemon, Yu-Gi-Oh, and custom games",
+  "version": "1.0.0",
+  "definitions": {
+    "UnifiedCard": {
+      "type": "object",
+      "description": "Core card data - the logical card independent of printings",
+      "required": ["id", "game", "name", "type_line"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier (UUID or game-specific ID)"
+        },
+        "game": {
+          "type": "string",
+          "description": "Game slug identifier",
+          "examples": ["fab", "mtg", "onepiece", "riftbound", "pokemon", "yugioh"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Card name in primary language"
+        },
+        "name_normalized": {
+          "type": "string",
+          "description": "Lowercase, ASCII-only name for searching"
+        },
+        "type_line": {
+          "type": "string",
+          "description": "Full type line as displayed on card"
+        },
+        "types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parsed card types (Hero, Action, Monster, Spell, etc.)"
+        },
+        "subtypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parsed subtypes (Warrior, Dragon, Equipment, etc.)"
+        },
+        "supertypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parsed supertypes (Legendary, Basic, etc.)"
+        },
+        "text": {
+          "type": "string",
+          "description": "Card text/effect/oracle text"
+        },
+        "text_normalized": {
+          "type": "string",
+          "description": "Normalized text for searching"
+        },
+        "cost": {
+          "type": ["string", "integer", "null"],
+          "description": "Generic cost value (mana, pitch, energy, etc.)"
+        },
+        "power": {
+          "type": ["string", "integer", "null"],
+          "description": "Power/ATK value"
+        },
+        "defense": {
+          "type": ["string", "integer", "null"],
+          "description": "Defense/DEF/Toughness value"
+        },
+        "health": {
+          "type": ["integer", "null"],
+          "description": "Health/HP/Life value"
+        },
+        "colors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Color identity (W/U/B/R/G, Red/Yellow/Blue, DARK/LIGHT, etc.)"
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keywords/abilities (Flying, Go Again, Blocker, etc.)"
+        },
+        "legalities": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Format legality mapping (format -> legal/banned/restricted)"
+        },
+        "game_specific": {
+          "type": "object",
+          "description": "Game-specific fields not covered by core schema",
+          "additionalProperties": true
+        },
+        "external_ids": {
+          "type": "object",
+          "description": "IDs from external sources (scryfall, tcgplayer, cardmarket, etc.)",
+          "additionalProperties": { "type": "string" }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "UnifiedPrinting": {
+      "type": "object",
+      "description": "A specific printing/version of a card in a set",
+      "required": ["id", "card_id", "set_id", "collector_number"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique printing identifier"
+        },
+        "card_id": {
+          "type": "string",
+          "description": "Reference to UnifiedCard.id"
+        },
+        "set_id": {
+          "type": "string",
+          "description": "Reference to set identifier"
+        },
+        "set_code": {
+          "type": "string",
+          "description": "Short set code (WTR, M21, OP01, etc.)"
+        },
+        "set_name": {
+          "type": "string",
+          "description": "Full set name"
+        },
+        "collector_number": {
+          "type": "string",
+          "description": "Collector number within set"
+        },
+        "rarity": {
+          "type": ["string", "null"],
+          "description": "Rarity code (C, U, R, M, SR, etc.)"
+        },
+        "rarity_label": {
+          "type": ["string", "null"],
+          "description": "Human-readable rarity (Common, Rare Holo, etc.)"
+        },
+        "finish": {
+          "type": ["string", "null"],
+          "description": "Card finish/foiling (foil, etched, rainbow, cold, etc.)"
+        },
+        "finish_label": {
+          "type": ["string", "null"],
+          "description": "Human-readable finish name"
+        },
+        "language": {
+          "type": "string",
+          "default": "en",
+          "description": "ISO language code"
+        },
+        "flavor_text": {
+          "type": ["string", "null"],
+          "description": "Flavor text for this printing"
+        },
+        "artist": {
+          "type": ["string", "null"],
+          "description": "Artist name(s)"
+        },
+        "image_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Primary image URL"
+        },
+        "image_url_small": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Thumbnail image URL"
+        },
+        "image_url_back": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Back side image URL (for double-faced cards)"
+        },
+        "is_promo": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a promotional printing"
+        },
+        "is_reprint": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a reprint"
+        },
+        "is_variant": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is an alternate art/variant"
+        },
+        "released_at": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Release date of this printing"
+        },
+        "prices": {
+          "type": "object",
+          "description": "Price data from various sources",
+          "properties": {
+            "tcgplayer": { "$ref": "#/definitions/PriceData" },
+            "cardmarket": { "$ref": "#/definitions/PriceData" },
+            "cardtrader": { "$ref": "#/definitions/PriceData" }
+          },
+          "additionalProperties": { "$ref": "#/definitions/PriceData" }
+        },
+        "game_specific": {
+          "type": "object",
+          "description": "Game-specific printing fields",
+          "additionalProperties": true
+        },
+        "external_ids": {
+          "type": "object",
+          "description": "External printing IDs",
+          "additionalProperties": { "type": "string" }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "UnifiedSet": {
+      "type": "object",
+      "description": "A card set/expansion",
+      "required": ["id", "game", "code", "name"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "game": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "description": "Short set code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full set name"
+        },
+        "released_at": {
+          "type": ["string", "null"],
+          "format": "date"
+        },
+        "set_type": {
+          "type": ["string", "null"],
+          "description": "Type of set (expansion, core, promo, etc.)"
+        },
+        "card_count": {
+          "type": ["integer", "null"]
+        },
+        "icon_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "game_specific": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "PriceData": {
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string" },
+        "price": { "type": ["number", "null"] },
+        "price_foil": { "type": ["number", "null"] },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "GameSpecificFields": {
+      "description": "Documentation of game-specific fields stored in game_specific JSON",
+      "fab": {
+        "card": {
+          "pitch": "integer (1-3)",
+          "cost": "integer",
+          "power": "integer",
+          "defense": "integer",
+          "health": "integer",
+          "intelligence": "integer",
+          "arcane": "integer",
+          "traits": "array of strings",
+          "abilities_and_effects": "array of strings",
+          "talent": "string",
+          "hero": "string",
+          "young": "boolean"
+        },
+        "printing": {
+          "edition": "string (1st, Unlimited, Alpha)",
+          "foiling": "string (S, R, C, G, etc.)",
+          "tcgplayer_product_id": "string",
+          "tcgplayer_url": "string"
+        }
+      },
+      "mtg": {
+        "card": {
+          "mana_cost": "string ({2}{U}{U})",
+          "mana_value": "number",
+          "loyalty": "string",
+          "color_identity": "array",
+          "produced_mana": "array",
+          "layout": "string (normal, split, transform, etc.)",
+          "card_faces": "array (for multi-faced cards)",
+          "all_parts": "array (for tokens/melded cards)"
+        },
+        "printing": {
+          "finishes": "array (nonfoil, foil, etched)",
+          "frame": "string (1993, 1997, 2003, 2015, future)",
+          "frame_effects": "array",
+          "border_color": "string",
+          "is_full_art": "boolean",
+          "is_textless": "boolean",
+          "is_oversized": "boolean",
+          "scryfall_id": "string",
+          "mtgo_id": "integer",
+          "arena_id": "integer"
+        }
+      },
+      "onepiece": {
+        "card": {
+          "card_type": "string (Leader, Character, Event, Stage)",
+          "color": "string",
+          "color_secondary": "string",
+          "cost": "integer",
+          "power": "integer",
+          "life": "integer",
+          "counter": "integer",
+          "attribute": "string",
+          "trigger": "string"
+        }
+      },
+      "riftbound": {
+        "card": {
+          "energy": "integer",
+          "domains": "array of strings"
+        }
+      },
+      "pokemon": {
+        "card": {
+          "hp": "integer",
+          "level": "string",
+          "evolvesFrom": "string",
+          "evolvesTo": "array",
+          "abilities": "array of {name, text, type}",
+          "attacks": "array of {name, cost, damage, text}",
+          "weaknesses": "array of {type, value}",
+          "resistances": "array of {type, value}",
+          "retreatCost": "array",
+          "convertedRetreatCost": "integer",
+          "nationalPokedexNumbers": "array",
+          "regulationMark": "string",
+          "ancientTrait": "object"
+        }
+      },
+      "yugioh": {
+        "card": {
+          "passcode": "integer",
+          "frameType": "string",
+          "atk": "integer",
+          "def": "integer",
+          "level": "integer",
+          "rank": "integer",
+          "scale": "integer",
+          "linkval": "integer",
+          "linkmarkers": "array",
+          "race": "string (monster type)",
+          "attribute": "string",
+          "archetype": "string",
+          "banlist_tcg": "string",
+          "banlist_ocg": "string"
+        }
+      }
+    }
+  },
+  "examples": {
+    "fab_card": {
+      "id": "fab-card-abc123",
+      "game": "fab",
+      "name": "Enlightened Strike",
+      "name_normalized": "enlightened strike",
+      "type_line": "Ninja Action - Attack",
+      "types": ["Action"],
+      "subtypes": ["Attack"],
+      "text": "Enlightened Strike gains +2 {p} for each card in your hand with cost 0.\n\nGo again",
+      "cost": 2,
+      "power": 4,
+      "defense": 3,
+      "colors": [],
+      "keywords": ["Go again"],
+      "legalities": {
+        "blitz": "legal",
+        "cc": "legal",
+        "commoner": "legal"
+      },
+      "game_specific": {
+        "pitch": 3,
+        "talents": ["Ninja"],
+        "young": false
+      }
+    },
+    "fab_printing": {
+      "id": "fab-print-xyz789",
+      "card_id": "fab-card-abc123",
+      "set_id": "fab-set-wtr",
+      "set_code": "WTR",
+      "set_name": "Welcome to Rathe",
+      "collector_number": "093",
+      "rarity": "M",
+      "rarity_label": "Majestic",
+      "finish": "R",
+      "finish_label": "Rainbow Foil",
+      "language": "en",
+      "artist": "Riordan Delmiro",
+      "image_url": "https://example.com/wtr093-rf.png",
+      "game_specific": {
+        "edition": "Alpha",
+        "tcgplayer_product_id": "12345"
+      }
+    },
+    "mtg_card": {
+      "id": "mtg-card-def456",
+      "game": "mtg",
+      "name": "Lightning Bolt",
+      "type_line": "Instant",
+      "types": ["Instant"],
+      "text": "Lightning Bolt deals 3 damage to any target.",
+      "cost": "{R}",
+      "colors": ["R"],
+      "keywords": [],
+      "legalities": {
+        "standard": "not_legal",
+        "modern": "legal",
+        "legacy": "legal",
+        "vintage": "legal",
+        "commander": "legal"
+      },
+      "game_specific": {
+        "mana_cost": "{R}",
+        "mana_value": 1,
+        "color_identity": ["R"],
+        "layout": "normal"
+      }
+    },
+    "pokemon_card": {
+      "id": "pokemon-card-charizard",
+      "game": "pokemon",
+      "name": "Charizard",
+      "type_line": "Stage 2 - Fire",
+      "types": ["Stage 2"],
+      "subtypes": ["Fire"],
+      "text": "Fire Spin: Discard 3 Energy cards attached to Charizard.",
+      "health": 120,
+      "colors": ["Fire"],
+      "keywords": [],
+      "game_specific": {
+        "hp": 120,
+        "evolvesFrom": "Charmeleon",
+        "attacks": [
+          {
+            "name": "Fire Spin",
+            "cost": ["Fire", "Fire", "Fire", "Fire"],
+            "damage": "100",
+            "text": "Discard 3 Energy cards attached to Charizard."
+          }
+        ],
+        "weaknesses": [{ "type": "Water", "value": "×2" }],
+        "retreatCost": ["Colorless", "Colorless", "Colorless"]
+      }
+    },
+    "yugioh_card": {
+      "id": "yugioh-card-darkmagician",
+      "game": "yugioh",
+      "name": "Dark Magician",
+      "type_line": "Normal Monster",
+      "types": ["Normal Monster"],
+      "subtypes": ["Spellcaster"],
+      "text": "The ultimate wizard in terms of attack and defense.",
+      "power": 2500,
+      "defense": 2100,
+      "colors": ["DARK"],
+      "game_specific": {
+        "passcode": 46986414,
+        "frameType": "normal",
+        "atk": 2500,
+        "def": 2100,
+        "level": 7,
+        "race": "Spellcaster",
+        "attribute": "DARK",
+        "archetype": "Dark Magician"
+      }
+    }
+  }
+}
