@@ -19,7 +19,6 @@ import { index as lotsIndex, show as lotShow, update as lotUpdate, destroy as lo
 import { show as boxShow } from '@/routes/boxes';
 import { type BreadcrumbItem } from '@/types';
 import { getConditionLabel, getFoilingLabel, getLanguageLabel, getRarityLabel } from '@/types/fab';
-import { printing as printingRoute } from '@/actions/App/Http/Controllers/Fab/FabCardController';
 import { type Box, type Lot } from '@/types/inventory';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -129,7 +128,7 @@ export default function LotShow({ lot, boxes }: Props) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/fab/scanner">Flesh and Blood</Link>
+                                    <Link href="/scanner?game=fab">Flesh and Blood</Link>
                                 </DropdownMenuItem>
                                 {/* Weitere Spiele hier hinzufügen */}
                             </DropdownMenuContent>
@@ -178,7 +177,7 @@ export default function LotShow({ lot, boxes }: Props) {
                                             </TableCell>
                                             <TableCell>
                                                 <Link
-                                                    href={printingRoute.url(item.fab_printing_id)}
+                                                    href={`/g/fab/printings/${item.fab_printing_id}`}
                                                     className="flex items-center gap-3 hover:opacity-80"
                                                 >
                                                     {item.printing?.image_url && (
@@ -236,7 +235,7 @@ export default function LotShow({ lot, boxes }: Props) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         <DropdownMenuItem asChild>
-                                            <Link href="/fab/scanner">Flesh and Blood</Link>
+                                            <Link href="/scanner?game=fab">Flesh and Blood</Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>

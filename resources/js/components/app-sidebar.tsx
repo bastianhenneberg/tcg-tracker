@@ -15,7 +15,7 @@ import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Archive, BookOpen, Camera, Database, Folder, Gamepad2, Heart, Layers, LayoutGrid, Library, Package, PenSquare, Settings, Sparkles, Target } from 'lucide-react';
+import { Archive, BookOpen, Camera, Database, Folder, Gamepad2, Heart, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface CustomGame {
@@ -57,127 +57,56 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const fabNavItems: NavItem[] = [
-    {
-        title: 'Scanner',
-        href: '/scanner?game=fab',
-        icon: Camera,
-    },
-    {
-        title: 'Inventar',
-        href: '/fab/inventory',
-        icon: Package,
-    },
-    {
-        title: 'Sammlung',
-        href: '/fab/collection',
-        icon: Heart,
-    },
-    {
-        title: 'Kartendatenbank',
-        href: '/fab/cards',
-        icon: Database,
-    },
-    {
-        title: 'Eigene Karten',
-        href: '/custom-cards?game=fab',
-        icon: PenSquare,
-    },
-];
+// Helper to generate nav items for a game
+const getGameNavItems = (slug: string, hasCustomCards = true): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Scanner',
+            href: `/scanner?game=${slug}`,
+            icon: Camera,
+        },
+        {
+            title: 'Inventar',
+            href: `/g/${slug}/inventory`,
+            icon: Package,
+        },
+        {
+            title: 'Sammlung',
+            href: `/g/${slug}/collection`,
+            icon: Heart,
+        },
+        {
+            title: 'Kartendatenbank',
+            href: `/g/${slug}/cards`,
+            icon: Database,
+        },
+        {
+            title: 'Sets',
+            href: `/g/${slug}/sets`,
+            icon: Library,
+        },
+        {
+            title: 'Printings',
+            href: `/g/${slug}/printings`,
+            icon: Sparkles,
+        },
+    ];
 
-const mtgNavItems: NavItem[] = [
-    {
-        title: 'Scanner',
-        href: '/scanner?game=magic-the-gathering',
-        icon: Camera,
-    },
-    {
-        title: 'Inventar',
-        href: '/mtg/inventory',
-        icon: Package,
-    },
-    {
-        title: 'Sammlung',
-        href: '/mtg/collection',
-        icon: Heart,
-    },
-    {
-        title: 'Kartendatenbank',
-        href: '/mtg/cards',
-        icon: Database,
-    },
-    {
-        title: 'Sets',
-        href: '/mtg/sets',
-        icon: Library,
-    },
-    {
-        title: 'Printings',
-        href: '/mtg/printings',
-        icon: Sparkles,
-    },
-    {
-        title: 'Eigene Karten',
-        href: '/custom-cards?game=magic-the-gathering',
-        icon: PenSquare,
-    },
-];
+    if (hasCustomCards) {
+        items.push({
+            title: 'Eigene Karten',
+            href: `/custom-cards?game=${slug}`,
+            icon: PenSquare,
+        });
+    }
 
-const riftboundNavItems: NavItem[] = [
-    {
-        title: 'Scanner',
-        href: '/scanner?game=riftbound',
-        icon: Camera,
-    },
-    {
-        title: 'Inventar',
-        href: '/riftbound/inventory',
-        icon: Package,
-    },
-    {
-        title: 'Sammlung',
-        href: '/riftbound/collection',
-        icon: Heart,
-    },
-    {
-        title: 'Kartendatenbank',
-        href: '/riftbound/cards',
-        icon: Database,
-    },
-    {
-        title: 'Eigene Karten',
-        href: '/custom-cards?game=riftbound',
-        icon: PenSquare,
-    },
-];
+    return items;
+};
 
-const onepieceNavItems: NavItem[] = [
-    {
-        title: 'Scanner',
-        href: '/scanner?game=onepiece',
-        icon: Camera,
-    },
-    {
-        title: 'Inventar',
-        href: '/onepiece/inventory',
-        icon: Package,
-    },
-    {
-        title: 'Sammlung',
-        href: '/onepiece/collection',
-        icon: Heart,
-    },
-    {
-        title: 'Kartendatenbank',
-        href: '/onepiece/cards',
-        icon: Database,
-    },
-    {
-        title: 'Printings',
-        href: '/onepiece/printings',
-        icon: Sparkles,
-    },
-];
+const fabNavItems = getGameNavItems('fab');
+const mtgNavItems = getGameNavItems('magic-the-gathering');
+const riftboundNavItems = getGameNavItems('riftbound');
+const onepieceNavItems = getGameNavItems('onepiece', false);
 
 const footerNavItems: NavItem[] = [
     {
@@ -194,35 +123,6 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { customGames } = usePage<{ customGames: CustomGame[] }>().props;
-
-    // Generate nav items for each custom game
-    const getCustomGameNavItems = (game: CustomGame): NavItem[] => [
-        {
-            title: 'Scanner',
-            href: `/scanner?game=${game.slug}`,
-            icon: Camera,
-        },
-        {
-            title: 'Inventar',
-            href: `/games/${game.slug}/inventory`,
-            icon: Package,
-        },
-        {
-            title: 'Sammlung',
-            href: `/games/${game.slug}/collection`,
-            icon: Heart,
-        },
-        {
-            title: 'Kartendatenbank',
-            href: `/games/${game.slug}/cards`,
-            icon: Database,
-        },
-        {
-            title: 'Eigene Karten',
-            href: `/custom-cards?game=${game.slug}`,
-            icon: PenSquare,
-        },
-    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -245,7 +145,7 @@ export function AppSidebar() {
                 <NavGroup label="Riftbound" items={riftboundNavItems} />
                 <NavGroup label="One Piece" items={onepieceNavItems} />
                 {customGames?.map((game) => (
-                    <NavGroup key={game.id} label={game.name} items={getCustomGameNavItems(game)} />
+                    <NavGroup key={game.id} label={game.name} items={getGameNavItems(game.slug)} />
                 ))}
             </SidebarContent>
 
