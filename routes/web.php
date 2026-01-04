@@ -22,6 +22,9 @@ use App\Http\Controllers\Riftbound\RiftboundCollectionController;
 use App\Http\Controllers\Riftbound\RiftboundInventoryController;
 use App\Http\Controllers\Riftbound\RiftboundScannerController;
 use App\Http\Controllers\ScannerController;
+use App\Http\Controllers\UnifiedCardController;
+use App\Http\Controllers\UnifiedCollectionController;
+use App\Http\Controllers\UnifiedInventoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -60,6 +63,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/lot', [ScannerController::class, 'createLot'])->name('create-lot');
         Route::post('/settings', [ScannerController::class, 'saveSettings'])->name('save-settings');
     });
+
+    // ========== UNIFIED ROUTES (neue unified Tabellen) ==========
+    Route::prefix('g/{slug}')->name('unified.')->group(function () {
+        // Cards Database
+        Route::get('cards', [UnifiedCardController::class, 'index'])->name('cards');
+        Route::get('cards/{card}', [UnifiedCardController::class, 'show'])->name('cards.show');
+        Route::get('printings', [UnifiedCardController::class, 'printings'])->name('printings');
+        Route::get('printings/{printing}', [UnifiedCardController::class, 'printing'])->name('printings.show');
+        Route::get('sets', [UnifiedCardController::class, 'sets'])->name('sets');
+        Route::get('sets/{set}', [UnifiedCardController::class, 'set'])->name('sets.show');
+
+        // Inventory
+        Route::get('inventory', [UnifiedInventoryController::class, 'index'])->name('inventory');
+        Route::patch('inventory/{item}', [UnifiedInventoryController::class, 'update'])->name('inventory.update');
+        Route::delete('inventory/{item}', [UnifiedInventoryController::class, 'destroy'])->name('inventory.destroy');
+        Route::post('inventory/mark-sold', [UnifiedInventoryController::class, 'markSold'])->name('inventory.mark-sold');
+        Route::post('inventory/move-to-collection', [UnifiedInventoryController::class, 'moveToCollection'])->name('inventory.move-to-collection');
+        Route::post('inventory/delete-multiple', [UnifiedInventoryController::class, 'destroyMultiple'])->name('inventory.delete-multiple');
+
+        // Collection
+        Route::get('collection', [UnifiedCollectionController::class, 'index'])->name('collection');
+        Route::patch('collection/{item}', [UnifiedCollectionController::class, 'update'])->name('collection.update');
+        Route::delete('collection/{item}', [UnifiedCollectionController::class, 'destroy'])->name('collection.destroy');
+        Route::post('collection/delete-multiple', [UnifiedCollectionController::class, 'destroyMultiple'])->name('collection.delete-multiple');
+        Route::post('collection/move-to-inventory', [UnifiedCollectionController::class, 'moveToInventory'])->name('collection.move-to-inventory');
+    });
+
+    // ========== LEGACY ROUTES (alte spiel-spezifische Tabellen) ==========
 
     // Flesh and Blood
     Route::prefix('fab')->name('fab.')->group(function () {
