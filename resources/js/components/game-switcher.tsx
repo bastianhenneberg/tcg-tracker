@@ -78,14 +78,14 @@ export function GameSwitcher({ selectedSlug, onSelect, games }: GameSwitcherProp
     const selectedGame = games.find(g => g.slug === selectedSlug);
 
     return (
-        <div className="px-2 py-2">
+        <div className="px-2 py-2 overflow-hidden">
             <Select value={selectedSlug} onValueChange={onSelect}>
-                <SelectTrigger className="w-full">
-                    <div className="flex items-center gap-2">
-                        <Gamepad2 className="h-4 w-4" />
-                        <SelectValue>
+                <SelectTrigger className="w-full min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Gamepad2 className="h-4 w-4 shrink-0" />
+                        <span className="truncate">
                             {selectedGame?.name ?? 'Spiel wählen'}
-                        </SelectValue>
+                        </span>
                     </div>
                 </SelectTrigger>
                 <SelectContent>
