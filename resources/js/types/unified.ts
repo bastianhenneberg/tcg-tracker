@@ -160,6 +160,39 @@ export interface FilterOptions {
     domains?: Record<string, string>;
 }
 
+// Common constants for all games
+export type ConditionKey = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
+export type LanguageKey = 'EN' | 'DE' | 'FR' | 'ES' | 'IT' | 'JP' | 'CN' | 'KR';
+
+export const CONDITIONS: Record<ConditionKey, string> = {
+    NM: 'Near Mint',
+    LP: 'Lightly Played',
+    MP: 'Moderately Played',
+    HP: 'Heavily Played',
+    DMG: 'Damaged',
+};
+
+export const LANGUAGES: Record<LanguageKey, string> = {
+    EN: 'English',
+    DE: 'Deutsch',
+    FR: 'Français',
+    ES: 'Español',
+    IT: 'Italiano',
+    JP: 'Japanese',
+    CN: 'Chinese',
+    KR: 'Korean',
+};
+
+export function getConditionLabel(condition: string | null): string {
+    if (!condition) return 'Unknown';
+    return CONDITIONS[condition as ConditionKey] ?? condition;
+}
+
+export function getLanguageLabel(language: string | null): string {
+    if (!language) return 'English';
+    return LANGUAGES[language as LanguageKey] ?? language;
+}
+
 // Helper to get color indicator for FAB pitch
 export function getPitchColor(pitch?: number | string): string {
     const p = typeof pitch === 'string' ? parseInt(pitch, 10) : pitch;

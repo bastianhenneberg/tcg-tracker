@@ -29,7 +29,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             )}
                             tooltip={{ children: item.title }}
                         >
-                            <Link href={item.href} prefetch>
+                            <Link href={item.href} prefetch={item.prefetch !== false}>
                                 {item.icon && <item.icon />}
                                 <span>{item.title}</span>
                             </Link>
@@ -56,7 +56,7 @@ export function NavGroup({ label, items }: NavGroup) {
                             )}
                             tooltip={{ children: item.title }}
                         >
-                            <Link href={item.href} prefetch>
+                            <Link href={item.href} prefetch={item.prefetch !== false}>
                                 {item.icon && <item.icon />}
                                 <span>{item.title}</span>
                             </Link>

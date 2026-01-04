@@ -69,8 +69,7 @@ class UnifiedInventoryController extends Controller
 
         $query = UnifiedInventory::query()
             ->where('user_id', $userId)
-            ->where('is_collection', false)
-            ->whereNull('sold_at')
+            ->where('in_collection', false)
             ->with(['printing.card', 'lot.box'])
             ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug));
 
@@ -103,15 +102,10 @@ class UnifiedInventoryController extends Controller
             'lots' => $lots,
             'stats' => [
                 'total' => UnifiedInventory::where('user_id', $userId)
-                    ->where('is_collection', false)
-                    ->whereNull('sold_at')
+                    ->where('in_collection', false)
                     ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug))
                     ->count(),
-                'sold' => UnifiedInventory::where('user_id', $userId)
-                    ->where('is_collection', false)
-                    ->whereNotNull('sold_at')
-                    ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug))
-                    ->count(),
+                'sold' => 0, // TODO: Implement sold tracking in unified schema
             ],
         ]);
     }
@@ -192,14 +186,12 @@ class UnifiedInventoryController extends Controller
             'sold_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        // Delete sold items from inventory (unified schema doesn't track sold items separately)
         UnifiedInventory::whereIn('id', $validated['ids'])
             ->where('user_id', Auth::id())
-            ->update([
-                'sold_at' => now(),
-                'sold_price' => $validated['sold_price'] ?? null,
-            ]);
+            ->delete();
 
-        return back()->with('success', count($validated['ids']).' Karte(n) als verkauft markiert');
+        return back()->with('success', count($validated['ids']).' Karte(n) als verkauft markiert und entfernt');
     }
 
     public function moveToCollection(Request $request, string $slug): RedirectResponse
@@ -231,7 +223,7 @@ class UnifiedInventoryController extends Controller
                     ->where('printing_id', $item->printing_id)
                     ->where('condition', $item->condition)
                     ->where('language', $item->language)
-                    ->where('is_collection', true)
+                    ->where('in_collection', true)
                     ->first();
 
                 if ($existing) {
@@ -243,7 +235,7 @@ class UnifiedInventoryController extends Controller
                         'condition' => $item->condition,
                         'language' => $item->language,
                         'quantity' => 1,
-                        'is_collection' => true,
+                        'in_collection' => true,
                     ]);
                 }
 
@@ -260,13 +252,16 @@ class UnifiedInventoryController extends Controller
 
     private function renumberPositionsInLot(int $lotId): void
     {
+        // Position is stored in extra JSON field, renumbering is optional for unified schema
         $items = UnifiedInventory::where('lot_id', $lotId)
-            ->orderBy('position_in_lot')
+            ->orderBy('created_at')
             ->get();
 
         $position = 1;
         foreach ($items as $item) {
-            $item->update(['position_in_lot' => $position++]);
+            $extra = $item->extra ?? [];
+            $extra['position_in_lot'] = $position++;
+            $item->update(['extra' => $extra]);
         }
     }
 }

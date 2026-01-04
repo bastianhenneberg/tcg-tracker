@@ -20,7 +20,7 @@ import { type Box, type Lot } from '@/types/inventory';
 import { Head, router, useForm } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Props {
     lots: PaginatedData<Lot>;
@@ -36,6 +36,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function LotsIndex({ lots, boxes }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
+
+    // Reload data when the page becomes visible (tab switching)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                router.reload({ only: ['lots', 'boxes'] });
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const form = useForm({
         box_id: '',
@@ -85,10 +96,10 @@ export default function LotsIndex({ lots, boxes }: Props) {
                     ),
             },
             {
-                accessorKey: 'fab_inventory_items_count',
+                accessorKey: 'inventory_items_count',
                 header: 'Karten',
                 cell: ({ row }) => (
-                    <Badge>{row.original.fab_inventory_items_count ?? 0}</Badge>
+                    <Badge>{row.original.inventory_items_count ?? 0}</Badge>
                 ),
             },
             {

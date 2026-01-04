@@ -144,7 +144,8 @@ export default function ScannerIndex({
         }
 
         if (flash.confirmed) {
-            setScannedCards((prev) => [flash.confirmed!, ...prev]);
+            // Don't optimistically add to scannedCards - initialLotInventory already contains the new card
+            // and will be synced via the other useEffect. Only update the count and show toast.
             if (flash.lot_count) setLotCardCount(flash.lot_count);
             toast.success(`${flash.confirmed.card_name} hinzugefügt`, {
                 description: `Position ${flash.confirmed.position} · ${flash.confirmed.condition}${flash.confirmed.is_custom ? ' · Custom' : ''}`,

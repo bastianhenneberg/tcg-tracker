@@ -1,12 +1,10 @@
 <?php
 
 use App\Models\Box;
-use App\Models\Fab\FabCard;
-use App\Models\Fab\FabCollection;
-use App\Models\Fab\FabInventory;
-use App\Models\Fab\FabPrinting;
-use App\Models\Fab\FabSet;
 use App\Models\Lot;
+use App\Models\UnifiedCard;
+use App\Models\UnifiedInventory;
+use App\Models\UnifiedPrinting;
 use App\Models\User;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -43,17 +41,20 @@ describe('Lot', function () {
         expect($lot->box)->toBeInstanceOf(Box::class);
     });
 
-    it('has many fab inventory items', function () {
+    it('has many inventory items', function () {
         $user = User::factory()->create();
         $box = Box::factory()->create(['user_id' => $user->id]);
         $lot = Lot::factory()->create(['user_id' => $user->id, 'box_id' => $box->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
-        FabInventory::factory()->count(5)->create([
+        UnifiedInventory::factory()->count(5)->create([
             'user_id' => $user->id,
             'lot_id' => $lot->id,
+            'printing_id' => $printing->id,
         ]);
 
-        expect($lot->fabInventory)->toHaveCount(5);
+        expect($lot->inventoryItems)->toHaveCount(5);
     });
 
     it('generates next lot number for user', function () {
@@ -72,131 +73,84 @@ describe('Lot', function () {
     });
 });
 
-describe('FabInventory', function () {
+describe('UnifiedInventory', function () {
     it('belongs to a user', function () {
-        $item = FabInventory::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
+        $item = UnifiedInventory::factory()->create(['printing_id' => $printing->id]);
 
         expect($item->user)->toBeInstanceOf(User::class);
     });
 
     it('belongs to a lot', function () {
-        $item = FabInventory::factory()->create();
+        $user = User::factory()->create();
+        $box = Box::factory()->create(['user_id' => $user->id]);
+        $lot = Lot::factory()->create(['user_id' => $user->id, 'box_id' => $box->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
+
+        $item = UnifiedInventory::factory()->create([
+            'user_id' => $user->id,
+            'lot_id' => $lot->id,
+            'printing_id' => $printing->id,
+        ]);
 
         expect($item->lot)->toBeInstanceOf(Lot::class);
     });
 
-    it('belongs to a fab printing', function () {
-        $item = FabInventory::factory()->create();
+    it('belongs to a printing', function () {
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
+        $item = UnifiedInventory::factory()->create(['printing_id' => $printing->id]);
 
-        expect($item->printing)->toBeInstanceOf(FabPrinting::class);
+        expect($item->printing)->toBeInstanceOf(UnifiedPrinting::class);
     });
 
-    it('tracks sold status', function () {
-        $available = FabInventory::factory()->create();
-        $sold = FabInventory::factory()->sold()->create();
+    it('can filter by collection status', function () {
+        $user = User::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
-        expect($available->isSold())->toBeFalse()
-            ->and($available->isAvailable())->toBeTrue()
-            ->and($sold->isSold())->toBeTrue()
-            ->and($sold->isAvailable())->toBeFalse();
+        UnifiedInventory::factory()->count(3)->create([
+            'user_id' => $user->id,
+            'printing_id' => $printing->id,
+            'in_collection' => false,
+        ]);
+
+        UnifiedInventory::factory()->count(2)->create([
+            'user_id' => $user->id,
+            'printing_id' => $printing->id,
+            'in_collection' => true,
+        ]);
+
+        expect(UnifiedInventory::inInventory()->count())->toBe(3)
+            ->and(UnifiedInventory::inCollection()->count())->toBe(2);
     });
 
     it('has condition constants', function () {
-        expect(FabInventory::CONDITIONS)->toHaveKeys(['NM', 'LP', 'MP', 'HP', 'DMG']);
+        expect(UnifiedInventory::CONDITIONS)->toHaveKeys(['NM', 'LP', 'MP', 'HP', 'DMG']);
     });
 
     it('has language constants', function () {
-        expect(FabInventory::LANGUAGES)->toHaveKeys(['EN', 'DE', 'FR', 'ES', 'IT', 'JP', 'CN', 'KR']);
-    });
-
-    it('renumbers positions when item deleted', function () {
-        $user = User::factory()->create();
-        $box = Box::factory()->create(['user_id' => $user->id]);
-        $lot = Lot::factory()->create(['user_id' => $user->id, 'box_id' => $box->id]);
-
-        $item1 = FabInventory::factory()->create([
-            'user_id' => $user->id,
-            'lot_id' => $lot->id,
-            'position_in_lot' => 1,
-        ]);
-        $item2 = FabInventory::factory()->create([
-            'user_id' => $user->id,
-            'lot_id' => $lot->id,
-            'position_in_lot' => 2,
-        ]);
-        $item3 = FabInventory::factory()->create([
-            'user_id' => $user->id,
-            'lot_id' => $lot->id,
-            'position_in_lot' => 3,
-        ]);
-
-        // Delete item in the middle
-        $item2->delete();
-        FabInventory::renumberPositionsInLot($lot->id);
-
-        $item1->refresh();
-        $item3->refresh();
-
-        expect($item1->position_in_lot)->toBe(1)
-            ->and($item3->position_in_lot)->toBe(2);
+        expect(UnifiedInventory::LANGUAGES)->toHaveKeys(['EN', 'DE', 'FR', 'ES', 'IT', 'JA', 'KO', 'ZH']);
     });
 });
 
-describe('FabCollection', function () {
-    it('belongs to a user', function () {
-        $item = FabCollection::factory()->create();
+describe('UnifiedPrinting', function () {
+    it('belongs to a card', function () {
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
-        expect($item->user)->toBeInstanceOf(User::class);
+        expect($printing->card)->toBeInstanceOf(UnifiedCard::class);
     });
 
-    it('belongs to a fab printing', function () {
-        $item = FabCollection::factory()->create();
-
-        expect($item->printing)->toBeInstanceOf(FabPrinting::class);
+    it('has finishes constants', function () {
+        expect(UnifiedPrinting::FINISHES)->toHaveKeys(['nonfoil', 'foil', 'cold_foil', 'rainbow_foil']);
     });
 
-    it('can have a source lot', function () {
-        $user = User::factory()->create();
-        $box = Box::factory()->create(['user_id' => $user->id]);
-        $lot = Lot::factory()->create(['user_id' => $user->id, 'box_id' => $box->id]);
-        $printing = FabPrinting::factory()->create();
-
-        $item = FabCollection::factory()->create([
-            'user_id' => $user->id,
-            'fab_printing_id' => $printing->id,
-            'source_lot_id' => $lot->id,
-        ]);
-
-        expect($item->sourceLot)->toBeInstanceOf(Lot::class)
-            ->and($item->source_lot_id)->toBe($lot->id);
-    });
-
-    it('has default quantity of 1', function () {
-        $item = FabCollection::factory()->create(['quantity' => 1]);
-
-        expect($item->quantity)->toBe(1);
-    });
-});
-
-describe('FabPrinting', function () {
-    it('belongs to a fab card', function () {
-        $printing = FabPrinting::factory()->create();
-
-        expect($printing->card)->toBeInstanceOf(FabCard::class);
-    });
-
-    it('belongs to a fab set', function () {
-        $printing = FabPrinting::factory()->create();
-
-        expect($printing->set)->toBeInstanceOf(FabSet::class);
-    });
-
-    it('has rarity constants', function () {
-        expect(FabPrinting::RARITIES)->toHaveKeys(['C', 'R', 'S', 'M', 'L', 'F', 'P', 'T']);
-    });
-
-    it('has foiling constants', function () {
-        expect(FabPrinting::FOILINGS)->toHaveKeys(['S', 'R', 'C', 'G']);
+    it('has game-specific finishes', function () {
+        expect(UnifiedPrinting::GAME_FINISHES)->toHaveKeys(['fab', 'mtg', 'riftbound']);
+        expect(UnifiedPrinting::GAME_FINISHES['fab'])->toHaveKeys(['S', 'R', 'C', 'G']);
     });
 });
 
@@ -216,17 +170,38 @@ describe('User relationships', function () {
         expect($user->lots)->toHaveCount(3);
     });
 
-    it('has many fab inventory items', function () {
+    it('has many unified inventory items', function () {
         $user = User::factory()->create();
-        FabInventory::factory()->count(4)->create(['user_id' => $user->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
-        expect($user->fabInventory)->toHaveCount(4);
+        UnifiedInventory::factory()->count(4)->create([
+            'user_id' => $user->id,
+            'printing_id' => $printing->id,
+            'in_collection' => false,
+        ]);
+
+        expect($user->unifiedInventory)->toHaveCount(4);
     });
 
-    it('has many fab collection items', function () {
+    it('separates inventory from collection', function () {
         $user = User::factory()->create();
-        FabCollection::factory()->count(5)->create(['user_id' => $user->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
-        expect($user->fabCollection)->toHaveCount(5);
+        UnifiedInventory::factory()->count(3)->create([
+            'user_id' => $user->id,
+            'printing_id' => $printing->id,
+            'in_collection' => false,
+        ]);
+
+        UnifiedInventory::factory()->count(2)->create([
+            'user_id' => $user->id,
+            'printing_id' => $printing->id,
+            'in_collection' => true,
+        ]);
+
+        expect($user->inventory)->toHaveCount(3);
+        expect($user->collection)->toHaveCount(2);
     });
 });

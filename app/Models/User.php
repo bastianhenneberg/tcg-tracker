@@ -2,11 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Fab\FabCollection;
-use App\Models\Fab\FabInventory;
-use App\Models\Riftbound\RiftboundCollection;
-use App\Models\Riftbound\RiftboundInventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -30,6 +25,7 @@ class User extends Authenticatable
         'scanner_settings',
         'mtg_scanner_settings',
         'riftbound_scanner_settings',
+        'op_scanner_settings',
     ];
 
     /**
@@ -58,6 +54,7 @@ class User extends Authenticatable
             'scanner_settings' => 'array',
             'mtg_scanner_settings' => 'array',
             'riftbound_scanner_settings' => 'array',
+            'op_scanner_settings' => 'array',
         ];
     }
 
@@ -71,23 +68,18 @@ class User extends Authenticatable
         return $this->hasMany(Lot::class);
     }
 
-    public function fabInventory(): HasMany
+    public function unifiedInventory(): HasMany
     {
-        return $this->hasMany(FabInventory::class);
+        return $this->hasMany(UnifiedInventory::class);
     }
 
-    public function fabCollection(): HasMany
+    public function inventory(): HasMany
     {
-        return $this->hasMany(FabCollection::class);
+        return $this->hasMany(UnifiedInventory::class)->where('in_collection', false);
     }
 
-    public function riftboundInventory(): HasMany
+    public function collection(): HasMany
     {
-        return $this->hasMany(RiftboundInventory::class);
-    }
-
-    public function riftboundCollection(): HasMany
-    {
-        return $this->hasMany(RiftboundCollection::class);
+        return $this->hasMany(UnifiedInventory::class)->where('in_collection', true);
     }
 }

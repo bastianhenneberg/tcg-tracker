@@ -27,7 +27,7 @@ import {
 } from '@/types/unified';
 import { Head, router } from '@inertiajs/react';
 import { Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 interface Props {
@@ -48,13 +48,24 @@ export default function InventoryIndex({
     inventory,
     filters,
     conditions,
-    foilings,
+    foilings: _foilings,
     lots,
     stats,
 }: Props) {
     const baseUrl = `/g/${game.slug}`;
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    // Reload data when the page becomes visible (tab switching)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                router.reload({ only: ['inventory', 'stats', 'lots'] });
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: game.name, href: `${baseUrl}/cards` },

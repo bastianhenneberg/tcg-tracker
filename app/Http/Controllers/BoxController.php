@@ -42,7 +42,7 @@ class BoxController extends Controller
     {
         $this->authorize('view', $box);
 
-        $box->load(['lots' => fn ($q) => $q->withCount('fabInventoryItems')->orderByDesc('lot_number')]);
+        $box->load(['lots' => fn ($q) => $q->withCount('inventoryItems')->orderByDesc('lot_number')]);
 
         return Inertia::render('inventory/boxes/show', [
             'box' => $box,

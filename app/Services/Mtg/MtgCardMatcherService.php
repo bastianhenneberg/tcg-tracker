@@ -2,7 +2,7 @@
 
 namespace App\Services\Mtg;
 
-use App\Models\Mtg\MtgPrinting;
+use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 
 class MtgCardMatcherService
@@ -11,7 +11,7 @@ class MtgCardMatcherService
      * Find a card printing that matches the recognition result.
      *
      * @param  array{card_name?: string|null, set_code?: string|null, collector_number?: string|null}  $recognitionResult
-     * @return array{match: MtgPrinting|null, confidence: string, alternatives: Collection}
+     * @return array{match: UnifiedPrinting|null, confidence: string, alternatives: Collection}
      */
     public function findMatch(array $recognitionResult): array
     {
@@ -66,29 +66,34 @@ class MtgCardMatcherService
     /**
      * Search for printings by set code and collector number.
      */
-    protected function findBySetAndNumber(string $setCode, string $collectorNumber): ?MtgPrinting
+    protected function findBySetAndNumber(string $setCode, string $collectorNumber): ?UnifiedPrinting
     {
         // Clean collector number (e.g., "123/271" -> "123")
         $number = preg_replace('/\/.*$/', '', $collectorNumber);
 
-        return MtgPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
-            ->whereHas('set', fn ($q) => $q->whereRaw('LOWER(code) = ?', [strtolower($setCode)]))
-            ->where('number', $number)
+            ->forGame('mtg')
+            ->where(function ($q) use ($setCode) {
+                $q->whereRaw('LOWER(set_code) = ?', [strtolower($setCode)])
+                    ->orWhereHas('set', fn ($s) => $s->whereRaw('LOWER(code) = ?', [strtolower($setCode)]));
+            })
+            ->where('collector_number', $number)
             ->first();
     }
 
     /**
      * Search for printings by collector number only.
      */
-    protected function findByCollectorNumber(string $collectorNumber): ?MtgPrinting
+    protected function findByCollectorNumber(string $collectorNumber): ?UnifiedPrinting
     {
         // Clean collector number
         $number = preg_replace('/\/.*$/', '', $collectorNumber);
 
-        return MtgPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
-            ->where('number', $number)
+            ->forGame('mtg')
+            ->where('collector_number', $number)
             ->first();
     }
 
@@ -97,19 +102,23 @@ class MtgCardMatcherService
      */
     protected function findByName(string $cardName, ?string $setCode = null): Collection
     {
-        $query = MtgPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('mtg')
             ->whereHas('card', function ($q) use ($cardName) {
                 $q->where('name', $cardName)
                     ->orWhere('name', 'LIKE', "%{$cardName}%");
             });
 
         if ($setCode) {
-            $query->whereHas('set', fn ($q) => $q->whereRaw('LOWER(code) = ?', [strtolower($setCode)]));
+            $query->where(function ($q) use ($setCode) {
+                $q->whereRaw('LOWER(set_code) = ?', [strtolower($setCode)])
+                    ->orWhereHas('set', fn ($s) => $s->whereRaw('LOWER(code) = ?', [strtolower($setCode)]));
+            });
         }
 
         return $query->orderByRaw('CASE WHEN EXISTS (
-            SELECT 1 FROM mtg_cards WHERE mtg_cards.id = mtg_printings.mtg_card_id AND mtg_cards.name = ?
+            SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?
         ) THEN 0 ELSE 1 END', [$cardName])
             ->limit(10)
             ->get();
@@ -124,19 +133,20 @@ class MtgCardMatcherService
             return collect();
         }
 
-        return MtgPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('mtg')
             ->where(function ($q) use ($query) {
                 $q->whereHas('card', fn ($c) => $c->where('name', 'LIKE', "%{$query}%"))
-                    ->orWhere('number', 'LIKE', "%{$query}%")
+                    ->orWhere('collector_number', 'LIKE', "%{$query}%")
                     ->orWhereHas('set', fn ($s) => $s->where('name', 'LIKE', "%{$query}%")
                         ->orWhere('code', 'LIKE', "%{$query}%"));
             })
             ->orderByRaw('CASE
-                WHEN number = ? THEN 0
-                WHEN number LIKE ? THEN 1
-                WHEN EXISTS (SELECT 1 FROM mtg_cards WHERE mtg_cards.id = mtg_printings.mtg_card_id AND mtg_cards.name = ?) THEN 2
-                WHEN EXISTS (SELECT 1 FROM mtg_cards WHERE mtg_cards.id = mtg_printings.mtg_card_id AND mtg_cards.name LIKE ?) THEN 3
+                WHEN collector_number = ? THEN 0
+                WHEN collector_number LIKE ? THEN 1
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?) THEN 2
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name LIKE ?) THEN 3
                 ELSE 4
             END', [$query, "{$query}%", $query, "{$query}%"])
             ->limit($limit)
@@ -144,23 +154,24 @@ class MtgCardMatcherService
             ->map(fn ($p) => [
                 'id' => $p->id,
                 'card_name' => $p->card->name,
-                'set_name' => $p->set->name,
-                'set_code' => $p->set->code,
-                'number' => $p->number,
+                'set_name' => $p->set?->name ?? $p->set_name ?? $p->set_code,
+                'set_code' => $p->set?->code ?? $p->set_code,
+                'collector_number' => $p->collector_number,
                 'rarity' => $p->rarity,
                 'image_url' => $p->image_url,
-                'has_foil' => $p->has_foil,
-                'has_non_foil' => $p->has_non_foil,
+                'foiling' => $p->finish,
+                'foiling_label' => $p->finish_label,
             ]);
     }
 
     /**
      * Get a specific printing by ID with all relations loaded.
      */
-    public function getPrinting(int $id): ?MtgPrinting
+    public function getPrinting(int $id): ?UnifiedPrinting
     {
-        return MtgPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('mtg')
             ->find($id);
     }
 }

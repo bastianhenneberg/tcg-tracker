@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Models\Custom\CustomCollection;
-use App\Models\Fab\FabCard;
-use App\Models\Fab\FabCollection;
 use App\Models\GameFormat;
 use App\Models\PlaysetRule;
+use App\Models\UnifiedCard;
+use App\Models\UnifiedInventory;
 use Illuminate\Support\Collection;
 
 class PlaysetService
@@ -26,14 +26,14 @@ class PlaysetService
         $format = GameFormat::with('game')->findOrFail($gameFormatId);
         $rules = $this->getRulesForFormat($userId, $gameFormatId);
 
-        // Get FAB collection grouped by card name
-        $fabCollection = $this->getFabCollectionByCardName($userId, $format->game_id);
+        // Get unified collection grouped by card name
+        $unifiedCollection = $this->getUnifiedCollectionByCardName($userId, $format->game->slug);
 
         // Get Custom collection grouped by card name
         $customCollection = $this->getCustomCollectionByCardName($userId, $format->game_id);
 
         // Merge collections
-        $allCards = $fabCollection->merge($customCollection);
+        $allCards = $unifiedCollection->merge($customCollection);
 
         // Build playset info for each card
         return $allCards->map(function ($cardData, $cardName) use ($rules) {
@@ -59,21 +59,25 @@ class PlaysetService
         $format = GameFormat::with('game')->findOrFail($gameFormatId);
         $rules = $this->getRulesForFormat($userId, $gameFormatId);
 
-        // Get FAB card data
-        $fabCard = FabCard::where('name', $cardName)->first();
-        $fabQuantity = 0;
+        // Get unified card data
+        $unifiedCard = UnifiedCard::where('name', $cardName)
+            ->where('game', $format->game->slug)
+            ->first();
+
+        $unifiedQuantity = 0;
         $cardData = ['quantity' => 0, 'rarity' => null, 'types' => [], 'traits' => []];
 
-        if ($fabCard) {
-            $fabQuantity = FabCollection::where('user_id', $userId)
-                ->whereHas('printing', fn ($q) => $q->where('fab_card_id', $fabCard->id))
+        if ($unifiedCard) {
+            $unifiedQuantity = UnifiedInventory::where('user_id', $userId)
+                ->where('in_collection', true)
+                ->whereHas('printing', fn ($q) => $q->where('card_id', $unifiedCard->id))
                 ->sum('quantity');
 
             $cardData = [
-                'quantity' => $fabQuantity,
-                'rarity' => $fabCard->printings()->first()?->rarity,
-                'types' => $fabCard->types ?? [],
-                'traits' => $fabCard->traits ?? [],
+                'quantity' => $unifiedQuantity,
+                'rarity' => $unifiedCard->printings()->first()?->rarity,
+                'types' => $unifiedCard->game_specific['types'] ?? [],
+                'traits' => $unifiedCard->game_specific['traits'] ?? [],
             ];
         }
 
@@ -84,7 +88,7 @@ class PlaysetService
                 ->where('name', $cardName))
             ->sum('quantity');
 
-        $cardData['quantity'] = $fabQuantity + $customQuantity;
+        $cardData['quantity'] = $unifiedQuantity + $customQuantity;
 
         $maxCopies = $this->getMaxCopiesForCard($cardData, $rules);
 
@@ -111,13 +115,15 @@ class PlaysetService
     }
 
     /**
-     * Get FAB collection quantities grouped by card name.
+     * Get unified collection quantities grouped by card name.
      *
      * @return Collection<string, array{quantity: int, rarity: ?string, types: array, traits: array}>
      */
-    private function getFabCollectionByCardName(int $userId, int $gameId): Collection
+    private function getUnifiedCollectionByCardName(int $userId, string $gameSlug): Collection
     {
-        return FabCollection::where('user_id', $userId)
+        return UnifiedInventory::where('user_id', $userId)
+            ->where('in_collection', true)
+            ->whereHas('printing.card', fn ($q) => $q->where('game', $gameSlug))
             ->with(['printing.card'])
             ->get()
             ->groupBy(fn ($item) => $item->printing->card->name)
@@ -128,10 +134,10 @@ class PlaysetService
                 return [
                     'quantity' => $items->sum('quantity'),
                     'rarity' => $firstItem->printing->rarity,
-                    'types' => $card->types ?? [],
-                    'traits' => $card->traits ?? [],
-                    'card_keywords' => $card->card_keywords ?? [],
-                    'source' => 'fab',
+                    'types' => $card->game_specific['types'] ?? [],
+                    'traits' => $card->game_specific['traits'] ?? [],
+                    'card_keywords' => $card->game_specific['card_keywords'] ?? [],
+                    'source' => 'unified',
                 ];
             });
     }

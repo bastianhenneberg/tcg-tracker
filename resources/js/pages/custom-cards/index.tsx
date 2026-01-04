@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { index as customCardsIndex } from '@/routes/custom-cards';
 import { type BreadcrumbItem, type PaginatedData } from '@/types';
-import { getPitchColor } from '@/types/fab';
+import { getPitchColor } from '@/types/unified';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';

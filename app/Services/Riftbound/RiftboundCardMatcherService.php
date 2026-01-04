@@ -4,9 +4,7 @@ namespace App\Services\Riftbound;
 
 use App\Contracts\CardMatcherInterface;
 use App\Models\Custom\CustomPrinting;
-use App\Models\Riftbound\RiftboundInventory;
-use App\Models\Riftbound\RiftboundPrinting;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -120,29 +118,33 @@ class RiftboundCardMatcherService implements CardMatcherInterface
         return null;
     }
 
-    protected function findByCollectorNumber(string $collectorNumber, ?string $foiling = null): ?RiftboundPrinting
+    protected function findByCollectorNumber(string $collectorNumber, ?string $foiling = null): ?UnifiedPrinting
     {
-        $query = RiftboundPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('riftbound')
             ->where('collector_number', $collectorNumber);
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->first();
     }
 
-    protected function findBySetAndNumber(string $setCode, string $collectorNumber, ?string $foiling = null): ?RiftboundPrinting
+    protected function findBySetAndNumber(string $setCode, string $collectorNumber, ?string $foiling = null): ?UnifiedPrinting
     {
         $numberPart = preg_replace('/^[A-Z]+/', '', $collectorNumber);
 
-        $query = RiftboundPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
-            ->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode)
-                    ->orWhere('external_id', 'LIKE', "%{$setCode}%")
-                    ->orWhere('name', 'LIKE', "%{$setCode}%");
+            ->forGame('riftbound')
+            ->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhere('set_code', 'LIKE', "%{$setCode}%")
+                    ->orWhereHas('set', fn ($s) => $s->where('code', $setCode)
+                        ->orWhere('code', 'LIKE', "%{$setCode}%")
+                        ->orWhere('name', 'LIKE', "%{$setCode}%"));
             })
             ->where(function ($q) use ($collectorNumber, $numberPart) {
                 $q->where('collector_number', $collectorNumber)
@@ -150,7 +152,7 @@ class RiftboundCardMatcherService implements CardMatcherInterface
             });
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->first();
@@ -158,21 +160,23 @@ class RiftboundCardMatcherService implements CardMatcherInterface
 
     protected function findByName(string $cardName, ?string $setCode = null, ?string $foiling = null): Collection
     {
-        $query = RiftboundPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('riftbound')
             ->whereHas('card', function ($q) use ($cardName) {
                 $q->where('name', $cardName)
                     ->orWhere('name', 'LIKE', "%{$cardName}%");
             });
 
         if ($setCode) {
-            $query->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode);
+            $query->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhereHas('set', fn ($s) => $s->where('code', $setCode));
             });
         }
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->limit(10)->get();
@@ -180,8 +184,9 @@ class RiftboundCardMatcherService implements CardMatcherInterface
 
     public function search(string $query, int $limit = 20): Collection
     {
-        $riftboundResults = RiftboundPrinting::query()
+        $riftboundResults = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('riftbound')
             ->where(function ($q) use ($query) {
                 $q->whereHas('card', function ($cardQuery) use ($query) {
                     $cardQuery->where('name', 'LIKE', "%{$query}%");
@@ -193,12 +198,12 @@ class RiftboundCardMatcherService implements CardMatcherInterface
             ->map(fn ($p) => [
                 'id' => $p->id,
                 'card_name' => $p->card->name,
-                'set_name' => $p->set->name ?? $p->set->external_id ?? 'Unknown',
+                'set_name' => $p->set?->name ?? $p->set_name ?? $p->set_code ?? 'Unknown',
                 'collector_number' => $p->collector_number,
                 'rarity' => $p->rarity,
                 'rarity_label' => $p->rarity_label,
-                'foiling' => $p->foiling,
-                'foiling_label' => $p->foiling_label,
+                'foiling' => $p->finish,
+                'foiling_label' => $p->finish_label,
                 'image_url' => $p->image_url,
                 'is_custom' => false,
             ]);
@@ -237,25 +242,5 @@ class RiftboundCardMatcherService implements CardMatcherInterface
     public function getGameSlug(): string
     {
         return 'riftbound';
-    }
-
-    public function createInventoryItem(
-        int $lotId,
-        int $printingId,
-        string $condition,
-        ?string $foiling = null,
-        ?string $language = null,
-        bool $isCustom = false
-    ): Model {
-        $position = RiftboundInventory::where('lot_id', $lotId)->max('position_in_lot') ?? 0;
-
-        return RiftboundInventory::create([
-            'user_id' => Auth::id(),
-            'lot_id' => $lotId,
-            'riftbound_printing_id' => $printingId,
-            'condition' => $condition,
-            'foiling' => $foiling,
-            'position_in_lot' => $position + 1,
-        ]);
     }
 }

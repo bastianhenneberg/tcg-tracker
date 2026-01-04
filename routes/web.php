@@ -4,6 +4,7 @@ use App\Http\Controllers\BoxController;
 use App\Http\Controllers\CustomCardController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\QuickAddController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\UnifiedCardController;
 use App\Http\Controllers\UnifiedCollectionController;
@@ -45,6 +46,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/confirm-bulk', [ScannerController::class, 'confirmBulk'])->name('confirm-bulk');
         Route::post('/lot', [ScannerController::class, 'createLot'])->name('create-lot');
         Route::post('/settings', [ScannerController::class, 'saveSettings'])->name('save-settings');
+    });
+
+    // Quick Add (keyboard-optimized manual entry)
+    Route::prefix('quick-add')->name('quick-add.')->group(function () {
+        Route::get('/', [QuickAddController::class, 'index'])->name('index');
+        Route::post('/confirm', [QuickAddController::class, 'confirm'])->name('confirm');
+        Route::post('/lot', [QuickAddController::class, 'createLot'])->name('create-lot');
     });
 
     // ========== UNIFIED ROUTES (neue unified Tabellen) ==========

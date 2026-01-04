@@ -1,5 +1,4 @@
 import { type CardPrinting } from './cards';
-import { type FabInventory } from './fab';
 
 export interface Box {
     id: number;
@@ -10,6 +9,42 @@ export interface Box {
     updated_at: string;
     lots_count?: number;
     lots?: Lot[];
+}
+
+export interface UnifiedInventoryItem {
+    id: number;
+    user_id: number;
+    lot_id: number | null;
+    printing_id: number;
+    condition: ConditionKey;
+    language: string;
+    quantity: number;
+    in_collection: boolean;
+    extra: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+    printing?: {
+        id: number;
+        card_id: number;
+        collector_number: string;
+        set_name: string | null;
+        set_code: string | null;
+        rarity: string | null;
+        rarity_label: string | null;
+        finish: string | null;
+        finish_label: string | null;
+        image_url: string | null;
+        card: {
+            id: number;
+            name: string;
+            game: string;
+        };
+        set?: {
+            id: number;
+            name: string;
+            code: string;
+        };
+    };
 }
 
 export interface Lot {
@@ -24,8 +59,8 @@ export interface Lot {
     created_at: string;
     updated_at: string;
     box?: Box;
-    fab_inventory_items_count?: number;
-    fab_inventory_items?: FabInventory[];
+    inventory_items_count?: number;
+    inventory_items?: UnifiedInventoryItem[];
 }
 
 export interface InventoryCard {

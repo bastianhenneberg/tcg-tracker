@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Fab\FabCollection;
-use App\Models\Fab\FabInventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,19 +39,14 @@ class Lot extends Model
         return $this->belongsTo(Box::class);
     }
 
-    public function fabInventoryItems(): HasMany
+    public function inventoryItems(): HasMany
     {
-        return $this->hasMany(FabInventory::class);
+        return $this->hasMany(UnifiedInventory::class);
     }
 
-    public function fabInventory(): HasMany
+    public function getTotalCardCountAttribute(): int
     {
-        return $this->hasMany(FabInventory::class);
-    }
-
-    public function fabCollectionItems(): HasMany
-    {
-        return $this->hasMany(FabCollection::class, 'source_lot_id');
+        return $this->inventory_items_count ?? $this->inventoryItems()->count();
     }
 
     public static function nextLotNumber(int $userId): int

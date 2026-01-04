@@ -4,6 +4,7 @@ namespace App\Services\Fab;
 
 use App\Models\Custom\CustomPrinting;
 use App\Models\Fab\FabPrinting;
+use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,7 +14,7 @@ class FabCardMatcherService
      * Find a card printing that matches the recognition result.
      *
      * @param  array{card_name?: string|null, set_code?: string|null, collector_number?: string|null, foiling?: string|null}  $recognitionResult
-     * @return array{match: FabPrinting|CustomPrinting|null, confidence: string, alternatives: Collection, is_custom: bool}
+     * @return array{match: UnifiedPrinting|CustomPrinting|null, confidence: string, alternatives: Collection, is_custom: bool}
      */
     public function findMatch(array $recognitionResult): array
     {
@@ -131,14 +132,15 @@ class FabCardMatcherService
     /**
      * Search for printings by collector number (exact match).
      */
-    protected function findByCollectorNumber(string $collectorNumber, ?string $foiling = null): ?FabPrinting
+    protected function findByCollectorNumber(string $collectorNumber, ?string $foiling = null): ?UnifiedPrinting
     {
-        $query = FabPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('fab')
             ->where('collector_number', $collectorNumber);
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->first();
@@ -147,16 +149,21 @@ class FabCardMatcherService
     /**
      * Search for printings by set code and collector number.
      */
-    protected function findBySetAndNumber(string $setCode, string $collectorNumber, ?string $foiling = null): ?FabPrinting
+    protected function findBySetAndNumber(string $setCode, string $collectorNumber, ?string $foiling = null): ?UnifiedPrinting
     {
         // Extract just the number part if the collector number includes set prefix
         $numberPart = preg_replace('/^[A-Z]+/', '', $collectorNumber);
 
-        $query = FabPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
-            ->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode)
-                    ->orWhere('external_id', 'LIKE', "%{$setCode}%");
+            ->forGame('fab')
+            ->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhere('set_code', 'LIKE', "%{$setCode}%")
+                    ->orWhereHas('set', function ($setQ) use ($setCode) {
+                        $setQ->where('code', $setCode)
+                            ->orWhere('code', 'LIKE', "%{$setCode}%");
+                    });
             })
             ->where(function ($q) use ($collectorNumber, $numberPart, $setCode) {
                 $q->where('collector_number', $collectorNumber)
@@ -165,7 +172,7 @@ class FabCardMatcherService
             });
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->first();
@@ -176,25 +183,27 @@ class FabCardMatcherService
      */
     protected function findByName(string $cardName, ?string $setCode = null, ?string $foiling = null): Collection
     {
-        $query = FabPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('fab')
             ->whereHas('card', function ($q) use ($cardName) {
                 $q->where('name', $cardName)
                     ->orWhere('name', 'LIKE', "%{$cardName}%");
             });
 
         if ($setCode) {
-            $query->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode);
+            $query->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhereHas('set', fn ($setQ) => $setQ->where('code', $setCode));
             });
         }
 
         if ($foiling) {
-            $query->where('foiling', $foiling);
+            $query->where('finish', $foiling);
         }
 
         return $query->orderByRaw('CASE WHEN EXISTS (
-            SELECT 1 FROM fab_cards WHERE fab_cards.id = fab_printings.fab_card_id AND fab_cards.name = ?
+            SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?
         ) THEN 0 ELSE 1 END', [$cardName])
             ->limit(10)
             ->get();
@@ -206,9 +215,10 @@ class FabCardMatcherService
      */
     public function search(string $query, int $limit = 20): Collection
     {
-        // Search in FAB printings
-        $fabResults = FabPrinting::query()
+        // Search in unified printings for FAB
+        $fabResults = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('fab')
             ->where(function ($q) use ($query) {
                 $q->whereHas('card', function ($cardQuery) use ($query) {
                     $cardQuery->where('name', 'LIKE', "%{$query}%");
@@ -218,8 +228,8 @@ class FabCardMatcherService
             ->orderByRaw('CASE
                 WHEN collector_number = ? THEN 0
                 WHEN collector_number LIKE ? THEN 1
-                WHEN EXISTS (SELECT 1 FROM fab_cards WHERE fab_cards.id = fab_printings.fab_card_id AND fab_cards.name = ?) THEN 2
-                WHEN EXISTS (SELECT 1 FROM fab_cards WHERE fab_cards.id = fab_printings.fab_card_id AND fab_cards.name LIKE ?) THEN 3
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?) THEN 2
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name LIKE ?) THEN 3
                 ELSE 4
             END', [$query, "{$query}%", $query, "{$query}%"])
             ->limit($limit)
@@ -227,12 +237,12 @@ class FabCardMatcherService
             ->map(fn ($p) => [
                 'id' => $p->id,
                 'card_name' => $p->card->name,
-                'set_name' => $p->set->name ?? $p->set->external_id,
+                'set_name' => $p->set?->name ?? $p->set_name ?? $p->set_code,
                 'collector_number' => $p->collector_number,
                 'rarity' => $p->rarity,
                 'rarity_label' => $p->rarity_label,
-                'foiling' => $p->foiling,
-                'foiling_label' => $p->foiling_label,
+                'foiling' => $p->finish,
+                'foiling_label' => $p->finish_label,
                 'image_url' => $p->image_url,
                 'is_custom' => false,
             ]);

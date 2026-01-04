@@ -18,7 +18,7 @@ import AppLayout from '@/layouts/app-layout';
 import { index as lotsIndex, show as lotShow, update as lotUpdate, destroy as lotDestroy } from '@/routes/lots';
 import { show as boxShow } from '@/routes/boxes';
 import { type BreadcrumbItem } from '@/types';
-import { getConditionLabel, getFoilingLabel, getLanguageLabel, getRarityLabel } from '@/types/fab';
+import { getConditionLabel, getLanguageLabel } from '@/types/unified';
 import { type Box, type Lot } from '@/types/inventory';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -84,7 +84,7 @@ export default function LotShow({ lot, boxes }: Props) {
         });
     };
 
-    const fabItems = lot.fab_inventory_items ?? [];
+    const items = lot.inventory_items ?? [];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -107,7 +107,7 @@ export default function LotShow({ lot, boxes }: Props) {
                                 <span>Kein Karton</span>
                             )}
                             <span>•</span>
-                            <span>{fabItems.length} Karten</span>
+                            <span>{items.length} Karten</span>
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -149,13 +149,13 @@ export default function LotShow({ lot, boxes }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Karten ({fabItems.length})</CardTitle>
+                        <CardTitle>Karten ({items.length})</CardTitle>
                         <CardDescription>
-                            Alle Karten in diesem Lot, sortiert nach Position
+                            Alle Karten in diesem Lot, sortiert nach Hinzufügedatum
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {fabItems.length > 0 ? (
+                        {items.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -166,20 +166,16 @@ export default function LotShow({ lot, boxes }: Props) {
                                         <TableHead>Foiling</TableHead>
                                         <TableHead>Zustand</TableHead>
                                         <TableHead>Sprache</TableHead>
-                                        <TableHead>Preis</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {fabItems.map((item) => (
+                                    {items.map((item, index) => (
                                         <TableRow key={item.id}>
                                             <TableCell className="font-mono text-muted-foreground">
-                                                {item.position_in_lot}
+                                                {(item.extra as Record<string, number>)?.position_in_lot ?? items.length - index}
                                             </TableCell>
                                             <TableCell>
-                                                <Link
-                                                    href={`/g/fab/printings/${item.fab_printing_id}`}
-                                                    className="flex items-center gap-3 hover:opacity-80"
-                                                >
+                                                <div className="flex items-center gap-3">
                                                     {item.printing?.image_url && (
                                                         <img
                                                             src={item.printing.image_url}
@@ -188,32 +184,29 @@ export default function LotShow({ lot, boxes }: Props) {
                                                         />
                                                     )}
                                                     <div>
-                                                        <div className="font-medium hover:underline">
+                                                        <div className="font-medium">
                                                             {item.printing?.card?.name ?? 'Unbekannt'}
                                                         </div>
                                                         <div className="text-muted-foreground text-sm">
                                                             {item.printing?.collector_number}
                                                         </div>
                                                     </div>
-                                                </Link>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
-                                                {item.printing?.set?.name ?? item.printing?.set?.external_id}
+                                                {item.printing?.set?.name ?? item.printing?.set_name ?? item.printing?.set_code}
                                             </TableCell>
                                             <TableCell>
-                                                {getRarityLabel(item.printing?.rarity ?? null)}
+                                                {item.printing?.rarity_label ?? item.printing?.rarity ?? '-'}
                                             </TableCell>
                                             <TableCell>
-                                                {getFoilingLabel(item.printing?.foiling ?? null)}
+                                                {item.printing?.finish_label ?? item.printing?.finish ?? '-'}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="outline">{getConditionLabel(item.condition)}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 {getLanguageLabel(item.language)}
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.price ? `${item.price.toFixed(2)} €` : '-'}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -321,9 +314,9 @@ export default function LotShow({ lot, boxes }: Props) {
                         <DialogTitle>Lot löschen?</DialogTitle>
                         <DialogDescription>
                             Möchtest du Lot #{lot.lot_number} wirklich löschen?
-                            {fabItems.length > 0 && (
+                            {items.length > 0 && (
                                 <span className="block mt-2 text-destructive font-medium">
-                                    Achtung: {fabItems.length} Karten werden ebenfalls gelöscht!
+                                    Achtung: {items.length} Karten werden ebenfalls gelöscht!
                                 </span>
                             )}
                         </DialogDescription>

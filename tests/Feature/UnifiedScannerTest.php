@@ -1,11 +1,11 @@
 <?php
 
 use App\Models\Box;
-use App\Models\Fab\FabCard;
-use App\Models\Fab\FabInventory;
-use App\Models\Fab\FabPrinting;
 use App\Models\Game;
 use App\Models\Lot;
+use App\Models\UnifiedCard;
+use App\Models\UnifiedInventory;
+use App\Models\UnifiedPrinting;
 use App\Models\User;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -98,8 +98,8 @@ describe('Unified Scanner Index', function () {
 
     it('returns search results via query param for FAB', function () {
         $user = User::factory()->create();
-        $card = FabCard::factory()->create(['name' => 'Lightning Bolt']);
-        FabPrinting::factory()->create(['fab_card_id' => $card->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create(['name' => 'Lightning Bolt']);
+        UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
             ->get('/scanner?game=fab&q=Lightning')
@@ -158,7 +158,8 @@ describe('Unified Scanner Confirm', function () {
     it('adds FAB card to inventory', function () {
         $user = User::factory()->create();
         $lot = Lot::factory()->create(['user_id' => $user->id]);
-        $printing = FabPrinting::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
             ->post('/scanner/confirm', [
@@ -170,14 +171,15 @@ describe('Unified Scanner Confirm', function () {
             ->assertRedirect()
             ->assertSessionHas('scanner.confirmed');
 
-        expect(FabInventory::where('lot_id', $lot->id)->count())->toBe(1);
+        expect(UnifiedInventory::where('lot_id', $lot->id)->count())->toBe(1);
     });
 
     it('prevents adding to other users lot', function () {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $lot = Lot::factory()->create(['user_id' => $otherUser->id]);
-        $printing = FabPrinting::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
             ->post('/scanner/confirm', [

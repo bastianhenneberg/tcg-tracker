@@ -16,7 +16,7 @@ class LotController extends Controller
     {
         $lots = Lot::where('user_id', Auth::id())
             ->with('box')
-            ->withCount('fabInventoryItems')
+            ->withCount('inventoryItems')
             ->orderByDesc('lot_number')
             ->paginate(24)
             ->withQueryString();
@@ -58,9 +58,9 @@ class LotController extends Controller
 
         $lot->load([
             'box',
-            'fabInventoryItems' => fn ($q) => $q
+            'inventoryItems' => fn ($q) => $q
                 ->with(['printing.card', 'printing.set'])
-                ->orderBy('position_in_lot'),
+                ->orderByDesc('created_at'),
         ]);
 
         return Inertia::render('inventory/lots/show', [

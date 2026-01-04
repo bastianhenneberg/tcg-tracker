@@ -2,11 +2,40 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UnifiedInventory extends Model
 {
+    use HasFactory;
+
+    /**
+     * Standard condition grades used across all games.
+     */
+    public const CONDITIONS = [
+        'NM' => 'Near Mint',
+        'LP' => 'Lightly Played',
+        'MP' => 'Moderately Played',
+        'HP' => 'Heavily Played',
+        'DMG' => 'Damaged',
+    ];
+
+    /**
+     * Standard language codes.
+     */
+    public const LANGUAGES = [
+        'EN' => 'English',
+        'DE' => 'German',
+        'FR' => 'French',
+        'IT' => 'Italian',
+        'ES' => 'Spanish',
+        'PT' => 'Portuguese',
+        'JA' => 'Japanese',
+        'KO' => 'Korean',
+        'ZH' => 'Chinese',
+    ];
+
     protected $fillable = [
         'user_id',
         'printing_id',

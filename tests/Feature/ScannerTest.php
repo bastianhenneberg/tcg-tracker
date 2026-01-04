@@ -1,33 +1,57 @@
 <?php
 
 use App\Models\Box;
-use App\Models\Fab\FabCard;
-use App\Models\Fab\FabInventory;
-use App\Models\Fab\FabPrinting;
+use App\Models\Game;
 use App\Models\Lot;
+use App\Models\UnifiedCard;
+use App\Models\UnifiedInventory;
+use App\Models\UnifiedPrinting;
 use App\Models\User;
 use App\Services\Fab\FabCardMatcherService;
 use App\Services\OllamaService;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-describe('FaB Scanner Index', function () {
+beforeEach(function () {
+    // Seed the FAB game as it's required by ScannerController
+    Game::create([
+        'slug' => 'fab',
+        'name' => 'Flesh and Blood',
+        'is_official' => true,
+    ]);
+});
+
+describe('Scanner Index', function () {
     it('requires authentication', function () {
-        $this->get('/fab/scanner')->assertRedirect('/login');
+        $this->get('/scanner')->assertRedirect('/login');
     });
 
-    it('displays scanner page', function () {
+    it('displays scanner page with default game', function () {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get('/fab/scanner')
+            ->get('/scanner')
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page
-                ->component('fab/scanner')
+                ->component('scanner/index')
+                ->has('games')
                 ->has('lots')
                 ->has('boxes')
                 ->has('ollamaStatus')
                 ->has('conditions')
+                ->has('selectedGame')
+            );
+    });
+
+    it('displays scanner page with specific game', function () {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/scanner?game=fab')
+            ->assertSuccessful()
+            ->assertInertia(fn ($page) => $page
+                ->component('scanner/index')
+                ->where('selectedGame.slug', 'fab')
             );
     });
 
@@ -37,7 +61,7 @@ describe('FaB Scanner Index', function () {
         Lot::factory()->count(3)->create(['user_id' => $user->id, 'box_id' => $box->id]);
 
         $this->actingAs($user)
-            ->get('/fab/scanner')
+            ->get('/scanner?game=fab')
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page
                 ->has('lots', 3)
@@ -52,7 +76,7 @@ describe('FaB Scanner Index', function () {
         Lot::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->get('/fab/scanner')
+            ->get('/scanner?game=fab')
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page
                 ->has('lots', 1)
@@ -61,11 +85,11 @@ describe('FaB Scanner Index', function () {
 
     it('returns search results via query param', function () {
         $user = User::factory()->create();
-        $card = FabCard::factory()->create(['name' => 'Lightning Bolt']);
-        FabPrinting::factory()->create(['fab_card_id' => $card->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create(['name' => 'Lightning Bolt']);
+        UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
-            ->get('/fab/scanner?q=Lightning')
+            ->get('/scanner?game=fab&q=Lightning')
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page
                 ->has('searchResults', 1)
@@ -74,85 +98,99 @@ describe('FaB Scanner Index', function () {
     });
 });
 
-describe('FaB Scanner Confirm', function () {
+describe('Scanner Confirm', function () {
     it('requires authentication', function () {
-        $this->postJson('/fab/scanner/confirm', [])
+        $this->postJson('/scanner/confirm', [])
             ->assertUnauthorized();
     });
 
-    it('validates required fields', function () {
+    it('validates required fields for FAB', function () {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->postJson('/fab/scanner/confirm', [])
+            ->postJson('/scanner/confirm', ['game' => 'fab'])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['lot_id', 'fab_printing_id', 'condition']);
+            ->assertJsonValidationErrors(['lot_id', 'printing_id', 'condition']);
     });
 
-    it('adds card to inventory', function () {
+    it('adds FAB card to inventory', function () {
         $user = User::factory()->create();
         $lot = Lot::factory()->create(['user_id' => $user->id]);
-        $printing = FabPrinting::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
-            ->post('/fab/scanner/confirm', [
+            ->post('/scanner/confirm', [
+                'game' => 'fab',
                 'lot_id' => $lot->id,
-                'fab_printing_id' => $printing->id,
+                'printing_id' => $printing->id,
                 'condition' => 'NM',
             ])
             ->assertRedirect();
 
-        expect(FabInventory::count())->toBe(1);
-        expect(FabInventory::first())
+        expect(UnifiedInventory::count())->toBe(1);
+        expect(UnifiedInventory::first())
             ->user_id->toBe($user->id)
             ->lot_id->toBe($lot->id)
-            ->fab_printing_id->toBe($printing->id)
-            ->condition->toBe('NM')
-            ->position_in_lot->toBe(1);
+            ->printing_id->toBe($printing->id)
+            ->condition->toBe('NM');
+
+        expect(UnifiedInventory::first()->extra['position_in_lot'])->toBe(1);
     });
 
     it('increments position in lot', function () {
         $user = User::factory()->create();
         $lot = Lot::factory()->create(['user_id' => $user->id]);
-        $printing1 = FabPrinting::factory()->create();
-        $printing2 = FabPrinting::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing1 = UnifiedPrinting::factory()->forCard($card)->create();
 
-        FabInventory::factory()->create([
+        // Create existing inventory item with position 5
+        UnifiedInventory::create([
             'user_id' => $user->id,
             'lot_id' => $lot->id,
-            'position_in_lot' => 5,
+            'printing_id' => $printing1->id,
+            'condition' => 'NM',
+            'language' => 'EN',
+            'quantity' => 1,
+            'in_collection' => false,
+            'extra' => ['position_in_lot' => 5],
         ]);
 
+        $printing2 = UnifiedPrinting::factory()->forCard($card)->create();
+
         $this->actingAs($user)
-            ->post('/fab/scanner/confirm', [
+            ->post('/scanner/confirm', [
+                'game' => 'fab',
                 'lot_id' => $lot->id,
-                'fab_printing_id' => $printing1->id,
+                'printing_id' => $printing2->id,
                 'condition' => 'LP',
             ])
             ->assertRedirect();
 
-        expect(FabInventory::latest('id')->first()->position_in_lot)->toBe(6);
+        expect(UnifiedInventory::latest('id')->first()->extra['position_in_lot'])->toBe(6);
     });
 
     it('prevents adding to other users lot', function () {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $lot = Lot::factory()->create(['user_id' => $otherUser->id]);
-        $printing = FabPrinting::factory()->create();
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
         $this->actingAs($user)
-            ->post('/fab/scanner/confirm', [
+            ->post('/scanner/confirm', [
+                'game' => 'fab',
                 'lot_id' => $lot->id,
-                'fab_printing_id' => $printing->id,
+                'printing_id' => $printing->id,
                 'condition' => 'NM',
             ])
             ->assertForbidden();
     });
 });
 
-describe('FaB Scanner Create Lot', function () {
+describe('Scanner Create Lot', function () {
     it('requires authentication', function () {
-        $this->postJson('/fab/scanner/lot', [])
+        $this->postJson('/scanner/lot', [])
             ->assertUnauthorized();
     });
 
@@ -160,7 +198,7 @@ describe('FaB Scanner Create Lot', function () {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->post('/fab/scanner/lot', [])
+            ->post('/scanner/lot', [])
             ->assertRedirect();
 
         expect(Lot::count())->toBe(1);
@@ -174,7 +212,7 @@ describe('FaB Scanner Create Lot', function () {
         $box = Box::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->post('/fab/scanner/lot', ['box_id' => $box->id])
+            ->post('/scanner/lot', ['box_id' => $box->id])
             ->assertRedirect();
 
         expect(Lot::first()->box_id)->toBe($box->id);
@@ -185,7 +223,7 @@ describe('FaB Scanner Create Lot', function () {
         Lot::factory()->create(['user_id' => $user->id, 'lot_number' => 5]);
 
         $this->actingAs($user)
-            ->post('/fab/scanner/lot', [])
+            ->post('/scanner/lot', [])
             ->assertRedirect();
 
         expect(Lot::latest('id')->first()->lot_number)->toBe(6);
@@ -197,14 +235,15 @@ describe('FaB Scanner Create Lot', function () {
         $box = Box::factory()->create(['user_id' => $otherUser->id]);
 
         $this->actingAs($user)
-            ->post('/fab/scanner/lot', ['box_id' => $box->id])
+            ->post('/scanner/lot', ['box_id' => $box->id])
             ->assertForbidden();
     });
 });
 
 describe('FabCardMatcherService', function () {
     it('finds card by collector number', function () {
-        $printing = FabPrinting::factory()->create(['collector_number' => 'MST131']);
+        $card = UnifiedCard::factory()->forGame('fab')->create();
+        $printing = UnifiedPrinting::factory()->forCard($card)->create(['collector_number' => 'MST131']);
 
         $service = new FabCardMatcherService;
         $result = $service->findMatch([
@@ -217,8 +256,8 @@ describe('FabCardMatcherService', function () {
     });
 
     it('finds card by name', function () {
-        $card = FabCard::factory()->create(['name' => 'Aether Flare']);
-        $printing = FabPrinting::factory()->create(['fab_card_id' => $card->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create(['name' => 'Aether Flare']);
+        $printing = UnifiedPrinting::factory()->forCard($card)->create();
 
         $service = new FabCardMatcherService;
         $result = $service->findMatch([
@@ -240,9 +279,9 @@ describe('FabCardMatcherService', function () {
     });
 
     it('searches cards', function () {
-        $card = FabCard::factory()->create(['name' => 'Mystic Warrior']);
-        FabPrinting::factory()->create(['fab_card_id' => $card->id]);
-        FabPrinting::factory()->create(['fab_card_id' => $card->id]);
+        $card = UnifiedCard::factory()->forGame('fab')->create(['name' => 'Mystic Warrior']);
+        UnifiedPrinting::factory()->forCard($card)->create();
+        UnifiedPrinting::factory()->forCard($card)->create();
 
         $service = new FabCardMatcherService;
         $results = $service->search('Mystic');

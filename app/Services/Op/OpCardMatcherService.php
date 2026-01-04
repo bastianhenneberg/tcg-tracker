@@ -4,9 +4,7 @@ namespace App\Services\Op;
 
 use App\Contracts\CardMatcherInterface;
 use App\Models\Custom\CustomPrinting;
-use App\Models\Op\OpInventory;
-use App\Models\Op\OpPrinting;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -119,24 +117,28 @@ class OpCardMatcherService implements CardMatcherInterface
         return null;
     }
 
-    protected function findByCollectorNumber(string $collectorNumber): ?OpPrinting
+    protected function findByCollectorNumber(string $collectorNumber): ?UnifiedPrinting
     {
-        return OpPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('onepiece')
             ->where('collector_number', $collectorNumber)
             ->first();
     }
 
-    protected function findBySetAndNumber(string $setCode, string $collectorNumber): ?OpPrinting
+    protected function findBySetAndNumber(string $setCode, string $collectorNumber): ?UnifiedPrinting
     {
         $numberPart = preg_replace('/^[A-Z0-9]+-/', '', $collectorNumber);
 
-        return OpPrinting::query()
+        return UnifiedPrinting::query()
             ->with(['card', 'set'])
-            ->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode)
-                    ->orWhere('external_id', 'LIKE', "%{$setCode}%")
-                    ->orWhere('name', 'LIKE', "%{$setCode}%");
+            ->forGame('onepiece')
+            ->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhere('set_code', 'LIKE', "%{$setCode}%")
+                    ->orWhereHas('set', fn ($s) => $s->where('code', $setCode)
+                        ->orWhere('code', 'LIKE', "%{$setCode}%")
+                        ->orWhere('name', 'LIKE', "%{$setCode}%"));
             })
             ->where(function ($q) use ($collectorNumber, $numberPart) {
                 $q->where('collector_number', $collectorNumber)
@@ -147,16 +149,18 @@ class OpCardMatcherService implements CardMatcherInterface
 
     protected function findByName(string $cardName, ?string $setCode = null): Collection
     {
-        $query = OpPrinting::query()
+        $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('onepiece')
             ->whereHas('card', function ($q) use ($cardName) {
                 $q->where('name', $cardName)
                     ->orWhere('name', 'LIKE', "%{$cardName}%");
             });
 
         if ($setCode) {
-            $query->whereHas('set', function ($q) use ($setCode) {
-                $q->where('external_id', $setCode);
+            $query->where(function ($q) use ($setCode) {
+                $q->where('set_code', $setCode)
+                    ->orWhereHas('set', fn ($s) => $s->where('code', $setCode));
             });
         }
 
@@ -165,8 +169,9 @@ class OpCardMatcherService implements CardMatcherInterface
 
     public function search(string $query, int $limit = 20): Collection
     {
-        $opResults = OpPrinting::query()
+        $opResults = UnifiedPrinting::query()
             ->with(['card', 'set'])
+            ->forGame('onepiece')
             ->where(function ($q) use ($query) {
                 $q->whereHas('card', function ($cardQuery) use ($query) {
                     $cardQuery->where('name', 'LIKE', "%{$query}%");
@@ -178,15 +183,14 @@ class OpCardMatcherService implements CardMatcherInterface
             ->map(fn ($p) => [
                 'id' => $p->id,
                 'card_name' => $p->card->name,
-                'set_name' => $p->set->name ?? $p->set->external_id ?? 'Unknown',
+                'set_name' => $p->set?->name ?? $p->set_name ?? $p->set_code ?? 'Unknown',
                 'collector_number' => $p->collector_number,
                 'rarity' => $p->rarity,
                 'rarity_label' => $p->rarity_label,
-                'foiling' => null,
-                'foiling_label' => null,
+                'foiling' => $p->finish,
+                'foiling_label' => $p->finish_label,
                 'image_url' => $p->image_url,
                 'is_custom' => false,
-                'color' => $p->card->color ?? null,
             ]);
 
         $userId = Auth::id();
@@ -223,25 +227,5 @@ class OpCardMatcherService implements CardMatcherInterface
     public function getGameSlug(): string
     {
         return 'onepiece';
-    }
-
-    public function createInventoryItem(
-        int $lotId,
-        int $printingId,
-        string $condition,
-        ?string $foiling = null,
-        ?string $language = null,
-        bool $isCustom = false
-    ): Model {
-        $position = OpInventory::where('lot_id', $lotId)->max('position_in_lot') ?? 0;
-
-        return OpInventory::create([
-            'user_id' => Auth::id(),
-            'lot_id' => $lotId,
-            'op_printing_id' => $printingId,
-            'condition' => $condition,
-            'language' => $language ?? 'EN',
-            'position_in_lot' => $position + 1,
-        ]);
     }
 }

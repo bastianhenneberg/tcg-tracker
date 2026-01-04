@@ -2,8 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\Fab\FabCollection;
-use App\Models\Fab\FabInventory;
+use App\Models\UnifiedInventory;
 use App\Models\User;
 use App\Notifications\InventoryActionCompleted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,20 +38,25 @@ class ProcessInventoryAction implements ShouldQueue
     protected function confirmCards(User $user): void
     {
         $cards = $this->data['cards'] ?? [];
+        $gameSlug = $this->data['game'] ?? 'fab';
         $count = 0;
 
         foreach ($cards as $card) {
             $lotId = $card['lot_id'];
-            $position = FabInventory::where('lot_id', $lotId)->max('position_in_lot') ?? 0;
+            $position = UnifiedInventory::where('lot_id', $lotId)->max('extra->position_in_lot') ?? 0;
 
-            FabInventory::create([
+            UnifiedInventory::create([
                 'user_id' => $user->id,
                 'lot_id' => $lotId,
-                'fab_printing_id' => $card['fab_printing_id'],
+                'printing_id' => $card['printing_id'],
                 'condition' => $card['condition'],
                 'language' => $card['language'] ?? 'EN',
-                'price' => $card['price'] ?? null,
-                'position_in_lot' => $position + 1,
+                'quantity' => 1,
+                'in_collection' => false,
+                'extra' => [
+                    'position_in_lot' => $position + 1,
+                    'price' => $card['price'] ?? null,
+                ],
             ]);
 
             $count++;
@@ -61,7 +65,7 @@ class ProcessInventoryAction implements ShouldQueue
         $user->notify(new InventoryActionCompleted(
             action: 'confirm_cards',
             message: "{$count} Karte(n) zum Inventar hinzugefügt",
-            url: '/fab/inventory',
+            url: "/g/{$gameSlug}/inventory",
             meta: ['count' => $count]
         ));
     }
@@ -70,24 +74,25 @@ class ProcessInventoryAction implements ShouldQueue
     {
         $ids = $this->data['ids'] ?? [];
         $soldPrice = $this->data['sold_price'] ?? null;
+        $gameSlug = $this->data['game'] ?? 'fab';
 
-        $items = FabInventory::whereIn('id', $ids)
+        $items = UnifiedInventory::whereIn('id', $ids)
             ->where('user_id', $user->id)
             ->get();
 
         $count = 0;
         foreach ($items as $item) {
-            $item->update([
-                'sold_at' => now(),
-                'sold_price' => $soldPrice ?? $item->price,
-            ]);
+            $extra = $item->extra ?? [];
+            $extra['sold_at'] = now()->toIso8601String();
+            $extra['sold_price'] = $soldPrice ?? ($extra['price'] ?? null);
+            $item->update(['extra' => $extra]);
             $count++;
         }
 
         $user->notify(new InventoryActionCompleted(
             action: 'mark_sold',
             message: "{$count} Karte(n) als verkauft markiert",
-            url: '/fab/inventory',
+            url: "/g/{$gameSlug}/inventory",
             meta: ['count' => $count]
         ));
     }
@@ -95,51 +100,43 @@ class ProcessInventoryAction implements ShouldQueue
     protected function moveToCollection(User $user): void
     {
         $ids = $this->data['ids'] ?? [];
-
-        $affectedLotIds = [];
+        $gameSlug = $this->data['game'] ?? 'fab';
         $count = 0;
 
-        DB::transaction(function () use ($ids, $user, &$affectedLotIds, &$count) {
-            $items = FabInventory::whereIn('id', $ids)
+        DB::transaction(function () use ($ids, $user, &$count) {
+            $items = UnifiedInventory::whereIn('id', $ids)
                 ->where('user_id', $user->id)
                 ->with('printing')
                 ->get();
 
-            $affectedLotIds = $items->pluck('lot_id')->unique()->filter()->toArray();
-
             foreach ($items as $item) {
-                $existing = FabCollection::where('user_id', $user->id)
-                    ->where('fab_printing_id', $item->fab_printing_id)
+                // Check if already in collection with same printing, condition, language
+                $existing = UnifiedInventory::where('user_id', $user->id)
+                    ->where('printing_id', $item->printing_id)
                     ->where('condition', $item->condition)
                     ->where('language', $item->language ?? 'EN')
+                    ->where('in_collection', true)
                     ->first();
 
                 if ($existing) {
                     $existing->increment('quantity');
+                    $item->delete();
                 } else {
-                    FabCollection::create([
-                        'user_id' => $user->id,
-                        'fab_printing_id' => $item->fab_printing_id,
-                        'condition' => $item->condition,
-                        'language' => $item->language ?? 'EN',
+                    // Convert to collection item
+                    $item->update([
+                        'in_collection' => true,
                         'quantity' => 1,
-                        'source_lot_id' => $item->lot_id,
                     ]);
                 }
 
-                $item->delete();
                 $count++;
             }
         });
 
-        foreach ($affectedLotIds as $lotId) {
-            FabInventory::renumberPositionsInLot($lotId);
-        }
-
         $user->notify(new InventoryActionCompleted(
             action: 'move_to_collection',
             message: "{$count} Karte(n) in Sammlung verschoben",
-            url: '/fab/collection',
+            url: "/g/{$gameSlug}/collection",
             meta: ['count' => $count]
         ));
     }
@@ -147,26 +144,16 @@ class ProcessInventoryAction implements ShouldQueue
     protected function deleteCards(User $user): void
     {
         $ids = $this->data['ids'] ?? [];
+        $gameSlug = $this->data['game'] ?? 'fab';
 
-        $affectedLotIds = FabInventory::whereIn('id', $ids)
-            ->where('user_id', $user->id)
-            ->pluck('lot_id')
-            ->unique()
-            ->filter()
-            ->toArray();
-
-        $count = FabInventory::whereIn('id', $ids)
+        $count = UnifiedInventory::whereIn('id', $ids)
             ->where('user_id', $user->id)
             ->delete();
-
-        foreach ($affectedLotIds as $lotId) {
-            FabInventory::renumberPositionsInLot($lotId);
-        }
 
         $user->notify(new InventoryActionCompleted(
             action: 'delete_cards',
             message: "{$count} Karte(n) gelöscht",
-            url: '/fab/inventory',
+            url: "/g/{$gameSlug}/inventory",
             meta: ['count' => $count]
         ));
     }

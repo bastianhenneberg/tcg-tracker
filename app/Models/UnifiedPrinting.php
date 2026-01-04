@@ -2,12 +2,53 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UnifiedPrinting extends Model
 {
+    use HasFactory;
+
+    /**
+     * Standard finishes/foilings used across games.
+     * Games may have additional game-specific finishes in game_specific field.
+     */
+    public const FINISHES = [
+        'nonfoil' => 'Standard',
+        'foil' => 'Foil',
+        'cold_foil' => 'Cold Foil',
+        'rainbow_foil' => 'Rainbow Foil',
+        'etched' => 'Etched',
+        'textured' => 'Textured',
+        'extended_art' => 'Extended Art',
+        'full_art' => 'Full Art',
+        'alternate_art' => 'Alternate Art',
+    ];
+
+    /**
+     * Game-specific finish mappings for backwards compatibility.
+     */
+    public const GAME_FINISHES = [
+        'fab' => [
+            'S' => 'Standard',
+            'R' => 'Rainbow Foil',
+            'C' => 'Cold Foil',
+            'G' => 'Gold Cold Foil',
+        ],
+        'mtg' => [
+            'nonfoil' => 'Non-Foil',
+            'foil' => 'Foil',
+            'etched' => 'Etched',
+        ],
+        'riftbound' => [
+            'standard' => 'Standard',
+            'holofoil' => 'Holofoil',
+            'fullart' => 'Full Art',
+        ],
+    ];
+
     protected $fillable = [
         'card_id',
         'set_id',

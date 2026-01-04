@@ -6,15 +6,10 @@ use App\Jobs\ProcessInventoryAction;
 use App\Models\Box;
 use App\Models\Custom\CustomInventory;
 use App\Models\Custom\CustomPrinting;
-use App\Models\Fab\FabInventory;
-use App\Models\Fab\FabPrinting;
 use App\Models\Game;
 use App\Models\Lot;
-use App\Models\Mtg\MtgInventory;
-use App\Models\Mtg\MtgPrinting;
-use App\Models\Op\OpInventory;
-use App\Models\Riftbound\RiftboundInventory;
-use App\Models\Riftbound\RiftboundPrinting;
+use App\Models\UnifiedInventory;
+use App\Models\UnifiedPrinting;
 use App\Services\Fab\FabCardMatcherService;
 use App\Services\Mtg\MtgCardMatcherService;
 use App\Services\OllamaService;
@@ -168,12 +163,15 @@ class ScannerController extends Controller
 
         $lotCount = $this->getLotCardCount($game, $lot->id);
 
+        // Get position from extra for UnifiedInventory, direct property for CustomInventory
+        $position = $inventoryItem->extra['position_in_lot'] ?? $inventoryItem->position_in_lot ?? $inventoryItem->id;
+
         return back()->with('scanner', [
             'success' => true,
             'confirmed' => [
                 'id' => $inventoryItem->id,
                 'card_name' => $inventoryItem->printing->card->name,
-                'position' => $inventoryItem->position_in_lot,
+                'position' => $position,
                 'condition' => $inventoryItem->condition,
                 'is_custom' => $validated['is_custom'] ?? false,
             ],
@@ -231,7 +229,7 @@ class ScannerController extends Controller
             $confirmedCards[] = [
                 'id' => $inventoryItem->id,
                 'card_name' => $inventoryItem->printing->card->name,
-                'position' => $inventoryItem->position_in_lot,
+                'position' => $inventoryItem->extra['position_in_lot'] ?? $inventoryItem->position_in_lot ?? $inventoryItem->id,
                 'condition' => $inventoryItem->condition,
             ];
         }
@@ -251,6 +249,12 @@ class ScannerController extends Controller
         ]);
 
         $user = Auth::user();
+
+        // Check box ownership if provided
+        if (isset($validated['box_id'])) {
+            $box = Box::findOrFail($validated['box_id']);
+            $this->authorize('view', $box);
+        }
 
         // Get next lot number for user
         $nextNumber = Lot::where('user_id', $user->id)->max('lot_number') + 1;
@@ -340,33 +344,40 @@ class ScannerController extends Controller
 
     private function getConditions(Game $game): array
     {
-        return match ($game->slug) {
-            'fab' => FabInventory::CONDITIONS,
-            'mtg' => MtgInventory::CONDITIONS,
-            'op' => OpInventory::CONDITIONS,
-            'riftbound' => RiftboundInventory::CONDITIONS,
-            default => $game->getConditions(),
-        };
+        // For official games, use unified conditions
+        if ($game->is_official) {
+            return UnifiedInventory::CONDITIONS;
+        }
+
+        // For custom games, use game attributes
+        return $game->getConditions();
     }
 
     private function getFoilings(Game $game): array
     {
-        return match ($game->slug) {
-            'fab' => FabPrinting::FOILINGS,
-            'mtg' => MtgPrinting::FINISHES,
-            'riftbound' => RiftboundPrinting::FOILINGS,
-            default => $game->getFoilings(),
-        };
+        // For official games with game-specific finishes
+        if ($game->is_official && isset(UnifiedPrinting::GAME_FINISHES[$game->slug])) {
+            return UnifiedPrinting::GAME_FINISHES[$game->slug];
+        }
+
+        // For official games without specific finishes, use generic
+        if ($game->is_official) {
+            return UnifiedPrinting::FINISHES;
+        }
+
+        // For custom games, use game attributes
+        return $game->getFoilings();
     }
 
     private function getLanguages(Game $game): array
     {
-        return match ($game->slug) {
-            'fab' => FabInventory::LANGUAGES,
-            'mtg' => MtgInventory::LANGUAGES,
-            'op' => OpInventory::LANGUAGES,
-            default => $game->getLanguages(),
-        };
+        // For official games, use unified languages
+        if ($game->is_official) {
+            return UnifiedInventory::LANGUAGES;
+        }
+
+        // For custom games, use game attributes
+        return $game->getLanguages();
     }
 
     private function searchCards(Game $game, string $query, int $limit): array
@@ -515,9 +526,25 @@ class ScannerController extends Controller
             return [];
         }
 
-        $inventoryClass = $this->getInventoryClass($game);
+        // For official games, use UnifiedInventory
+        if ($game->is_official) {
+            return UnifiedInventory::where('lot_id', $lotId)
+                ->with('printing.card')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get()
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'card_name' => $item->printing->card->name,
+                    'position' => $item->extra['position_in_lot'] ?? $item->id,
+                    'condition' => $item->condition,
+                    'is_custom' => false,
+                ])
+                ->toArray();
+        }
 
-        return $inventoryClass::where('lot_id', $lotId)
+        // For custom games, use CustomInventory
+        return CustomInventory::where('lot_id', $lotId)
             ->with('printing.card')
             ->orderByDesc('position_in_lot')
             ->limit(50)
@@ -527,27 +554,18 @@ class ScannerController extends Controller
                 'card_name' => $item->printing->card->name,
                 'position' => $item->position_in_lot,
                 'condition' => $item->condition,
-                'is_custom' => false,
+                'is_custom' => true,
             ])
             ->toArray();
     }
 
     private function getLotCardCount(Game $game, int $lotId): int
     {
-        $inventoryClass = $this->getInventoryClass($game);
+        if ($game->is_official) {
+            return UnifiedInventory::where('lot_id', $lotId)->count();
+        }
 
-        return $inventoryClass::where('lot_id', $lotId)->count();
-    }
-
-    private function getInventoryClass(Game $game): string
-    {
-        return match ($game->slug) {
-            'fab' => FabInventory::class,
-            'mtg' => MtgInventory::class,
-            'op' => OpInventory::class,
-            'riftbound' => RiftboundInventory::class,
-            default => CustomInventory::class,
-        };
+        return CustomInventory::where('lot_id', $lotId)->count();
     }
 
     private function createInventoryItem(
@@ -559,40 +577,34 @@ class ScannerController extends Controller
         ?string $language,
         bool $isCustom
     ) {
-        $inventoryClass = $isCustom ? CustomInventory::class : $this->getInventoryClass($game);
+        // For custom games or custom cards, use CustomInventory
+        if ($isCustom || ! $game->is_official) {
+            $position = CustomInventory::where('lot_id', $lot->id)->max('position_in_lot') ?? 0;
 
-        $position = $inventoryClass::where('lot_id', $lot->id)->max('position_in_lot') ?? 0;
+            return CustomInventory::create([
+                'user_id' => Auth::id(),
+                'lot_id' => $lot->id,
+                'custom_printing_id' => $printingId,
+                'condition' => $condition,
+                'language' => $language ?? 'EN',
+                'position_in_lot' => $position + 1,
+            ]);
+        }
 
-        $printingIdField = $isCustom ? 'custom_printing_id' : $this->getPrintingIdField($game);
+        // For official games, use UnifiedInventory
+        $position = UnifiedInventory::where('lot_id', $lot->id)->max('extra->position_in_lot') ?? 0;
 
-        $data = [
+        return UnifiedInventory::create([
             'user_id' => Auth::id(),
             'lot_id' => $lot->id,
-            $printingIdField => $printingId,
+            'printing_id' => $printingId,
             'condition' => $condition,
-            'position_in_lot' => $position + 1,
-        ];
-
-        if ($foiling !== null) {
-            $foilingField = $game->slug === 'mtg' ? 'finish' : 'foiling';
-            $data[$foilingField] = $foiling;
-        }
-
-        if ($language !== null && $game->slug !== 'riftbound') {
-            $data['language'] = $language;
-        }
-
-        return $inventoryClass::create($data);
-    }
-
-    private function getPrintingIdField(Game $game): string
-    {
-        return match ($game->slug) {
-            'fab' => 'fab_printing_id',
-            'mtg' => 'mtg_printing_id',
-            'op' => 'op_printing_id',
-            'riftbound' => 'riftbound_printing_id',
-            default => 'custom_printing_id',
-        };
+            'language' => $language ?? 'EN',
+            'quantity' => 1,
+            'in_collection' => false,
+            'extra' => [
+                'position_in_lot' => $position + 1,
+            ],
+        ]);
     }
 }
