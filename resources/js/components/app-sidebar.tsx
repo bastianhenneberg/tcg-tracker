@@ -1,5 +1,4 @@
 import { GameSwitcher, useSelectedGame } from '@/components/game-switcher';
-import { NavFooter } from '@/components/nav-footer';
 import { NavGroup, NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -17,7 +16,7 @@ import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Archive, BookOpen, Camera, Database, Folder, Gamepad2, Heart, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
+import { Archive, Camera, Database, Gamepad2, Heart, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
 import { useMemo } from 'react';
 import AppLogo from './app-logo';
 
@@ -88,18 +87,6 @@ const getGameNavItems = (slug: string): NavItem[] => [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
 
 export function AppSidebar() {
     const { selectedGame, selectedSlug, setSelectedGame, allGames } = useSelectedGame();
@@ -136,7 +123,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
