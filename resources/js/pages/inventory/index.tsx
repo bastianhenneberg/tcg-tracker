@@ -35,7 +35,6 @@ interface Props {
     inventory: PaginatedData<UnifiedInventory>;
     filters: Record<string, string | undefined>;
     conditions: Record<string, string>;
-    foilings: Record<string, string>;
     lots: Lot[];
     stats: {
         total: number;
@@ -48,7 +47,6 @@ export default function InventoryIndex({
     inventory,
     filters,
     conditions,
-    foilings: _foilings,
     lots,
     stats,
 }: Props) {

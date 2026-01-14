@@ -47,6 +47,19 @@ export function ScannerCamera({
     const bulkScanIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const bulkCountdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    const stopBulkScan = useCallback(() => {
+        if (bulkScanIntervalRef.current) {
+            clearInterval(bulkScanIntervalRef.current);
+            bulkScanIntervalRef.current = null;
+        }
+        if (bulkCountdownIntervalRef.current) {
+            clearInterval(bulkCountdownIntervalRef.current);
+            bulkCountdownIntervalRef.current = null;
+        }
+        setBulkScanRunning(false);
+        setBulkCountdown(0);
+    }, []);
+
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -128,7 +141,7 @@ export function ScannerCamera({
         setVideoReady(false);
         setShowCameraSettings(false);
         setCameraCapabilities({});
-    }, []);
+    }, [stopBulkScan]);
 
     const applyCameraSetting = async (setting: Partial<CameraSettings>) => {
         if (!trackRef.current) return;
@@ -219,19 +232,6 @@ export function ScannerCamera({
             }
         }, bulkMode.interval * 1000);
     }, [videoReady, bulkMode.interval, recognizing, capturePhoto]);
-
-    const stopBulkScan = useCallback(() => {
-        if (bulkScanIntervalRef.current) {
-            clearInterval(bulkScanIntervalRef.current);
-            bulkScanIntervalRef.current = null;
-        }
-        if (bulkCountdownIntervalRef.current) {
-            clearInterval(bulkCountdownIntervalRef.current);
-            bulkCountdownIntervalRef.current = null;
-        }
-        setBulkScanRunning(false);
-        setBulkCountdown(0);
-    }, []);
 
     useEffect(() => {
         return () => {

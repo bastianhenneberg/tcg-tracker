@@ -215,23 +215,28 @@ class FabCardMatcherService
      */
     public function search(string $query, int $limit = 20): Collection
     {
+        $normalizedQuery = \App\Models\UnifiedCard::normalize($query);
+
         // Search in unified printings for FAB
         $fabResults = UnifiedPrinting::query()
             ->with(['card', 'set'])
             ->forGame('fab')
-            ->where(function ($q) use ($query) {
-                $q->whereHas('card', function ($cardQuery) use ($query) {
-                    $cardQuery->where('name', 'LIKE', "%{$query}%");
+            ->where(function ($q) use ($query, $normalizedQuery) {
+                $q->whereHas('card', function ($cardQuery) use ($normalizedQuery) {
+                    // Use name_normalized with index for better performance
+                    $cardQuery->where('name_normalized', 'LIKE', "{$normalizedQuery}%")
+                        ->orWhere('name_normalized', 'LIKE', "%{$normalizedQuery}%");
                 })
-                    ->orWhere('collector_number', 'LIKE', "%{$query}%");
+                    ->orWhere('collector_number', $query)
+                    ->orWhere('collector_number', 'LIKE', "{$query}%");
             })
             ->orderByRaw('CASE
                 WHEN collector_number = ? THEN 0
                 WHEN collector_number LIKE ? THEN 1
-                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?) THEN 2
-                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name LIKE ?) THEN 3
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name_normalized = ?) THEN 2
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name_normalized LIKE ?) THEN 3
                 ELSE 4
-            END', [$query, "{$query}%", $query, "{$query}%"])
+            END', [$query, "{$query}%", $normalizedQuery, "{$normalizedQuery}%"])
             ->limit($limit)
             ->get()
             ->map(fn ($p) => [

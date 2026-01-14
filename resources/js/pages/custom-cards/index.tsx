@@ -381,6 +381,7 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
 
             {/* Edit Printing Dialog */}
             <EditPrintingDialog
+                key={editingPrinting?.printing.id ?? 'new'}
                 isOpen={editingPrinting !== null}
                 onClose={() => setEditingPrinting(null)}
                 printing={editingPrinting?.printing ?? null}
@@ -749,7 +750,7 @@ function EditCardDialog({
     } | null>(null);
     const [hoveredCard, setHoveredCard] = useState<{ image_url: string | null } | null>(null);
 
-    const { data, setData, patch, processing, reset, setDefaults } = useForm({
+    const { data, setData, patch, processing, reset } = useForm({
         name: '',
         linked_fab_card_id: null as number | null,
         types: '',
@@ -777,6 +778,7 @@ function EditCardDialog({
             setFabCardSearch('');
             setFabCardResults([]);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [card]);
 
     const debouncedFabSearch = useDebouncedCallback(async (query: string) => {
@@ -1131,29 +1133,14 @@ function EditPrintingDialog({
     const [removeImage, setRemoveImage] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    // Initialize form with printing data (component is keyed by printing.id)
     const [formData, setFormData] = useState({
-        set_name: '',
-        collector_number: '',
-        rarity: '',
-        foiling: '',
-        language: 'EN',
+        set_name: printing?.set_name ?? '',
+        collector_number: printing?.collector_number ?? '',
+        rarity: printing?.rarity ?? '',
+        foiling: printing?.foiling ?? '',
+        language: printing?.language ?? 'EN',
     });
-
-    // Reset form when printing changes
-    useEffect(() => {
-        if (printing) {
-            setFormData({
-                set_name: printing.set_name ?? '',
-                collector_number: printing.collector_number ?? '',
-                rarity: printing.rarity ?? '',
-                foiling: printing.foiling ?? '',
-                language: printing.language ?? 'EN',
-            });
-            setSelectedImage(null);
-            setPreviewUrl(null);
-            setRemoveImage(false);
-        }
-    }, [printing]);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

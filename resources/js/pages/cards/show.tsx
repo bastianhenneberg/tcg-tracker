@@ -9,11 +9,9 @@ import { Head, Link } from '@inertiajs/react';
 interface Props {
     game: Game;
     card: UnifiedCard;
-    rarities: Record<string, string>;
-    foilings: Record<string, string>;
 }
 
-export default function CardShow({ game, card, rarities, foilings }: Props) {
+export default function CardShow({ game, card }: Props) {
     const baseUrl = `/g/${game.slug}`;
     const pitch = card.game_specific?.pitch as number | undefined;
     const pitchColor = getPitchColor(pitch);

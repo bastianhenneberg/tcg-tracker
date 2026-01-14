@@ -3,11 +3,10 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
 } from '@/components/ui/select';
 import { usePage } from '@inertiajs/react';
 import { Gamepad2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export interface GameOption {
     slug: string;
@@ -51,14 +50,6 @@ export function useSelectedGame() {
             localStorage.setItem(STORAGE_KEY, slug);
         }
     };
-
-    // Sync with localStorage on mount
-    useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored && stored !== selectedSlug) {
-            setSelectedSlug(stored);
-        }
-    }, []);
 
     return {
         selectedGame,

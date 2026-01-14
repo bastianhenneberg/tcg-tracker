@@ -133,22 +133,26 @@ class MtgCardMatcherService
             return collect();
         }
 
+        $normalizedQuery = \App\Models\UnifiedCard::normalize($query);
+
         return UnifiedPrinting::query()
             ->with(['card', 'set'])
             ->forGame('mtg')
-            ->where(function ($q) use ($query) {
-                $q->whereHas('card', fn ($c) => $c->where('name', 'LIKE', "%{$query}%"))
-                    ->orWhere('collector_number', 'LIKE', "%{$query}%")
+            ->where(function ($q) use ($query, $normalizedQuery) {
+                $q->whereHas('card', fn ($c) => $c->where('name_normalized', 'LIKE', "{$normalizedQuery}%")
+                    ->orWhere('name_normalized', 'LIKE', "%{$normalizedQuery}%"))
+                    ->orWhere('collector_number', $query)
+                    ->orWhere('collector_number', 'LIKE', "{$query}%")
                     ->orWhereHas('set', fn ($s) => $s->where('name', 'LIKE', "%{$query}%")
                         ->orWhere('code', 'LIKE', "%{$query}%"));
             })
             ->orderByRaw('CASE
                 WHEN collector_number = ? THEN 0
                 WHEN collector_number LIKE ? THEN 1
-                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?) THEN 2
-                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name LIKE ?) THEN 3
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name_normalized = ?) THEN 2
+                WHEN EXISTS (SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name_normalized LIKE ?) THEN 3
                 ELSE 4
-            END', [$query, "{$query}%", $query, "{$query}%"])
+            END', [$query, "{$query}%", $normalizedQuery, "{$normalizedQuery}%"])
             ->limit($limit)
             ->get()
             ->map(fn ($p) => [

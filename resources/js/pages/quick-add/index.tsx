@@ -235,7 +235,7 @@ export default function QuickAddIndex({
             setRecentCards([]);
             toast.success(`Lot #${flash.newLot.lot_number} erstellt`);
         }
-    }, [flash]);
+    }, [flash, selectedFoiling]);
 
     // Auto-focus search input on mount
     useEffect(() => {
@@ -391,7 +391,7 @@ export default function QuickAddIndex({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(conditions).map(([key, label]) => (
+                                    {Object.entries(conditions).map(([key]) => (
                                         <SelectItem key={key} value={key}>
                                             {key}
                                         </SelectItem>
@@ -421,7 +421,7 @@ export default function QuickAddIndex({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(languages).map(([key, label]) => (
+                                    {Object.entries(languages).map(([key]) => (
                                         <SelectItem key={key} value={key}>
                                             {key}
                                         </SelectItem>
@@ -534,7 +534,7 @@ export default function QuickAddIndex({
                                             <div className="space-y-2">
                                                 <Label className="text-xs">Condition</Label>
                                                 <div className="flex flex-wrap gap-1">
-                                                    {Object.entries(conditions).map(([key, label], index) => (
+                                                    {Object.entries(conditions).map(([key], index) => (
                                                         <Button
                                                             key={key}
                                                             variant={selectedCondition === key ? 'default' : 'outline'}

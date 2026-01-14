@@ -16,10 +16,9 @@ interface Props {
     game: Game;
     set: UnifiedSet & { printings_count: number };
     printings: PaginatedData<UnifiedPrinting>;
-    rarities: Record<string, string>;
 }
 
-export default function SetShow({ game, set, printings, rarities }: Props) {
+export default function SetShow({ game, set, printings }: Props) {
     const baseUrl = `/g/${game.slug}`;
 
     const breadcrumbs: BreadcrumbItem[] = [

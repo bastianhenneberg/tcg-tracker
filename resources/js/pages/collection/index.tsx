@@ -34,7 +34,6 @@ interface Props {
     collection: PaginatedData<UnifiedInventory>;
     filters: Record<string, string | undefined>;
     conditions: Record<string, string>;
-    foilings: Record<string, string>;
     stats: {
         total: number;
         unique: number;
@@ -46,7 +45,6 @@ export default function CollectionIndex({
     collection,
     filters,
     conditions,
-    foilings,
     stats,
 }: Props) {
     const baseUrl = `/g/${game.slug}`;
