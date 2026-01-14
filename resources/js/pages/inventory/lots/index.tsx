@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/ui/data-table';
+import { DataTable, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -15,11 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { index as lotsIndex, show as lotShow, store as lotStore } from '@/routes/lots';
 import { type BreadcrumbItem } from '@/types';
-import { type PaginatedData } from '@/types/cards';
 import { type Box, type Lot } from '@/types/inventory';
 import { Head, router, useForm } from '@inertiajs/react';
-import { type ColumnDef } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
+import { Layers, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface Props {
@@ -224,7 +222,20 @@ export default function LotsIndex({ lots, boxes }: Props) {
                     </div>
                 )}
 
-                <DataTable columns={columns} data={lots} onRowClick={handleRowClick} />
+                <DataTable
+                    columns={columns}
+                    data={lots}
+                    onRowClick={handleRowClick}
+                    emptyState={
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Layers className="text-muted-foreground mb-4 h-12 w-12" />
+                            <h3 className="text-lg font-medium">Keine Lots</h3>
+                            <p className="text-muted-foreground mb-4 text-center">
+                                Erstelle ein Lot um mit dem Scannen zu beginnen.
+                            </p>
+                        </div>
+                    }
+                />
             </div>
         </AppLayout>
     );

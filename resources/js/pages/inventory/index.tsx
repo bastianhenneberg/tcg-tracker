@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { DataTable, DataTableToolbar, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -18,26 +18,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
     type Game,
     type Lot,
-    type PaginatedData,
     type UnifiedInventory,
 } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
 import { Download, Edit, Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 interface Props {
@@ -64,8 +55,9 @@ export default function InventoryIndex({
 }: Props) {
     const baseUrl = `/g/${game.slug}`;
     const [search, setSearch] = useState(filters.search ?? '');
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [selectedItems, setSelectedItems] = useState<UnifiedInventory[]>([]);
     const [editingItem, setEditingItem] = useState<UnifiedInventory | null>(null);
+    const selectedIds = selectedItems.map((item) => item.id);
     const [editForm, setEditForm] = useState({
         condition: '',
         language: '',
@@ -113,26 +105,12 @@ export default function InventoryIndex({
         );
     };
 
-    const toggleSelection = (id: number) => {
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-        );
-    };
-
-    const toggleAll = () => {
-        if (selectedIds.length === inventory.data.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(inventory.data.map((item) => item.id));
-        }
-    };
-
     const handleMarkSold = () => {
         if (selectedIds.length === 0) return;
         router.post(
             `${baseUrl}/inventory/mark-sold`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedIds([]) }
+            { onSuccess: () => setSelectedItems([]) }
         );
     };
 
@@ -141,7 +119,7 @@ export default function InventoryIndex({
         router.post(
             `${baseUrl}/inventory/move-to-collection`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedIds([]) }
+            { onSuccess: () => setSelectedItems([]) }
         );
     };
 
@@ -151,11 +129,11 @@ export default function InventoryIndex({
         router.post(
             `${baseUrl}/inventory/delete-multiple`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedIds([]) }
+            { onSuccess: () => setSelectedItems([]) }
         );
     };
 
-    const openEditDialog = (item: UnifiedInventory) => {
+    const openEditDialog = useCallback((item: UnifiedInventory) => {
         setEditingItem(item);
         setEditForm({
             condition: item.condition,
@@ -165,7 +143,7 @@ export default function InventoryIndex({
             notes: item.notes ?? '',
             lot_id: item.lot_id?.toString() ?? '',
         });
-    };
+    }, []);
 
     const handleSaveEdit = () => {
         if (!editingItem) return;
@@ -197,6 +175,103 @@ export default function InventoryIndex({
             onSuccess: () => setEditingItem(null),
         });
     };
+
+    // Define columns for DataTable
+    const columns = useMemo<ColumnDef<UnifiedInventory, unknown>[]>(
+        () => [
+            {
+                id: 'name',
+                accessorFn: (row) => row.printing?.card?.name ?? '',
+                header: 'Karte',
+                cell: ({ row }) => {
+                    const item = row.original;
+                    return (
+                        <Link
+                            href={`${baseUrl}/cards/${item.printing?.card_id}`}
+                            className="flex items-center gap-3 hover:opacity-80"
+                        >
+                            {item.printing?.image_url && (
+                                <img
+                                    src={item.printing.image_url}
+                                    alt={item.printing.card?.name}
+                                    className="h-12 w-auto rounded"
+                                />
+                            )}
+                            <div>
+                                <p className="font-medium hover:underline">{item.printing?.card?.name}</p>
+                                <p className="text-muted-foreground text-sm">#{item.printing?.collector_number}</p>
+                            </div>
+                        </Link>
+                    );
+                },
+            },
+            {
+                id: 'set',
+                accessorFn: (row) => row.printing?.set_name ?? row.printing?.set_code ?? '',
+                header: 'Set',
+                cell: ({ row }) => (
+                    <span className="text-sm">
+                        {row.original.printing?.set_name ?? row.original.printing?.set_code}
+                    </span>
+                ),
+            },
+            {
+                id: 'foiling',
+                accessorFn: (row) => row.printing?.finish ?? '',
+                header: 'Foiling',
+                cell: ({ row }) => (
+                    <span className="text-sm">
+                        {row.original.printing?.finish_label ?? row.original.printing?.finish ?? '-'}
+                    </span>
+                ),
+            },
+            {
+                id: 'condition',
+                accessorKey: 'condition',
+                header: 'Zustand',
+                cell: ({ row }) => (
+                    <Badge variant="outline">{conditions[row.original.condition] ?? row.original.condition}</Badge>
+                ),
+            },
+            {
+                id: 'lot',
+                accessorFn: (row) => row.lot?.lot_number ?? '',
+                header: 'Lot',
+                cell: ({ row }) =>
+                    row.original.lot ? (
+                        <span className="text-muted-foreground text-sm">#{row.original.lot.lot_number}</span>
+                    ) : null,
+            },
+            {
+                id: 'price',
+                accessorKey: 'purchase_price',
+                header: () => <span className="block text-right">Preis</span>,
+                cell: ({ row }) => (
+                    <span className="block text-right">
+                        {row.original.purchase_price ? `€${row.original.purchase_price.toFixed(2)}` : '-'}
+                    </span>
+                ),
+            },
+            {
+                id: 'actions',
+                header: '',
+                enableSorting: false,
+                cell: ({ row }) => (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDialog(row.original);
+                        }}
+                    >
+                        <Edit className="h-4 w-4" />
+                    </Button>
+                ),
+            },
+        ],
+        [baseUrl, conditions, openEditDialog]
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -281,159 +356,35 @@ export default function InventoryIndex({
                 </div>
 
                 {/* Bulk Actions */}
-                {selectedIds.length > 0 && (
-                    <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-3">
-                        <span className="text-sm font-medium">
-                            {selectedIds.length} ausgewählt
-                        </span>
-                        <div className="flex-1" />
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleMoveToCollection}
-                        >
-                            <Heart className="mr-2 h-4 w-4" />
-                            Zur Sammlung
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleMarkSold}
-                        >
-                            <ShoppingCart className="mr-2 h-4 w-4" />
-                            Verkauft
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleDeleteMultiple}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Löschen
-                        </Button>
-                    </div>
-                )}
+                <DataTableToolbar selectedCount={selectedItems.length}>
+                    <Button variant="outline" size="sm" onClick={handleMoveToCollection}>
+                        <Heart className="mr-2 h-4 w-4" />
+                        Zur Sammlung
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleMarkSold}>
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Verkauft
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={handleDeleteMultiple}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Löschen
+                    </Button>
+                </DataTableToolbar>
 
                 {/* Table */}
-                <div className="rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12">
-                                    <Checkbox
-                                        checked={
-                                            inventory.data.length > 0 &&
-                                            selectedIds.length === inventory.data.length
-                                        }
-                                        onCheckedChange={toggleAll}
-                                    />
-                                </TableHead>
-                                <TableHead>Karte</TableHead>
-                                <TableHead>Set</TableHead>
-                                <TableHead>Foiling</TableHead>
-                                <TableHead>Zustand</TableHead>
-                                <TableHead>Lot</TableHead>
-                                <TableHead className="text-right">Preis</TableHead>
-                                <TableHead className="w-12"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {inventory.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="text-center py-8">
-                                        <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                                        <p className="mt-2 text-muted-foreground">
-                                            Keine Karten im Inventar
-                                        </p>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                inventory.data.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell>
-                                            <Checkbox
-                                                checked={selectedIds.includes(item.id)}
-                                                onCheckedChange={() => toggleSelection(item.id)}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link
-                                                href={`${baseUrl}/cards/${item.printing?.card_id}`}
-                                                className="flex items-center gap-3 hover:opacity-80"
-                                            >
-                                                {item.printing?.image_url && (
-                                                    <img
-                                                        src={item.printing.image_url}
-                                                        alt={item.printing.card?.name}
-                                                        className="h-12 w-auto rounded"
-                                                    />
-                                                )}
-                                                <div>
-                                                    <p className="font-medium hover:underline">
-                                                        {item.printing?.card?.name}
-                                                    </p>
-                                                    <p className="text-muted-foreground text-sm">
-                                                        #{item.printing?.collector_number}
-                                                    </p>
-                                                </div>
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm">
-                                                {item.printing?.set_name ?? item.printing?.set_code}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm">
-                                                {item.printing?.finish_label ?? item.printing?.finish ?? '-'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">
-                                                {conditions[item.condition] ?? item.condition}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {item.lot && (
-                                                <span className="text-sm text-muted-foreground">
-                                                    #{item.lot.lot_number}
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {item.purchase_price ? `€${item.purchase_price.toFixed(2)}` : '-'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEditDialog(item)}
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                {/* Pagination */}
-                {inventory.last_page > 1 && (
-                    <div className="flex items-center justify-center gap-2">
-                        {inventory.links.map((link, index) => (
-                            <Button
-                                key={index}
-                                variant={link.active ? 'default' : 'outline'}
-                                size="sm"
-                                disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={inventory}
+                    enableRowSelection
+                    onSelectionChange={setSelectedItems}
+                    getRowId={(row) => row.id.toString()}
+                    emptyState={
+                        <div className="flex flex-col items-center justify-center py-8">
+                            <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-2 text-muted-foreground">Keine Karten im Inventar</p>
+                        </div>
+                    }
+                />
             </div>
 
             {/* Edit Dialog */}

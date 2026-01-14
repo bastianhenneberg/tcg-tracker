@@ -52,20 +52,113 @@ class LotController extends Controller
         return back();
     }
 
-    public function show(Lot $lot): Response
+    public function show(Request $request, Lot $lot): Response
     {
         $this->authorize('view', $lot);
 
-        $lot->load([
-            'box',
-            'inventoryItems' => fn ($q) => $q
-                ->with(['printing.card', 'printing.set'])
-                ->orderByDesc('created_at'),
-        ]);
+        $lot->load('box');
+
+        // Build paginated inventory query with filters
+        $query = $lot->inventoryItems()
+            ->with(['printing.card', 'printing.set']);
+
+        // Sorting
+        $sortField = $request->input('sort', 'created_at');
+        $sortDirection = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        // Join for sorting on related tables
+        if (in_array($sortField, ['name', 'set', 'rarity', 'foiling'])) {
+            $query->join('unified_printings', 'unified_printings.id', '=', 'unified_inventories.printing_id')
+                ->join('unified_cards', 'unified_cards.id', '=', 'unified_printings.card_id')
+                ->select('unified_inventories.*');
+        }
+
+        switch ($sortField) {
+            case 'name':
+                $query->orderBy('unified_cards.name', $sortDirection);
+                break;
+            case 'set':
+                $query->orderBy('unified_printings.set_name', $sortDirection);
+                break;
+            case 'rarity':
+                $query->orderBy('unified_printings.rarity', $sortDirection);
+                break;
+            case 'foiling':
+                $query->orderBy('unified_printings.finish', $sortDirection);
+                break;
+            case 'condition':
+                $query->orderBy('unified_inventories.condition', $sortDirection);
+                break;
+            case 'position':
+                $query->orderByRaw("JSON_EXTRACT(unified_inventories.extra, '$.position_in_lot') {$sortDirection}");
+                break;
+            default:
+                $query->orderBy('unified_inventories.created_at', $sortDirection);
+        }
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('printing.card', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        // Condition filter
+        if ($request->filled('condition')) {
+            $query->where('condition', $request->input('condition'));
+        }
+
+        // Foiling filter
+        if ($request->filled('foiling')) {
+            $query->whereHas('printing', fn ($q) => $q->where('finish', $request->input('foiling')));
+        }
+
+        // Rarity filter
+        if ($request->filled('rarity')) {
+            $query->whereHas('printing', fn ($q) => $q->where('rarity', $request->input('rarity')));
+        }
+
+        $items = $query->paginate(25)->withQueryString();
+
+        // Get distinct foilings and rarities for filter options
+        $foilings = $lot->inventoryItems()
+            ->with('printing')
+            ->get()
+            ->pluck('printing.finish', 'printing.finish')
+            ->filter()
+            ->unique()
+            ->mapWithKeys(fn ($v, $k) => [$k => $lot->inventoryItems()
+                ->whereHas('printing', fn ($q) => $q->where('finish', $k))
+                ->first()?->printing?->finish_label ?? $k])
+            ->toArray();
+
+        $rarities = $lot->inventoryItems()
+            ->with('printing')
+            ->get()
+            ->pluck('printing.rarity', 'printing.rarity')
+            ->filter()
+            ->unique()
+            ->mapWithKeys(fn ($v, $k) => [$k => $lot->inventoryItems()
+                ->whereHas('printing', fn ($q) => $q->where('rarity', $k))
+                ->first()?->printing?->rarity_label ?? $k])
+            ->toArray();
 
         return Inertia::render('inventory/lots/show', [
             'lot' => $lot,
+            'items' => $items,
             'boxes' => Box::where('user_id', Auth::id())->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'condition', 'foiling', 'rarity', 'sort', 'direction']),
+            'conditions' => [
+                'NM' => 'Near Mint',
+                'LP' => 'Lightly Played',
+                'MP' => 'Moderately Played',
+                'HP' => 'Heavily Played',
+                'DMG' => 'Damaged',
+            ],
+            'foilings' => $foilings,
+            'rarities' => $rarities,
+            'stats' => [
+                'total' => $lot->inventoryItems()->count(),
+            ],
         ]);
     }
 

@@ -1,4 +1,4 @@
-import { DataTable } from '@/components/ui/data-table';
+import { DataTable, type ColumnDef } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -18,7 +18,7 @@ import {
     getPitchColor,
 } from '@/types/unified';
 import { Head, router } from '@inertiajs/react';
-import { type ColumnDef } from '@tanstack/react-table';
+import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -274,7 +274,20 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                     </div>
                 </div>
 
-                <DataTable columns={columns} data={cards} onRowClick={handleRowClick} />
+                <DataTable
+                    columns={columns}
+                    data={cards}
+                    onRowClick={handleRowClick}
+                    emptyState={
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Search className="text-muted-foreground mb-4 h-12 w-12" />
+                            <h3 className="text-lg font-medium">Keine Karten gefunden</h3>
+                            <p className="text-muted-foreground text-center">
+                                Versuche einen anderen Suchbegriff oder Filter.
+                            </p>
+                        </div>
+                    }
+                />
             </div>
         </AppLayout>
     );
