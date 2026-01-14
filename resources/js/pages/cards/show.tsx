@@ -52,6 +52,23 @@ export default function CardShow({ game, card }: Props) {
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Card Image */}
+                    <Card>
+                        <CardContent className="pt-6">
+                            {card.printings?.[0]?.image_url ? (
+                                <img
+                                    src={card.printings[0].image_url}
+                                    alt={card.name}
+                                    className="w-full rounded-lg"
+                                />
+                            ) : (
+                                <div className="bg-muted flex aspect-[2.5/3.5] items-center justify-center rounded-lg">
+                                    <span className="text-muted-foreground">Kein Bild</span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Main Card Info */}
                     <Card className="lg:col-span-2">
                         <CardHeader>
@@ -135,23 +152,6 @@ export default function CardShow({ game, card }: Props) {
                                             </Badge>
                                         ))}
                                     </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Card Image */}
-                    <Card>
-                        <CardContent className="pt-6">
-                            {card.printings?.[0]?.image_url ? (
-                                <img
-                                    src={card.printings[0].image_url}
-                                    alt={card.name}
-                                    className="w-full rounded-lg"
-                                />
-                            ) : (
-                                <div className="bg-muted flex aspect-[2.5/3.5] items-center justify-center rounded-lg">
-                                    <span className="text-muted-foreground">Kein Bild</span>
                                 </div>
                             )}
                         </CardContent>

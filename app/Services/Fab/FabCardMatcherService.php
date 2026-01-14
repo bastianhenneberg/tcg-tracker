@@ -23,6 +23,18 @@ class FabCardMatcherService
         $setCode = $recognitionResult['set_code'] ?? null;
         $foiling = $recognitionResult['foiling'] ?? null;
 
+        // Parse card name to extract color and foiling if present
+        // E.g., "Smelting of the Old Ones (Extended Art Rainbow Foil)" → foiling = "R-EA"
+        if ($cardName) {
+            $parsed = $this->parseCardName($cardName);
+            $cardName = $parsed['name']; // Use base name for matching
+
+            // Use parsed foiling if no explicit foiling was provided
+            if (! $foiling && $parsed['foiling']) {
+                $foiling = $parsed['foiling'];
+            }
+        }
+
         // Strategy 1: Exact match by collector number in main DB
         if ($collectorNumber) {
             $exactMatch = $this->findByCollectorNumber($collectorNumber, $foiling);
@@ -140,7 +152,21 @@ class FabCardMatcherService
             ->where('collector_number', $collectorNumber);
 
         if ($foiling) {
-            $query->where('finish', $foiling);
+            // Try exact finish match first
+            $exactMatch = (clone $query)->where('finish', $foiling)->first();
+            if ($exactMatch) {
+                return $exactMatch;
+            }
+
+            // Fallback: if foiling is R/C/G, also try with art variations
+            if (in_array($foiling, ['R', 'C', 'G'], true)) {
+                $artVariationMatch = (clone $query)
+                    ->where('finish', 'LIKE', $foiling.'-%')
+                    ->first();
+                if ($artVariationMatch) {
+                    return $artVariationMatch;
+                }
+            }
         }
 
         return $query->first();
@@ -172,10 +198,80 @@ class FabCardMatcherService
             });
 
         if ($foiling) {
-            $query->where('finish', $foiling);
+            // Try exact finish match first
+            $exactMatch = (clone $query)->where('finish', $foiling)->first();
+            if ($exactMatch) {
+                return $exactMatch;
+            }
+
+            // Fallback: if foiling is R/C/G, also try with art variations (R-EA, R-AA, R-FA, etc.)
+            // This handles cases where TCG Powertools exports "Rainbow Foil" but the card is "Extended Art Rainbow Foil"
+            if (in_array($foiling, ['R', 'C', 'G'], true)) {
+                $artVariationMatch = (clone $query)
+                    ->where('finish', 'LIKE', $foiling.'-%')
+                    ->first();
+                if ($artVariationMatch) {
+                    return $artVariationMatch;
+                }
+            }
         }
 
         return $query->first();
+    }
+
+    /**
+     * Parse FAB card name that may contain color and foiling info.
+     * E.g., "Clash of Heads (Yellow) (Rainbow Foil)" → ['name' => 'Clash of Heads', 'pitch' => 2, 'foiling' => 'R']
+     *
+     * @return array{name: string, pitch: int|null, foiling: string|null}
+     */
+    protected function parseCardName(string $fullName): array
+    {
+        $name = $fullName;
+        $pitch = null;
+        $foiling = null;
+
+        // Extract foiling from name (must be done first as it's at the end)
+        $foilingPatterns = [
+            '(Rainbow Foil)' => 'R',
+            '(Cold Foil)' => 'C',
+            '(Gold Cold Foil)' => 'G',
+            '(Extended Art Rainbow Foil)' => 'R-EA',
+            '(Extended Art Cold Foil)' => 'C-EA',
+            '(Alternate Art Rainbow Foil)' => 'R-AA',
+            '(Alternate Art Cold Foil)' => 'C-AA',
+            '(Full Art Rainbow Foil)' => 'R-FA',
+            '(Full Art Cold Foil)' => 'C-FA',
+        ];
+
+        foreach ($foilingPatterns as $pattern => $code) {
+            if (str_contains($name, $pattern)) {
+                $foiling = $code;
+                $name = str_replace($pattern, '', $name);
+                break;
+            }
+        }
+
+        // Extract color/pitch from name
+        $colorPatterns = [
+            '(Red)' => 1,
+            '(Yellow)' => 2,
+            '(Blue)' => 3,
+        ];
+
+        foreach ($colorPatterns as $pattern => $pitchValue) {
+            if (str_contains($name, $pattern)) {
+                $pitch = $pitchValue;
+                $name = str_replace($pattern, '', $name);
+                break;
+            }
+        }
+
+        return [
+            'name' => trim($name),
+            'pitch' => $pitch,
+            'foiling' => $foiling,
+        ];
     }
 
     /**
@@ -183,12 +279,30 @@ class FabCardMatcherService
      */
     protected function findByName(string $cardName, ?string $setCode = null, ?string $foiling = null): Collection
     {
+        // Parse color and foiling from card name if present
+        $parsed = $this->parseCardName($cardName);
+        $baseName = $parsed['name'];
+        $parsedPitch = $parsed['pitch'];
+        $parsedFoiling = $parsed['foiling'];
+
+        // Use parsed foiling if no explicit foiling was provided
+        if (! $foiling && $parsedFoiling) {
+            $foiling = $parsedFoiling;
+        }
+
         $query = UnifiedPrinting::query()
             ->with(['card', 'set'])
             ->forGame('fab')
-            ->whereHas('card', function ($q) use ($cardName) {
-                $q->where('name', $cardName)
-                    ->orWhere('name', 'LIKE', "%{$cardName}%");
+            ->whereHas('card', function ($q) use ($baseName, $parsedPitch) {
+                $q->where(function ($nameQ) use ($baseName) {
+                    $nameQ->where('name', $baseName)
+                        ->orWhere('name', 'LIKE', "%{$baseName}%");
+                });
+
+                // If we parsed a pitch/color, filter by it
+                if ($parsedPitch !== null) {
+                    $q->whereRaw("JSON_EXTRACT(game_specific, '$.pitch') = ?", [$parsedPitch]);
+                }
             });
 
         if ($setCode) {
@@ -204,7 +318,7 @@ class FabCardMatcherService
 
         return $query->orderByRaw('CASE WHEN EXISTS (
             SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?
-        ) THEN 0 ELSE 1 END', [$cardName])
+        ) THEN 0 ELSE 1 END', [$baseName])
             ->limit(10)
             ->get();
     }
@@ -215,21 +329,36 @@ class FabCardMatcherService
      */
     public function search(string $query, int $limit = 20): Collection
     {
-        $normalizedQuery = \App\Models\UnifiedCard::normalize($query);
+        // Parse color and foiling from query if present
+        $parsed = $this->parseCardName($query);
+        $baseQuery = $parsed['name'];
+        $parsedPitch = $parsed['pitch'];
+        $parsedFoiling = $parsed['foiling'];
+
+        $normalizedQuery = \App\Models\UnifiedCard::normalize($baseQuery);
 
         // Search in unified printings for FAB
         $fabResults = UnifiedPrinting::query()
             ->with(['card', 'set'])
             ->forGame('fab')
-            ->where(function ($q) use ($query, $normalizedQuery) {
-                $q->whereHas('card', function ($cardQuery) use ($normalizedQuery) {
+            ->where(function ($q) use ($query, $baseQuery, $normalizedQuery, $parsedPitch) {
+                $q->whereHas('card', function ($cardQuery) use ($normalizedQuery, $parsedPitch) {
                     // Use name_normalized with index for better performance
-                    $cardQuery->where('name_normalized', 'LIKE', "{$normalizedQuery}%")
-                        ->orWhere('name_normalized', 'LIKE', "%{$normalizedQuery}%");
+                    $cardQuery->where(function ($nameQ) use ($normalizedQuery) {
+                        $nameQ->where('name_normalized', 'LIKE', "{$normalizedQuery}%")
+                            ->orWhere('name_normalized', 'LIKE', "%{$normalizedQuery}%");
+                    });
+
+                    // Filter by pitch if parsed from query
+                    if ($parsedPitch !== null) {
+                        $cardQuery->whereRaw("JSON_EXTRACT(game_specific, '$.pitch') = ?", [$parsedPitch]);
+                    }
                 })
                     ->orWhere('collector_number', $query)
-                    ->orWhere('collector_number', 'LIKE', "{$query}%");
+                    ->orWhere('collector_number', $baseQuery)
+                    ->orWhere('collector_number', 'LIKE', "{$baseQuery}%");
             })
+            ->when($parsedFoiling, fn ($q) => $q->where('finish', $parsedFoiling))
             ->orderByRaw('CASE
                 WHEN collector_number = ? THEN 0
                 WHEN collector_number LIKE ? THEN 1

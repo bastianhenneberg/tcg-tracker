@@ -1,7 +1,16 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -17,6 +26,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -25,8 +35,8 @@ import {
     type PaginatedData,
     type UnifiedInventory,
 } from '@/types/unified';
-import { Head, router } from '@inertiajs/react';
-import { Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Download, Edit, Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -35,6 +45,7 @@ interface Props {
     inventory: PaginatedData<UnifiedInventory>;
     filters: Record<string, string | undefined>;
     conditions: Record<string, string>;
+    languages: Record<string, string>;
     lots: Lot[];
     stats: {
         total: number;
@@ -47,12 +58,23 @@ export default function InventoryIndex({
     inventory,
     filters,
     conditions,
+    languages,
     lots,
     stats,
 }: Props) {
     const baseUrl = `/g/${game.slug}`;
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [editingItem, setEditingItem] = useState<UnifiedInventory | null>(null);
+    const [editForm, setEditForm] = useState({
+        condition: '',
+        language: '',
+        printing_id: '',
+        price: '',
+        notes: '',
+        lot_id: '',
+    });
+    const [saving, setSaving] = useState(false);
 
     // Reload data when the page becomes visible (tab switching)
     useEffect(() => {
@@ -133,6 +155,49 @@ export default function InventoryIndex({
         );
     };
 
+    const openEditDialog = (item: UnifiedInventory) => {
+        setEditingItem(item);
+        setEditForm({
+            condition: item.condition,
+            language: item.language,
+            printing_id: item.printing_id.toString(),
+            price: item.purchase_price?.toString() ?? '',
+            notes: item.notes ?? '',
+            lot_id: item.lot_id?.toString() ?? '',
+        });
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingItem) return;
+        setSaving(true);
+        router.patch(
+            `${baseUrl}/inventory/${editingItem.id}`,
+            {
+                condition: editForm.condition,
+                language: editForm.language,
+                printing_id: parseInt(editForm.printing_id),
+                price: editForm.price ? parseFloat(editForm.price) : null,
+                notes: editForm.notes || null,
+                lot_id: editForm.lot_id ? parseInt(editForm.lot_id) : null,
+            },
+            {
+                onSuccess: () => {
+                    setEditingItem(null);
+                    setSaving(false);
+                },
+                onError: () => setSaving(false),
+            }
+        );
+    };
+
+    const handleDeleteSingle = () => {
+        if (!editingItem) return;
+        if (!confirm('Diese Karte wirklich löschen?')) return;
+        router.delete(`${baseUrl}/inventory/${editingItem.id}`, {
+            onSuccess: () => setEditingItem(null),
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${game.name} - Inventar`} />
@@ -198,6 +263,20 @@ export default function InventoryIndex({
                                 </SelectContent>
                             </Select>
                         )}
+
+                        <Button
+                            variant="outline"
+                            size="default"
+                            asChild
+                        >
+                            <a
+                                href={`${baseUrl}/inventory/export${filters.lot ? `?lot=${filters.lot}` : ''}${filters.condition ? `${filters.lot ? '&' : '?'}condition=${filters.condition}` : ''}`}
+                                download
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                Export
+                            </a>
+                        </Button>
                     </div>
                 </div>
 
@@ -251,15 +330,17 @@ export default function InventoryIndex({
                                 </TableHead>
                                 <TableHead>Karte</TableHead>
                                 <TableHead>Set</TableHead>
+                                <TableHead>Foiling</TableHead>
                                 <TableHead>Zustand</TableHead>
                                 <TableHead>Lot</TableHead>
                                 <TableHead className="text-right">Preis</TableHead>
+                                <TableHead className="w-12"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {inventory.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8">
+                                    <TableCell colSpan={8} className="text-center py-8">
                                         <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
                                         <p className="mt-2 text-muted-foreground">
                                             Keine Karten im Inventar
@@ -276,7 +357,10 @@ export default function InventoryIndex({
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-3">
+                                            <Link
+                                                href={`${baseUrl}/cards/${item.printing?.card_id}`}
+                                                className="flex items-center gap-3 hover:opacity-80"
+                                            >
                                                 {item.printing?.image_url && (
                                                     <img
                                                         src={item.printing.image_url}
@@ -285,18 +369,23 @@ export default function InventoryIndex({
                                                     />
                                                 )}
                                                 <div>
-                                                    <p className="font-medium">
+                                                    <p className="font-medium hover:underline">
                                                         {item.printing?.card?.name}
                                                     </p>
                                                     <p className="text-muted-foreground text-sm">
                                                         #{item.printing?.collector_number}
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         </TableCell>
                                         <TableCell>
                                             <span className="text-sm">
                                                 {item.printing?.set_name ?? item.printing?.set_code}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm">
+                                                {item.printing?.finish_label ?? item.printing?.finish ?? '-'}
                                             </span>
                                         </TableCell>
                                         <TableCell>
@@ -312,7 +401,16 @@ export default function InventoryIndex({
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {item.price ? `€${item.price.toFixed(2)}` : '-'}
+                                            {item.purchase_price ? `€${item.purchase_price.toFixed(2)}` : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => openEditDialog(item)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -337,6 +435,135 @@ export default function InventoryIndex({
                     </div>
                 )}
             </div>
+
+            {/* Edit Dialog */}
+            <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Karte bearbeiten</DialogTitle>
+                        <DialogDescription>
+                            {editingItem?.printing?.card?.name} - #{editingItem?.printing?.collector_number}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Zustand</Label>
+                                <Select
+                                    value={editForm.condition}
+                                    onValueChange={(v) => setEditForm({ ...editForm, condition: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(conditions).map(([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Sprache</Label>
+                                <Select
+                                    value={editForm.language}
+                                    onValueChange={(v) => setEditForm({ ...editForm, language: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(languages).map(([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        {editingItem?.available_printings && editingItem.available_printings.length > 1 && (
+                            <div className="space-y-2">
+                                <Label>Foiling</Label>
+                                <Select
+                                    value={editForm.printing_id}
+                                    onValueChange={(v) => setEditForm({ ...editForm, printing_id: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {editingItem.available_printings.map((p) => (
+                                            <SelectItem key={p.id} value={p.id.toString()}>
+                                                {p.finish_label || p.finish} ({p.collector_number})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Einkaufspreis (€)</Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editForm.price}
+                                    onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Lot</Label>
+                                <Select
+                                    value={editForm.lot_id || 'none'}
+                                    onValueChange={(v) => setEditForm({ ...editForm, lot_id: v === 'none' ? '' : v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Kein Lot" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Kein Lot</SelectItem>
+                                        {lots.map((lot) => (
+                                            <SelectItem key={lot.id} value={lot.id.toString()}>
+                                                Lot #{lot.lot_number}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Notizen</Label>
+                            <Textarea
+                                value={editForm.notes}
+                                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                placeholder="Optionale Notizen..."
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="flex-col gap-2 sm:flex-row">
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteSingle}
+                            className="sm:mr-auto"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Löschen
+                        </Button>
+                        <Button variant="outline" onClick={() => setEditingItem(null)}>
+                            Abbrechen
+                        </Button>
+                        <Button onClick={handleSaveEdit} disabled={saving}>
+                            {saving ? 'Speichern...' : 'Speichern'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

@@ -16,7 +16,7 @@ import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Archive, Camera, Database, Gamepad2, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
+import { Archive, Camera, Database, Gamepad2, GitMerge, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
 import { useMemo } from 'react';
 import AppLogo from './app-logo';
 
@@ -46,6 +46,11 @@ const mainNavItems: NavItem[] = [
         title: 'Playset-Regeln',
         href: '/settings/playset-rules',
         icon: Target,
+    },
+    {
+        title: 'Data Mappings',
+        href: '/data-mappings',
+        icon: GitMerge,
     },
 ];
 

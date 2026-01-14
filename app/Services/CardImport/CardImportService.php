@@ -119,27 +119,35 @@ class CardImportService
         $identifier = $mapper->extractCardIdentifier($cardData);
         $gameSlug = $mapper->getGameSlug();
 
-        // Build query to find existing card by external IDs or name
+        // Get game-specific external ID keys
+        $externalIdKeys = match ($gameSlug) {
+            'fab' => ['fab_id'],
+            'mtg' => ['oracle_id', 'scryfall_id'],
+            'onepiece' => ['op_id'],
+            'riftbound' => ['riftbound_id'],
+            'pokemon' => ['pokemon_tcg_id'],
+            'yugioh' => ['ygoprodeck_id'],
+            default => [],
+        };
+
+        // Games where cards with same name but different attributes are different cards
+        // (e.g., FAB cards with different pitch values are different cards)
+        $noNameFallbackGames = ['fab'];
+
+        // Build query to find existing card by external IDs (and optionally name)
         $existingCard = UnifiedCard::query()
             ->where('game', $mapped['game'])
-            ->where(function ($query) use ($identifier, $mapped, $gameSlug) {
+            ->where(function ($query) use ($identifier, $mapped, $gameSlug, $externalIdKeys, $noNameFallbackGames) {
                 // Check game-specific external IDs
-                $externalIdKeys = match ($gameSlug) {
-                    'fab' => ['fab_id'],
-                    'mtg' => ['oracle_id', 'scryfall_id'],
-                    'onepiece' => ['op_id'],
-                    'riftbound' => ['riftbound_id'],
-                    'pokemon' => ['pokemon_tcg_id'],
-                    'yugioh' => ['ygoprodeck_id'],
-                    default => [],
-                };
-
                 foreach ($externalIdKeys as $key) {
                     $query->orWhereJsonContains("external_ids->{$key}", $identifier);
                 }
 
-                // Fallback to name matching
-                $query->orWhere('name', $mapped['name']);
+                // Fallback to name matching (only for games that support it)
+                // FAB cards with same name but different pitch are different cards
+                if (! in_array($gameSlug, $noNameFallbackGames)) {
+                    $query->orWhere('name', $mapped['name']);
+                }
             })
             ->first();
 
@@ -246,16 +254,15 @@ class CardImportService
 
         $stats = ['cards' => 0, 'printings' => 0];
 
-        // Use JsonMachine for streaming large JSON files
-        // Fallback: Read and process in chunks using a simple streaming approach
         $handle = fopen($filePath, 'r');
         if (! $handle) {
             throw new \InvalidArgumentException("Cannot open file: {$filePath}");
         }
 
-        // Skip opening bracket
         $buffer = '';
         $inObject = false;
+        $inString = false;
+        $escaped = false;
         $depth = 0;
         $chunk = [];
         $chunkSize = 100;
@@ -263,31 +270,43 @@ class CardImportService
         while (! feof($handle)) {
             $char = fgetc($handle);
 
-            if ($char === '{') {
-                $inObject = true;
-                $depth++;
+            // Track string boundaries (ignore braces inside strings)
+            if ($char === '"' && ! $escaped) {
+                $inString = ! $inString;
+            }
+
+            // Track escape sequences
+            $escaped = ($char === '\\' && ! $escaped);
+
+            // Only count braces outside of strings
+            if (! $inString) {
+                if ($char === '{') {
+                    $inObject = true;
+                    $depth++;
+                }
+
+                if ($char === '}') {
+                    $depth--;
+                }
             }
 
             if ($inObject) {
                 $buffer .= $char;
             }
 
-            if ($char === '}') {
-                $depth--;
-                if ($depth === 0 && $inObject) {
-                    $inObject = false;
-                    $item = json_decode($buffer, true);
-                    $buffer = '';
+            if ($depth === 0 && $inObject && ! $inString) {
+                $inObject = false;
+                $item = json_decode($buffer, true);
+                $buffer = '';
 
-                    if ($item && $mapper->isValidCard($item)) {
-                        $chunk[] = $item;
+                if ($item && $mapper->isValidCard($item)) {
+                    $chunk[] = $item;
 
-                        if (count($chunk) >= $chunkSize) {
-                            $chunkStats = $this->importCards($gameSlug, $chunk);
-                            $stats['cards'] += $chunkStats['cards'];
-                            $stats['printings'] += $chunkStats['printings'];
-                            $chunk = [];
-                        }
+                    if (count($chunk) >= $chunkSize) {
+                        $chunkStats = $this->importCards($gameSlug, $chunk);
+                        $stats['cards'] += $chunkStats['cards'];
+                        $stats['printings'] += $chunkStats['printings'];
+                        $chunk = [];
                     }
                 }
             }

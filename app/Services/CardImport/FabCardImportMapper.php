@@ -26,6 +26,12 @@ class FabCardImportMapper implements CardImportMapperInterface
         'G' => 'Gold Cold Foil',
     ];
 
+    public const ART_VARIATIONS = [
+        'EA' => 'Extended Art',
+        'AA' => 'Alternate Art',
+        'FA' => 'Full Art',
+    ];
+
     public const EDITIONS = [
         'A' => 'Alpha',
         'F' => 'First Edition',
@@ -101,6 +107,23 @@ class FabCardImportMapper implements CardImportMapperInterface
         $rarity = $externalData['rarity'] ?? null;
         $foiling = $externalData['foiling'] ?? 'S';
         $edition = $externalData['edition'] ?? null;
+        $artVariations = $externalData['art_variations'] ?? [];
+
+        // Build finish code and label including art variations
+        $finishCode = $foiling;
+        $finishLabel = self::FOILINGS[$foiling] ?? $foiling;
+
+        if (! empty($artVariations)) {
+            // Add art variation to finish code (e.g., "R-EA" for Extended Art Rainbow Foil)
+            $artCodes = [];
+            $artLabels = [];
+            foreach ($artVariations as $artVar) {
+                $artCodes[] = $artVar;
+                $artLabels[] = self::ART_VARIATIONS[$artVar] ?? $artVar;
+            }
+            $finishCode = $foiling.'-'.implode('-', $artCodes);
+            $finishLabel = implode(' ', $artLabels).' '.$finishLabel;
+        }
 
         return [
             'card_id' => $card->id,
@@ -110,8 +133,8 @@ class FabCardImportMapper implements CardImportMapperInterface
             'collector_number' => $externalData['collector_number'] ?? $externalData['id'] ?? '',
             'rarity' => $rarity,
             'rarity_label' => self::RARITIES[$rarity] ?? $rarity,
-            'finish' => $foiling,
-            'finish_label' => self::FOILINGS[$foiling] ?? $foiling,
+            'finish' => $finishCode,
+            'finish_label' => $finishLabel,
             'language' => strtolower($externalData['language'] ?? 'en'),
             'flavor_text' => $externalData['flavor_text'] ?? null,
             'artist' => is_array($externalData['artists'] ?? null)
@@ -122,12 +145,13 @@ class FabCardImportMapper implements CardImportMapperInterface
             'image_url_back' => null,
             'is_promo' => ($rarity === 'P'),
             'is_reprint' => false,
-            'is_variant' => $foiling !== 'S',
+            'is_variant' => $foiling !== 'S' || ! empty($artVariations),
             'released_at' => null,
             'prices' => $this->mapPrices($externalData),
             'game_specific' => array_filter([
                 'edition' => $edition,
                 'edition_label' => self::EDITIONS[$edition] ?? $edition,
+                'art_variations' => ! empty($artVariations) ? $artVariations : null,
                 'tcgplayer_product_id' => $externalData['tcgplayer_product_id'] ?? null,
                 'tcgplayer_url' => $externalData['tcgplayer_url'] ?? null,
             ]),
@@ -144,10 +168,14 @@ class FabCardImportMapper implements CardImportMapperInterface
 
     public function extractPrintingIdentifier(array $externalData): string
     {
+        $artVariations = $externalData['art_variations'] ?? [];
+        $artSuffix = ! empty($artVariations) ? implode('-', $artVariations) : '';
+
         $parts = [
             $externalData['set_id'] ?? '',
             $externalData['collector_number'] ?? $externalData['id'] ?? '',
             $externalData['foiling'] ?? 'S',
+            $artSuffix,
             $externalData['language'] ?? 'EN',
         ];
 

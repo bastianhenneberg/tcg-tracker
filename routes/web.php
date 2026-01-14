@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BoxController;
 use App\Http\Controllers\CustomCardController;
+use App\Http\Controllers\DataMappingController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuickAddController;
@@ -72,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('inventory/mark-sold', [UnifiedInventoryController::class, 'markSold'])->name('inventory.mark-sold');
         Route::post('inventory/move-to-collection', [UnifiedInventoryController::class, 'moveToCollection'])->name('inventory.move-to-collection');
         Route::post('inventory/delete-multiple', [UnifiedInventoryController::class, 'destroyMultiple'])->name('inventory.delete-multiple');
+        Route::get('inventory/export', [UnifiedInventoryController::class, 'export'])->name('inventory.export');
 
         // Collection
         Route::get('collection', [UnifiedCollectionController::class, 'index'])->name('collection');
@@ -84,6 +86,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notifications
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    // Data Mappings (Platform)
+    Route::get('data-mappings', [DataMappingController::class, 'index'])->name('data-mappings.index');
 
     // Custom Cards
     Route::get('custom-cards', [CustomCardController::class, 'index'])->name('custom-cards.index');

@@ -152,7 +152,8 @@ class UnifiedCardController extends Controller
             ->when($request->input('search'), function (Builder $query, string $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('name_normalized', 'like', '%'.UnifiedCard::normalize($search).'%');
+                        ->orWhere('name_normalized', 'like', '%'.UnifiedCard::normalize($search).'%')
+                        ->orWhereHas('printings', fn ($p) => $p->where('collector_number', 'like', "%{$search}%"));
                 });
             })
             ->when($request->input('type'), function (Builder $query, string $type) {

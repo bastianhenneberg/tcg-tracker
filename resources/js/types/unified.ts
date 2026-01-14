@@ -80,6 +80,14 @@ export interface UnifiedSet {
     updated_at: string;
 }
 
+export interface AvailablePrinting {
+    id: number;
+    card_id: number;
+    finish: string;
+    finish_label: string;
+    collector_number: string;
+}
+
 export interface UnifiedInventory {
     id: number;
     user_id: number;
@@ -88,14 +96,15 @@ export interface UnifiedInventory {
     condition: string;
     language: string;
     quantity: number;
-    price?: number;
+    purchase_price?: number;
     sold_price?: number;
     sold_at?: string;
     notes?: string;
-    is_collection: boolean;
+    in_collection: boolean;
     position_in_lot?: number;
     printing?: UnifiedPrinting;
     lot?: Lot;
+    available_printings?: AvailablePrinting[];
     created_at: string;
     updated_at: string;
 }
