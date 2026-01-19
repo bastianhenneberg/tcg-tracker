@@ -1,6 +1,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -25,15 +33,21 @@ import {
     type UnifiedInventory,
 } from '@/types/unified';
 import { Head, router } from '@inertiajs/react';
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Package, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
+
+interface Lot {
+    id: number;
+    name: string;
+}
 
 interface Props {
     game: Game;
     collection: PaginatedData<UnifiedInventory>;
     filters: Record<string, string | undefined>;
     conditions: Record<string, string>;
+    lots: Lot[];
     stats: {
         total: number;
         unique: number;
@@ -45,11 +59,14 @@ export default function CollectionIndex({
     collection,
     filters,
     conditions,
+    lots,
     stats,
 }: Props) {
     const baseUrl = `/g/${game.slug}`;
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [showMoveDialog, setShowMoveDialog] = useState(false);
+    const [selectedLotId, setSelectedLotId] = useState<string>('');
 
     // Reload data when the page becomes visible (tab switching)
     useEffect(() => {
@@ -112,6 +129,21 @@ export default function CollectionIndex({
         );
     };
 
+    const handleMoveToInventory = () => {
+        if (selectedIds.length === 0 || !selectedLotId) return;
+        router.post(
+            `${baseUrl}/collection/move-to-inventory`,
+            { ids: selectedIds, lot_id: parseInt(selectedLotId) },
+            {
+                onSuccess: () => {
+                    setSelectedIds([]);
+                    setShowMoveDialog(false);
+                    setSelectedLotId('');
+                },
+            }
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${game.name} - Sammlung`} />
@@ -166,6 +198,14 @@ export default function CollectionIndex({
                             {selectedIds.length} ausgewählt
                         </span>
                         <div className="flex-1" />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMoveDialog(true)}
+                        >
+                            <Package className="mr-2 h-4 w-4" />
+                            Ins Inventar
+                        </Button>
                         <Button
                             variant="destructive"
                             size="sm"
@@ -271,6 +311,51 @@ export default function CollectionIndex({
                     </div>
                 )}
             </div>
+
+            {/* Move to Inventory Dialog */}
+            <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Ins Inventar verschieben</DialogTitle>
+                        <DialogDescription>
+                            Wähle ein Lot aus, in das die {selectedIds.length} Karte(n) verschoben werden sollen.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        {lots.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                Keine Lots vorhanden. Erstelle zuerst ein Lot unter "Lots".
+                            </p>
+                        ) : (
+                            <Select value={selectedLotId} onValueChange={setSelectedLotId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Lot auswählen..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {lots.map((lot) => (
+                                        <SelectItem key={lot.id} value={lot.id.toString()}>
+                                            {lot.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleMoveToInventory}
+                            disabled={!selectedLotId || lots.length === 0}
+                        >
+                            Verschieben
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

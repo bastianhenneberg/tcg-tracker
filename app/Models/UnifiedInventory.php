@@ -41,6 +41,9 @@ class UnifiedInventory extends Model
         'printing_id',
         'lot_id',
         'box_id',
+        'binder_id',
+        'binder_page_id',
+        'binder_slot',
         'quantity',
         'condition',
         'language',
@@ -50,6 +53,7 @@ class UnifiedInventory extends Model
         'purchased_at',
         'in_collection',
         'extra',
+        'position_in_lot',
     ];
 
     protected function casts(): array
@@ -83,6 +87,16 @@ class UnifiedInventory extends Model
         return $this->belongsTo(Box::class);
     }
 
+    public function binder(): BelongsTo
+    {
+        return $this->belongsTo(Binder::class);
+    }
+
+    public function binderPage(): BelongsTo
+    {
+        return $this->belongsTo(BinderPage::class);
+    }
+
     public function scopeForUser($query, int $userId)
     {
         return $query->where('user_id', $userId);
@@ -106,5 +120,15 @@ class UnifiedInventory extends Model
     public function scopeInLot($query, int $lotId)
     {
         return $query->where('lot_id', $lotId);
+    }
+
+    public function scopeInBinder($query, int $binderId)
+    {
+        return $query->where('binder_id', $binderId);
+    }
+
+    public function scopeOnBinderPage($query, int $binderPageId)
+    {
+        return $query->where('binder_page_id', $binderPageId);
     }
 }

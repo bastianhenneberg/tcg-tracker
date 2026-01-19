@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\Lot;
 use App\Models\UnifiedInventory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class UnifiedCollectionController extends Controller
 
         $query = UnifiedInventory::query()
             ->where('user_id', $userId)
-            ->where('is_collection', true)
+            ->where('in_collection', true)
             ->with(['printing.card', 'printing.set'])
             ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug));
 
@@ -87,15 +88,24 @@ class UnifiedCollectionController extends Controller
         $collection = $query->orderByDesc('created_at')->paginate(24)->withQueryString();
 
         $totalCards = UnifiedInventory::where('user_id', $userId)
-            ->where('is_collection', true)
+            ->where('in_collection', true)
             ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug))
             ->sum('quantity');
 
         $uniqueCards = UnifiedInventory::where('user_id', $userId)
-            ->where('is_collection', true)
+            ->where('in_collection', true)
             ->whereHas('printing.card', fn ($q) => $q->where('game', $unifiedSlug))
             ->distinct('printing_id')
             ->count('printing_id');
+
+        $lots = Lot::where('user_id', $userId)
+            ->with('box:id,name')
+            ->orderByDesc('lot_number')
+            ->get(['id', 'box_id', 'lot_number'])
+            ->map(fn ($lot) => [
+                'id' => $lot->id,
+                'name' => $lot->box ? "{$lot->box->name} - Lot #{$lot->lot_number}" : "Lot #{$lot->lot_number}",
+            ]);
 
         return Inertia::render('collection/index', [
             'game' => $game,
@@ -103,6 +113,7 @@ class UnifiedCollectionController extends Controller
             'filters' => $request->only(['search', 'condition', 'set']),
             'conditions' => $this->getConditions($game),
             'foilings' => $this->getFoilings($game),
+            'lots' => $lots,
             'stats' => [
                 'total' => $totalCards,
                 'unique' => $uniqueCards,
@@ -114,7 +125,7 @@ class UnifiedCollectionController extends Controller
     {
         $game = $this->getGame($slug);
 
-        if ($item->user_id !== Auth::id() || ! $item->is_collection) {
+        if ($item->user_id !== Auth::id() || ! $item->in_collection) {
             abort(403);
         }
 
@@ -135,7 +146,7 @@ class UnifiedCollectionController extends Controller
     {
         $this->getGame($slug);
 
-        if ($item->user_id !== Auth::id() || ! $item->is_collection) {
+        if ($item->user_id !== Auth::id() || ! $item->in_collection) {
             abort(403);
         }
 
@@ -155,7 +166,7 @@ class UnifiedCollectionController extends Controller
 
         UnifiedInventory::whereIn('id', $validated['ids'])
             ->where('user_id', Auth::id())
-            ->where('is_collection', true)
+            ->where('in_collection', true)
             ->delete();
 
         return back();
@@ -174,7 +185,7 @@ class UnifiedCollectionController extends Controller
 
         $items = UnifiedInventory::whereIn('id', $validated['ids'])
             ->where('user_id', Auth::id())
-            ->where('is_collection', true)
+            ->where('in_collection', true)
             ->with('printing.card')
             ->get();
 
@@ -195,14 +206,14 @@ class UnifiedCollectionController extends Controller
                     'condition' => $item->condition,
                     'language' => $item->language,
                     'quantity' => 1,
-                    'is_collection' => false,
+                    'in_collection' => false,
                     'position_in_lot' => ++$position,
                 ]);
             } else {
                 // Move the entire item
                 $item->update([
                     'lot_id' => $validated['lot_id'],
-                    'is_collection' => false,
+                    'in_collection' => false,
                     'position_in_lot' => ++$position,
                 ]);
             }

@@ -142,10 +142,23 @@ class LotController extends Controller
                 ->first()?->printing?->rarity_label ?? $k])
             ->toArray();
 
+        // Get other lots for "change lot" functionality
+        $otherLots = Lot::where('user_id', Auth::id())
+            ->where('id', '!=', $lot->id)
+            ->with('box:id,name')
+            ->orderByDesc('lot_number')
+            ->get(['id', 'lot_number', 'box_id'])
+            ->map(fn ($l) => [
+                'id' => $l->id,
+                'lot_number' => $l->lot_number,
+                'name' => $l->box ? "{$l->box->name} - Lot #{$l->lot_number}" : "Lot #{$l->lot_number}",
+            ]);
+
         return Inertia::render('inventory/lots/show', [
             'lot' => $lot,
             'items' => $items,
             'boxes' => Box::where('user_id', Auth::id())->orderBy('name')->get(),
+            'otherLots' => $otherLots,
             'filters' => $request->only(['search', 'condition', 'foiling', 'rarity', 'sort', 'direction']),
             'conditions' => [
                 'NM' => 'Near Mint',
