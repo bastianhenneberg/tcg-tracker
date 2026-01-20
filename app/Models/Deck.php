@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -82,5 +83,20 @@ class Deck extends Model
     public function scopeForGame($query, string $gameSlug)
     {
         return $query->whereHas('gameFormat.game', fn ($q) => $q->where('slug', $gameSlug));
+    }
+
+    public function inventoryAssignments(): HasMany
+    {
+        return $this->hasMany(DeckInventoryAssignment::class);
+    }
+
+    public function assignedInventory(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            UnifiedInventory::class,
+            'deck_inventory_assignments',
+            'deck_id',
+            'unified_inventory_id'
+        )->withPivot('quantity')->withTimestamps();
     }
 }

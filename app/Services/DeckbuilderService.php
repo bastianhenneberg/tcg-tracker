@@ -132,10 +132,23 @@ class DeckbuilderService
         $typeDistribution = [];
         $colorDistribution = [];
         $zoneStats = [];
+        $totalCards = 0;
 
         foreach ($cards as $deckCard) {
             $card = $deckCard->printing->card;
             $qty = $deckCard->quantity;
+            $zone = $deckCard->zone;
+
+            // Zone stats (always include all zones)
+            $zoneName = $zone->name;
+            $zoneStats[$zoneName] = ($zoneStats[$zoneName] ?? 0) + $qty;
+
+            // Skip non-counting zones (like Maybe) for other statistics
+            if (! $zone->counts_towards_deck) {
+                continue;
+            }
+
+            $totalCards += $qty;
 
             // Mana curve (use cost from game_specific)
             $cost = $card->game_specific['cost'] ?? $card->game_specific['pitch'] ?? 0;
@@ -155,17 +168,13 @@ class DeckbuilderService
             foreach ($colors as $color) {
                 $colorDistribution[$color] = ($colorDistribution[$color] ?? 0) + $qty;
             }
-
-            // Zone stats
-            $zoneName = $deckCard->zone->name;
-            $zoneStats[$zoneName] = ($zoneStats[$zoneName] ?? 0) + $qty;
         }
 
         // Sort mana curve by cost
         ksort($manaCurve);
 
         return [
-            'total_cards' => $cards->sum('quantity'),
+            'total_cards' => $totalCards,
             'mana_curve' => $manaCurve,
             'type_distribution' => $typeDistribution,
             'color_distribution' => $colorDistribution,
@@ -214,7 +223,7 @@ class DeckbuilderService
      *
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function searchCards(Deck $deck, string $query, int $perPage = 20)
+    public function searchCards(Deck $deck, string $query, int $perPage = 20, bool $collectionOnly = false)
     {
         $game = $deck->getGame();
 
@@ -235,7 +244,7 @@ class DeckbuilderService
             });
 
         // If collection only, filter to owned cards
-        if ($deck->use_collection_only) {
+        if ($collectionOnly) {
             $printingsQuery->whereIn('id', function ($q) use ($deck) {
                 $q->select('printing_id')
                     ->from('unified_inventories')
@@ -244,6 +253,15 @@ class DeckbuilderService
                     ->where('quantity', '>', 0);
             });
         }
+
+        // Add inventory quantity as a subquery
+        $printingsQuery->addSelect([
+            'unified_printings.*',
+            'owned_quantity' => \App\Models\UnifiedInventory::selectRaw('COALESCE(SUM(quantity), 0)')
+                ->whereColumn('printing_id', 'unified_printings.id')
+                ->where('user_id', $deck->user_id)
+                ->where('in_collection', true),
+        ]);
 
         return $printingsQuery
             ->orderBy(DB::raw('(SELECT name FROM unified_cards WHERE unified_cards.id = unified_printings.card_id)'))
@@ -262,11 +280,28 @@ class DeckbuilderService
         $deckCards = $deck->cards()
             ->with(['printing.card', 'zone'])
             ->orderBy('position')
-            ->get()
-            ->groupBy('deck_zone_id');
+            ->get();
 
-        $zonesWithCards = $zones->map(function ($zone) use ($deckCards) {
-            $cards = $deckCards->get($zone->id, collect());
+        // Get owned quantities for all printings in the deck
+        $printingIds = $deckCards->pluck('printing_id')->unique();
+        $ownedQuantities = \App\Models\UnifiedInventory::where('user_id', $deck->user_id)
+            ->where('in_collection', true)
+            ->whereIn('printing_id', $printingIds)
+            ->groupBy('printing_id')
+            ->selectRaw('printing_id, SUM(quantity) as total')
+            ->pluck('total', 'printing_id');
+
+        // Add owned_quantity to each deck card
+        $deckCards = $deckCards->map(function ($card) use ($ownedQuantities) {
+            $card->owned_quantity = (int) ($ownedQuantities[$card->printing_id] ?? 0);
+
+            return $card;
+        });
+
+        $groupedCards = $deckCards->groupBy('deck_zone_id');
+
+        $zonesWithCards = $zones->map(function ($zone) use ($groupedCards) {
+            $cards = $groupedCards->get($zone->id, collect());
 
             return [
                 'zone' => $zone,

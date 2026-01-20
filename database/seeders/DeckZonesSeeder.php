@@ -38,6 +38,7 @@ class DeckZonesSeeder extends Seeder
                             'min_cards' => $zone['min_cards'],
                             'max_cards' => $zone['max_cards'],
                             'is_required' => $zone['is_required'],
+                            'counts_towards_deck' => $zone['counts_towards_deck'] ?? true,
                             'sort_order' => $sortOrder,
                         ]
                     );

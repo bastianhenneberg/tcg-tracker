@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UnifiedInventory extends Model
 {
@@ -130,5 +132,44 @@ class UnifiedInventory extends Model
     public function scopeOnBinderPage($query, int $binderPageId)
     {
         return $query->where('binder_page_id', $binderPageId);
+    }
+
+    public function deckAssignments(): HasMany
+    {
+        return $this->hasMany(DeckInventoryAssignment::class, 'unified_inventory_id');
+    }
+
+    public function assignedToDecks(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Deck::class,
+            'deck_inventory_assignments',
+            'unified_inventory_id',
+            'deck_id'
+        )->withPivot('quantity')->withTimestamps();
+    }
+
+    /**
+     * Get total quantity assigned to decks.
+     */
+    public function getAssignedQuantityAttribute(): int
+    {
+        return $this->deckAssignments()->sum('quantity');
+    }
+
+    /**
+     * Get available (unassigned) quantity.
+     */
+    public function getAvailableQuantityAttribute(): int
+    {
+        return max(0, $this->quantity - $this->assigned_quantity);
+    }
+
+    /**
+     * Check if any quantity is assigned to a deck.
+     */
+    public function getIsInDeckAttribute(): bool
+    {
+        return $this->assigned_quantity > 0;
     }
 }

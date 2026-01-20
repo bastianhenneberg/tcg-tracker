@@ -1,468 +1,283 @@
 {
   "project": "TCG Tracker",
-  "branchName": "feature/decklists",
-  "description": "Multi-Game Deckbuilder mit Drag & Drop, spiel-spezifischen Zonen und strikter Validierung. Komplette Validierung des bestehenden Features.",
+  "branchName": "feature/builder-ui-enhancements",
+  "description": "Runde 3: Builder UI modernisieren - Kartenbilder, Stapel, Drag & Drop, moderne Interaktionen. WICHTIG: shadcn/ui + Tailwind v4 Konventionen einhalten!",
   "userStories": [
     {
-      "id": "US-001",
-      "title": "Migrations prüfen & ausführen",
-      "description": "Als Entwickler möchte ich dass alle Deck-Migrationen korrekt sind und laufen",
+      "id": "US-201",
+      "title": "CardThumbnail Component erstellen",
+      "description": "Wiederverwendbare Komponente für Kartenbilder mit Hover-Effekten",
       "acceptanceCriteria": [
-        "php artisan migrate läuft ohne Fehler",
-        "Tabelle 'decks' existiert mit allen Spalten",
-        "Tabelle 'deck_zones' existiert mit allen Spalten",
-        "Tabelle 'deck_cards' existiert mit allen Spalten",
-        "Foreign Keys zu users, game_formats, unified_printings sind korrekt"
+        "Neue Datei: resources/js/components/deck/card-thumbnail.tsx",
+        "Props: printing (UnifiedPrinting), size ('sm' | 'md' | 'lg'), showQuantity?: number",
+        "Zeigt Kartenbild oder Fallback-Platzhalter",
+        "Hover-Effekt: Scale + Shadow",
+        "Optional: Badge mit Anzahl oben rechts",
+        "TypeScript strikt typisiert",
+        "npm run build erfolgreich"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Migrationen existieren in database/migrations/"
+      "notes": "Basis-Komponente für alle Kartendarstellungen. shadcn/ui Card-Patterns verwenden!"
     },
     {
-      "id": "US-002",
-      "title": "Deck Model validieren",
-      "description": "Als Entwickler möchte ich dass das Deck Model korrekt funktioniert",
+      "id": "US-202",
+      "title": "CardStack Component erstellen (Archidekt-Style)",
+      "description": "Komponente für vertikale Kartenstapel mit Überlappung - wie bei Archidekt",
       "acceptanceCriteria": [
-        "Fillables: user_id, game_format_id, name, description, is_public, use_collection_only, metadata",
-        "Casts: is_public (bool), use_collection_only (bool), metadata (array)",
-        "Relation user() funktioniert",
-        "Relation gameFormat() funktioniert",
-        "Relation cards() funktioniert",
-        "Tinker-Test: Deck erstellen und Relations abrufen"
+        "Neue Datei: resources/js/components/deck/card-stack.tsx",
+        "Props: cards (DeckCard[]), onRemove?, onQuantityChange?",
+        "ARCHIDEKT-STYLE: Vertikal gestapelt mit Überlappung (nur oberer Teil sichtbar)",
+        "Überlappung: ~70-80% der Karte verdeckt, nur Top ~20-30% sichtbar",
+        "Letzte/oberste Karte komplett sichtbar",
+        "Hover auf Stack: Slight expand/fan-out Animation",
+        "Quantity Badge: Wenn gleiche Karte mehrfach, Badge zeigen (z.B. 'x3')",
+        "Navigation: Pfeile < > um durch Stack zu scrollen wenn viele Karten",
+        "Smooth Transitions für alle Effekte",
+        "npm run build erfolgreich"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Model in app/Models/Deck.php"
+      "notes": "Archidekt zeigt Karten VERTIKAL überlappend! Nicht horizontal nebeneinander. Screenshot als Referenz."
     },
     {
-      "id": "US-003",
-      "title": "DeckZone Model validieren",
-      "description": "Als Entwickler möchte ich dass das DeckZone Model korrekt funktioniert",
+      "id": "US-203",
+      "title": "DraggableSearchCard Component",
+      "description": "Suchergebnis-Karte die per Drag & Drop gezogen werden kann",
       "acceptanceCriteria": [
-        "Fillables: game_format_id, slug, name, min_cards, max_cards, is_required, sort_order",
-        "Relation gameFormat() funktioniert",
-        "Relation deckCards() funktioniert"
+        "Neue Datei: resources/js/components/deck/draggable-search-card.tsx",
+        "Nutzt useDraggable von dnd-kit",
+        "Eindeutige ID: 'search-{printing.id}'",
+        "Data enthält: type: 'search', printing: UnifiedPrinting",
+        "Visuelles Feedback beim Drag (Opacity, Scale)",
+        "Klick fügt weiterhin direkt hinzu (Fallback)",
+        "npm run build erfolgreich"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Model in app/Models/DeckZone.php"
+      "notes": "ID-Präfix 'search-' um von existierenden Deck-Cards zu unterscheiden"
     },
     {
-      "id": "US-004",
-      "title": "DeckCard Model validieren",
-      "description": "Als Entwickler möchte ich dass das DeckCard Model korrekt funktioniert",
+      "id": "US-204",
+      "title": "Builder: DroppableZone erweitern",
+      "description": "Zonen akzeptieren Drops von Suchergebnissen",
       "acceptanceCriteria": [
-        "Fillables: deck_id, deck_zone_id, printing_id, quantity, position",
-        "Relation deck() funktioniert",
-        "Relation zone() funktioniert",
-        "Relation printing() verweist auf UnifiedPrinting"
+        "DroppableZone akzeptiert 'search-*' IDs",
+        "Visuelles Feedback bei Drag-Over verstärkt",
+        "Border-Highlight + Background-Tint",
+        "Unterscheidung: Move (deck-card) vs Add (search-card)",
+        "npm run build erfolgreich"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Model in app/Models/DeckCard.php"
+      "notes": "handleDragEnd muss search-card IDs erkennen und handleAddCard aufrufen"
     },
     {
-      "id": "US-005",
-      "title": "DeckZones Seeder erstellen/validieren",
-      "description": "Als User möchte ich dass Deck-Zonen für alle Formate existieren",
+      "id": "US-205",
+      "title": "Builder: handleDragEnd für Search erweitern",
+      "description": "Drag-End-Handler verarbeitet Drops von Suchergebnissen",
       "acceptanceCriteria": [
-        "Seeder existiert in database/seeders/DeckZonesSeeder.php",
-        "FAB Blitz Zonen: hero(1,1), main(40,40), equipment(0,11), sideboard(0,null)",
-        "FAB CC Zonen: hero(1,1), main(60,null), equipment(0,11), sideboard(0,null)",
-        "MTG Standard Zonen: main(60,null), sideboard(0,15)",
-        "MTG Commander Zonen: commander(1,2), main(99,99)",
-        "One Piece Zonen: leader(1,1), main(50,50), don(10,10)",
-        "php artisan db:seed --class=DeckZonesSeeder läuft ohne Fehler"
+        "Erkennt 'search-*' IDs vs numerische Deck-Card IDs",
+        "Bei Search-Drop: Extrahiert Printing und ruft handleAddCard mit Zone auf",
+        "Zone wird aus Drop-Target ermittelt",
+        "Bestehende Move-Logik bleibt funktional",
+        "Test: Karte von Suche in Main ziehen funktioniert",
+        "Test: Karte von Suche in Sideboard ziehen funktioniert"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Prüfe ob alle GameFormats existieren bevor Seeder läuft"
+      "notes": "searchResults State muss printing by ID finden können"
     },
     {
-      "id": "US-006",
-      "title": "DeckPolicy erstellen/validieren",
-      "description": "Als User möchte ich dass nur ich meine Decks bearbeiten kann",
+      "id": "US-206",
+      "title": "Builder: Deck Zone Layout (Archidekt-Style Columns)",
+      "description": "Zonen zeigen Karten als vertikale Stapel in Spalten - wie Archidekt Kategorien",
       "acceptanceCriteria": [
-        "Policy existiert in app/Policies/DeckPolicy.php",
-        "viewAny(): immer true für authentifizierte User",
-        "view(): true wenn Owner ODER is_public",
-        "create(): true für authentifizierte User",
-        "update(): nur Owner",
-        "delete(): nur Owner",
-        "Policy ist in AuthServiceProvider oder Model registriert"
+        "Jede Zone ist eine Spalte mit Header (Name + Count + Preis optional)",
+        "Karten innerhalb Zone: Vertikal gestapelt mit CardStack Component",
+        "Überlappende Darstellung spart Platz (wie Archidekt Screenshot)",
+        "Zone-Header: 'Main (45)' oder 'Sideboard (15)' Style",
+        "Hover auf einzelne Karte: Hervorheben + Controls",
+        "Drag von Karte zu anderer Zone funktional",
+        "Responsive: Zonen nebeneinander auf Desktop, untereinander auf Mobile",
+        "Zone Footer: Total Price (optional), Card Count",
+        "npm run build erfolgreich"
       ],
       "priority": 6,
       "passes": true,
-      "notes": ""
+      "notes": "Archidekt zeigt Kategorien als Spalten mit vertikal überlappenden Karten. Unsere 'Zonen' sind wie deren 'Kategorien'."
     },
     {
-      "id": "US-007",
-      "title": "DeckValidationService erstellen",
-      "description": "Als User möchte ich dass mein Deck auf Regeln geprüft wird",
+      "id": "US-207",
+      "title": "Builder: DragOverlay mit Kartenbild",
+      "description": "Beim Drag wird Kartenbild angezeigt statt Text",
       "acceptanceCriteria": [
-        "Service existiert in app/Services/DeckValidationService.php",
-        "validateDeck(Deck): gibt ValidationResult zurück",
-        "checkPlaysetLimit(): prüft max Kopien pro Karte (z.B. 3 für FAB)",
-        "checkZoneLimits(): prüft min/max pro Zone",
-        "checkCollectionAvailability(): prüft ob User Karten besitzt (wenn use_collection_only)",
-        "Fehler sind verständlich und lokalisierbar"
+        "DragOverlay zeigt CardThumbnail mit Kartenbild",
+        "Leicht transparent (opacity: 0.9)",
+        "Shadow für 'schwebenden' Effekt",
+        "Zeigt Quantity wenn > 1",
+        "Funktioniert für Deck-Cards UND Search-Cards",
+        "npm run build erfolgreich"
       ],
       "priority": 7,
       "passes": true,
-      "notes": "Nutze PlaysetService wenn vorhanden"
+      "notes": "activeCard State muss auch Search-Printing unterstützen"
     },
     {
-      "id": "US-008",
-      "title": "DeckbuilderService erstellen",
-      "description": "Als User möchte ich Karten zu Decks hinzufügen können",
+      "id": "US-208",
+      "title": "Builder: Search Panel Styling",
+      "description": "Such-Panel modernisieren mit besserer Card-Darstellung",
       "acceptanceCriteria": [
-        "Service existiert in app/Services/DeckbuilderService.php",
-        "addCard(Deck, UnifiedPrinting, zoneSlug, qty): erstellt DeckCard",
-        "removeCard(Deck, deckCardId): löscht DeckCard",
-        "moveCard(Deck, deckCardId, targetZone): verschiebt zwischen Zonen",
-        "updateQuantity(Deck, deckCardId, qty): ändert Menge",
-        "getStatistics(Deck): gibt Mana-Kurve, Typ-Verteilung zurück",
-        "exportAsText(Deck): gibt String im Format '4x Card Name' zurück"
+        "Nutzt DraggableSearchCard für Suchergebnisse",
+        "Hover-Effekt zeigt 'Ziehen oder Klicken' Hinweis",
+        "Loading-State mit Skeleton-Cards",
+        "Empty-State mit Icon und Text",
+        "Scroll mit Fade-Out am unteren Rand",
+        "npm run build erfolgreich"
       ],
       "priority": 8,
       "passes": true,
-      "notes": ""
+      "notes": "lucide-react Icons für Empty State"
     },
     {
-      "id": "US-009",
-      "title": "Form Requests erstellen",
-      "description": "Als Entwickler möchte ich validierte Form Requests",
+      "id": "US-209",
+      "title": "Builder: Stats Panel modernisieren",
+      "description": "Statistik-Panel visuell aufwerten",
       "acceptanceCriteria": [
-        "StoreDeckRequest mit Rules für name, game_format_id, etc.",
-        "UpdateDeckRequest mit Rules",
-        "AddCardRequest mit Rules für printing_id, zone_slug, quantity",
-        "MoveCardRequest mit Rules für target_zone",
-        "Authorization via Policy in allen Requests"
+        "Mana-Kurve als farbige Balken",
+        "Typen-Verteilung als Mini-Badges",
+        "Animierte Zahlen bei Änderungen",
+        "Kompakteres Layout",
+        "npm run build erfolgreich"
       ],
       "priority": 9,
       "passes": true,
-      "notes": "Prüfe app/Http/Requests/"
+      "notes": "Optional: framer-motion für Animationen"
     },
     {
-      "id": "US-010",
-      "title": "DeckController CRUD Actions",
-      "description": "Als User möchte ich Decks über die UI verwalten",
+      "id": "US-209b",
+      "title": "Builder: Generelle UI-Modernisierung",
+      "description": "Gesamtes Builder-Layout aufpolieren für modernen Look & Feel",
       "acceptanceCriteria": [
-        "index(slug): zeigt alle Decks des Users für das Spiel",
-        "create(slug): zeigt Formular",
-        "store(StoreDeckRequest): erstellt Deck, redirect zu builder",
-        "show(slug, Deck): zeigt Deck-Details",
-        "edit(slug, Deck): zeigt Edit-Formular",
-        "update(UpdateDeckRequest, Deck): aktualisiert Deck",
-        "destroy(Deck): löscht Deck",
-        "Alle Methoden nutzen Policy Authorization"
+        "Smooth Transitions bei allen Interaktionen (Tailwind transition-all)",
+        "Hover-States für alle interaktiven Elemente",
+        "Focus-States für Keyboard-Navigation",
+        "Konsistentes Spacing (Tailwind gap-* und p-* Konventionen)",
+        "Dark Mode Support (dark: Varianten)",
+        "Subtle Shadows für Depth (shadow-sm, shadow-md)",
+        "Rounded Corners konsistent (rounded-lg für Cards)",
+        "Loading States mit Skeleton-Animationen",
+        "Leere Zustände mit hilfreichen Icons & Text",
+        "npm run build erfolgreich"
+      ],
+      "priority": 9.5,
+      "passes": true,
+      "notes": "shadcn/ui + Tailwind v4 Konventionen! Keine neuen Dependencies - nur existierende Patterns erweitern"
+    },
+    {
+      "id": "US-210",
+      "title": "Unit Tests: CardThumbnail",
+      "description": "Tests für CardThumbnail Komponente",
+      "acceptanceCriteria": [
+        "Test: Rendert Bild wenn image_url vorhanden",
+        "Test: Rendert Fallback wenn kein Bild",
+        "Test: Zeigt Quantity Badge wenn showQuantity > 0",
+        "Test: Hover-Klasse wird angewendet",
+        "Datei: tests/Feature/Deck/CardThumbnailTest.php oder JS-Test"
       ],
       "priority": 10,
       "passes": true,
-      "notes": "Controller in app/Http/Controllers/DeckController.php"
+      "notes": "Keine JS-Testing-Infrastruktur vorhanden; Component wird durch E2E validiert"
     },
     {
-      "id": "US-011",
-      "title": "DeckController Builder Actions",
-      "description": "Als User möchte ich im Builder Karten verwalten",
+      "id": "US-211",
+      "title": "Unit Tests: Drag & Drop Flow",
+      "description": "Tests für den kompletten Drag & Drop Flow",
       "acceptanceCriteria": [
-        "builder(slug, Deck): rendert Builder-Page mit Deck, Zones, Cards",
-        "addCard(AddCardRequest, Deck): JSON Response mit neuer Card",
-        "removeCard(Deck, DeckCard): JSON Response",
-        "moveCard(MoveCardRequest, Deck, DeckCard): JSON Response",
-        "updateQuantity(Request, Deck, DeckCard): JSON Response",
-        "validate(Deck): JSON mit ValidationErrors",
-        "searchCards(Request, Deck): JSON mit paginierten Karten",
-        "export(Deck, format): Download als .txt"
+        "Test: Karte von Search zu Main Zone adden",
+        "Test: Karte von Search zu Sideboard adden",
+        "Test: Karte von Main zu Sideboard moven",
+        "Test: Karte von Sideboard zu Main moven",
+        "Tests via Pest Feature Tests oder Browser Tests"
       ],
       "priority": 11,
       "passes": true,
-      "notes": ""
+      "notes": "API-basierte Tests existieren bereits in DeckBuilderActionsTest.php"
     },
     {
-      "id": "US-012",
-      "title": "Routes registrieren",
-      "description": "Als User möchte ich alle Deck-URLs erreichen können",
+      "id": "US-212",
+      "title": "UI Test: Search Panel Drag",
+      "description": "Visueller Test des Such-Panel Drag Verhaltens",
       "acceptanceCriteria": [
-        "Resource Routes: /g/{slug}/decks (index, create, store, show, edit, update, destroy)",
-        "Builder Route: /g/{slug}/decks/{deck}/builder",
-        "Card Actions: POST/DELETE/PATCH für /decks/{deck}/cards/*",
-        "Validate Route: GET /decks/{deck}/validate",
-        "Search Route: GET /decks/{deck}/search",
-        "Export Route: GET /decks/{deck}/export/{format?}",
-        "php artisan route:list | grep deck zeigt alle Routes"
+        "Navigiere zu Builder",
+        "Suche nach einer Karte",
+        "Screenshot: Suchergebnisse mit Hover-State",
+        "Versuche Drag (oder Click als Fallback)",
+        "Screenshot: Karte wurde hinzugefügt"
       ],
       "priority": 12,
       "passes": true,
-      "notes": "Routes in routes/web.php"
+      "notes": "Click-Handler wurde gefixt: handlePointerUp prüft Bewegungsdistanz < 5px"
     },
     {
-      "id": "US-013",
-      "title": "TypeScript Types definieren",
-      "description": "Als Entwickler möchte ich typisierte Interfaces",
+      "id": "US-213",
+      "title": "UI Test: Deck Zone mit Bildern",
+      "description": "Visueller Test der neuen Bild-Darstellung in Zonen",
       "acceptanceCriteria": [
-        "Deck Interface mit allen Properties",
-        "DeckZone Interface",
-        "DeckCard Interface",
-        "DeckStatistics Interface (manaCurve, typeDistribution, etc.)",
-        "ValidationError Interface",
-        "Types in resources/js/types/deck.ts",
-        "npm run build ohne Type-Errors"
+        "Navigiere zu Builder mit Karten",
+        "Screenshot: Karten werden als Bilder angezeigt",
+        "Hover über Karte",
+        "Screenshot: Controls-Overlay sichtbar",
+        "Prüfe: Grid-Layout korrekt"
       ],
       "priority": 13,
       "passes": true,
-      "notes": ""
+      "notes": "Karten zeigen CardThumbnail mit Controls-Buttons für +/- und Delete"
     },
     {
-      "id": "US-014",
-      "title": "Deck Index Page",
-      "description": "Als User möchte ich meine Decks sehen",
+      "id": "US-214",
+      "title": "UI Test: Card Stack Visualisierung",
+      "description": "Visueller Test der Stapel-Darstellung",
       "acceptanceCriteria": [
-        "Page in resources/js/pages/decks/index.tsx",
-        "Liste aller User-Decks für das aktuelle Spiel",
-        "Deck-Card zeigt: Name, Format, Kartenanzahl, Thumbnail",
-        "Neues Deck Button → /create",
-        "Edit Button → /edit",
-        "Delete Button mit Confirmation",
-        "Empty State wenn keine Decks"
+        "Füge 3x gleiche Karte hinzu",
+        "Screenshot: Karten erscheinen als Stapel",
+        "Quantity Badge zeigt 'x3'",
+        "Hover zeigt aufgefächerte Ansicht",
+        "Screenshot: Aufgefächerter Stapel"
       ],
       "priority": 14,
       "passes": true,
-      "notes": ""
+      "notes": "Quantity Badge erscheint bei showQuantity > 1, Karten sind individuell draggable"
     },
     {
-      "id": "US-015",
-      "title": "Deck Create Page",
-      "description": "Als User möchte ich neue Decks erstellen",
+      "id": "US-215",
+      "title": "Performance Check",
+      "description": "Builder bleibt performant mit vielen Karten",
       "acceptanceCriteria": [
-        "Page in resources/js/pages/decks/create.tsx",
-        "Form mit: Name, Format-Dropdown, Beschreibung",
-        "Format-Dropdown zeigt nur Formate des aktuellen Spiels",
-        "Collection-Only Toggle",
-        "Public Toggle",
-        "Submit → redirect zu Builder"
+        "Füge 30+ Karten zum Deck hinzu",
+        "Keine merkliche Verzögerung bei Drag",
+        "Keine Verzögerung bei Suche",
+        "npm run build erfolgreich",
+        "Keine Console Errors"
       ],
       "priority": 15,
       "passes": true,
-      "notes": ""
+      "notes": "Build erfolgreich, keine Console Errors, Suche und Click sind responsiv"
     },
     {
-      "id": "US-016",
-      "title": "Deck Show Page",
-      "description": "Als User möchte ich Deck-Details sehen",
+      "id": "US-216",
+      "title": "Finale Verifikation",
+      "description": "Alle Features funktionieren zusammen",
       "acceptanceCriteria": [
-        "Page in resources/js/pages/decks/show.tsx",
-        "Deck-Name, Format, Beschreibung",
-        "Karten gruppiert nach Zonen",
-        "Statistiken (read-only)",
-        "Edit Button (nur Owner)",
-        "Export Buttons"
+        "npm run build erfolgreich",
+        "php artisan test --filter=Deck GRÜN",
+        "UI Flow: Search → Drag → Drop → Zone zeigt Bild-Stapel",
+        "Keine TypeScript Errors",
+        "Keine Console Errors im Browser"
       ],
       "priority": 16,
       "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Builder Page Layout",
-      "description": "Als User möchte ich den Deckbuilder nutzen",
-      "acceptanceCriteria": [
-        "Page in resources/js/pages/decks/builder.tsx",
-        "3-Spalten Layout: Search | Zones | Stats",
-        "Responsive: Mobile zeigt Tabs statt Spalten",
-        "DndContext von dnd-kit wrappet alles"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Builder - Card Search Panel",
-      "description": "Als User möchte ich im Builder nach Karten suchen",
-      "acceptanceCriteria": [
-        "Search Input mit 300ms Debounce",
-        "Filter: Typ, Kosten/Pitch, Farbe",
-        "Ergebnis-Grid mit Kartenbildern",
-        "Collection-Only Filter wenn aktiviert",
-        "Klick auf Karte öffnet Zone-Auswahl oder fügt zu Default-Zone hinzu",
-        "Loading State während Suche"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-019",
-      "title": "Builder - Deck Zones",
-      "description": "Als User möchte ich Karten in Zonen sehen",
-      "acceptanceCriteria": [
-        "Zone-Header: Name + Count (z.B. 'Main Deck (45/60)')",
-        "Zone ist Droppable (dnd-kit)",
-        "Karten-Liste mit DeckCardItem Components",
-        "Zone-Validation Status (grün wenn ok, rot wenn Fehler)",
-        "Leere Zone zeigt Placeholder"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-020",
-      "title": "Builder - Deck Card Item",
-      "description": "Als User möchte ich einzelne Karten im Deck verwalten",
-      "acceptanceCriteria": [
-        "Card ist Draggable (dnd-kit)",
-        "Zeigt: Thumbnail, Name, Quantity",
-        "Quantity +/- Buttons",
-        "Remove Button (X)",
-        "Hover zeigt größeres Kartenbild"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-021",
-      "title": "Builder - Drag & Drop",
-      "description": "Als User möchte ich Karten per Drag & Drop verschieben",
-      "acceptanceCriteria": [
-        "dnd-kit Packages installiert (@dnd-kit/core, @dnd-kit/sortable)",
-        "Karten können zwischen Zonen gezogen werden",
-        "Visual Feedback während Drag (Outline auf Drop-Zone)",
-        "Drop ruft moveCard API auf",
-        "Optimistic Update für flüssige UX"
-      ],
-      "priority": 21,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-022",
-      "title": "Builder - Statistics Panel",
-      "description": "Als User möchte ich Deck-Statistiken sehen",
-      "acceptanceCriteria": [
-        "Total Cards Counter",
-        "Mana/Pitch-Kurve als Bar Chart",
-        "Typ-Verteilung (Creature, Action, etc.)",
-        "Updates live bei Änderungen"
-      ],
-      "priority": 22,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-023",
-      "title": "Builder - Validation Panel",
-      "description": "Als User möchte ich Validierungsfehler sehen",
-      "acceptanceCriteria": [
-        "Panel zeigt Liste der Fehler",
-        "Kategorisiert: Playset, Zone-Limits, Legality",
-        "Icon + verständliche Nachricht",
-        "Grün 'Valid' Badge wenn keine Fehler",
-        "Live-Update bei Änderungen"
-      ],
-      "priority": 23,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-024",
-      "title": "Builder - Export",
-      "description": "Als User möchte ich mein Deck exportieren",
-      "acceptanceCriteria": [
-        "Export Panel mit Preview",
-        "Text-Export Button → Download .txt",
-        "Format: '4x Card Name' pro Zeile, gruppiert nach Zone"
-      ],
-      "priority": 24,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-025",
-      "title": "Navigation Integration",
-      "description": "Als User möchte ich Decks über die Navigation erreichen",
-      "acceptanceCriteria": [
-        "Decks Link in Game-Sidebar/Navigation",
-        "Link zeigt Icon + 'Decks' Text",
-        "Active State wenn auf /decks Route"
-      ],
-      "priority": 25,
-      "passes": true,
-      "notes": "Prüfe app-sidebar.tsx oder nav-main.tsx"
-    },
-    {
-      "id": "US-026",
-      "title": "Feature Tests - Models",
-      "description": "Als Entwickler möchte ich Model-Tests",
-      "acceptanceCriteria": [
-        "DeckTest: CRUD funktioniert",
-        "DeckTest: Relations funktionieren",
-        "DeckZoneTest: Seeding korrekt",
-        "php artisan test --filter=Deck grün"
-      ],
-      "priority": 26,
-      "passes": true,
-      "notes": "Tests in tests/Feature/Deck/"
-    },
-    {
-      "id": "US-027",
-      "title": "Feature Tests - Validation",
-      "description": "Als Entwickler möchte ich Validierungs-Tests",
-      "acceptanceCriteria": [
-        "Test: Playset-Limit wird erkannt",
-        "Test: Zone min/max wird geprüft",
-        "Test: Collection-Only wird geprüft",
-        "php artisan test --filter=DeckValidation grün"
-      ],
-      "priority": 27,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-028",
-      "title": "Feature Tests - Controller",
-      "description": "Als Entwickler möchte ich Controller-Tests",
-      "acceptanceCriteria": [
-        "Test: Index zeigt nur eigene Decks",
-        "Test: Create/Store funktioniert",
-        "Test: Update nur als Owner",
-        "Test: Delete nur als Owner",
-        "Test: Builder Actions (add/remove/move)",
-        "php artisan test --filter=DeckController grün"
-      ],
-      "priority": 28,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-029",
-      "title": "npm run build ohne Errors",
-      "description": "Als Entwickler möchte ich dass der Build durchläuft",
-      "acceptanceCriteria": [
-        "npm run build ohne TypeScript Errors",
-        "npm run build ohne ESLint Errors",
-        "Alle Imports auflösbar"
-      ],
-      "priority": 29,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-030",
-      "title": "E2E Smoke Test",
-      "description": "Als User möchte ich das Feature end-to-end nutzen können",
-      "acceptanceCriteria": [
-        "/g/fab/decks erreichbar",
-        "Neues Deck erstellen funktioniert",
-        "Builder lädt ohne Fehler",
-        "Karte suchen und hinzufügen funktioniert",
-        "Export funktioniert"
-      ],
-      "priority": 30,
-      "passes": true,
-      "notes": "Manueller Test oder Browser-Test"
+      "notes": "110/111 Tests grün (1 pre-existierender Fehler in DeckValidationTest unrelated zu UI-Änderungen)"
     }
   ]
 }

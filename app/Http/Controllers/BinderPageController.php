@@ -18,14 +18,37 @@ class BinderPageController extends Controller
     {
         $this->authorize('view', $binderPage);
 
-        $binderPage->load(['binder', 'inventoryItems.printing.card', 'inventoryItems.printing.set']);
+        $binderPage->load([
+            'binder',
+            'inventoryItems.printing.card',
+            'inventoryItems.printing.set',
+            'inventoryItems.deckAssignments.deck',
+        ]);
 
         $slots = [];
-        $itemsBySlot = $binderPage->inventoryItems->groupBy('binder_slot');
+        $itemsBySlot = $binderPage->inventoryItems
+            ->sortBy('position_in_slot')
+            ->groupBy('binder_slot');
 
         for ($i = 1; $i <= BinderPage::SLOTS_PER_PAGE; $i++) {
             // Each slot can hold up to 4 cards
-            $slots[$i] = $itemsBySlot->get($i, collect())->take(4)->values()->all();
+            // Add deck assignment info to each card
+            $slotItems = $itemsBySlot->get($i, collect())
+                ->take(4)
+                ->values()
+                ->map(function ($item) {
+                    $item->deck_names = $item->deckAssignments
+                        ->map(fn ($a) => $a->deck?->name)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+                    $item->is_in_deck = count($item->deck_names) > 0;
+
+                    return $item;
+                })
+                ->all();
+            $slots[$i] = $slotItems;
         }
 
         return Inertia::render('collection/binders/pages/show', [
@@ -174,6 +197,149 @@ class BinderPageController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Move a specific card to a different slot (used by drag & drop).
+     */
+    public function moveCardToSlot(Request $request, BinderPage $binderPage): RedirectResponse
+    {
+        $this->authorize('update', $binderPage);
+
+        $validated = $request->validate([
+            'inventory_id' => ['required', 'exists:unified_inventories,id'],
+            'to_slot' => ['required', 'integer', 'min:1', 'max:'.BinderPage::SLOTS_PER_PAGE],
+            'position' => ['sometimes', 'integer', 'min:0', 'max:3'],
+        ]);
+
+        $inventory = UnifiedInventory::where('id', $validated['inventory_id'])
+            ->where('binder_page_id', $binderPage->id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        // Check if target slot has room (max 4 cards)
+        $toSlotCount = UnifiedInventory::where('binder_page_id', $binderPage->id)
+            ->where('binder_slot', $validated['to_slot'])
+            ->where('id', '!=', $inventory->id) // Exclude the card being moved
+            ->count();
+
+        if ($toSlotCount >= 4) {
+            return back()->withErrors(['slot' => 'Dieser Slot ist voll (max. 4 Karten).']);
+        }
+
+        // Determine position in the new slot
+        $position = $validated['position'] ?? $toSlotCount;
+
+        // If moving within the same slot, reorder
+        if ($inventory->binder_slot === $validated['to_slot']) {
+            $this->reorderCardsInSlot($binderPage, $validated['to_slot'], $inventory->id, $position);
+        } else {
+            // Moving to a different slot
+            // Shift existing cards at or after the target position
+            UnifiedInventory::where('binder_page_id', $binderPage->id)
+                ->where('binder_slot', $validated['to_slot'])
+                ->where('position_in_slot', '>=', $position)
+                ->increment('position_in_slot');
+
+            // Update the card
+            $inventory->update([
+                'binder_slot' => $validated['to_slot'],
+                'position_in_slot' => $position,
+            ]);
+
+            // Compact positions in the original slot
+            $this->compactSlotPositions($binderPage, $inventory->getOriginal('binder_slot'));
+        }
+
+        return back();
+    }
+
+    /**
+     * Reorder cards within a single slot.
+     */
+    public function reorderStack(Request $request, BinderPage $binderPage): RedirectResponse
+    {
+        $this->authorize('update', $binderPage);
+
+        $validated = $request->validate([
+            'slot' => ['required', 'integer', 'min:1', 'max:'.BinderPage::SLOTS_PER_PAGE],
+            'order' => ['required', 'array', 'max:4'],
+            'order.*' => ['integer', 'exists:unified_inventories,id'],
+        ]);
+
+        // Verify all cards belong to this slot and user
+        $cardIds = $validated['order'];
+        $validCards = UnifiedInventory::whereIn('id', $cardIds)
+            ->where('binder_page_id', $binderPage->id)
+            ->where('binder_slot', $validated['slot'])
+            ->where('user_id', Auth::id())
+            ->pluck('id')
+            ->all();
+
+        if (count($validCards) !== count($cardIds)) {
+            return back()->withErrors(['order' => 'Ungültige Kartenreihenfolge.']);
+        }
+
+        // Update positions
+        foreach ($cardIds as $position => $cardId) {
+            UnifiedInventory::where('id', $cardId)->update(['position_in_slot' => $position]);
+        }
+
+        return back();
+    }
+
+    /**
+     * Reorder cards within a slot when moving within the same slot.
+     */
+    private function reorderCardsInSlot(BinderPage $binderPage, int $slot, int $cardId, int $newPosition): void
+    {
+        $cards = UnifiedInventory::where('binder_page_id', $binderPage->id)
+            ->where('binder_slot', $slot)
+            ->orderBy('position_in_slot')
+            ->get();
+
+        // Remove the card being moved from its current position
+        $filteredCards = $cards->filter(fn ($c) => $c->id !== $cardId)->values();
+
+        // Insert at new position
+        $newOrder = collect();
+        foreach ($filteredCards as $index => $card) {
+            if ($index === $newPosition) {
+                $newOrder->push($cardId);
+            }
+            $newOrder->push($card->id);
+        }
+
+        // If new position is at the end
+        if ($newPosition >= $filteredCards->count()) {
+            $newOrder->push($cardId);
+        }
+
+        // Update all positions
+        foreach ($newOrder as $position => $id) {
+            UnifiedInventory::where('id', $id)->update(['position_in_slot' => $position]);
+        }
+    }
+
+    /**
+     * Compact positions in a slot after a card is removed.
+     */
+    private function compactSlotPositions(BinderPage $binderPage, ?int $slot): void
+    {
+        if ($slot === null) {
+            return;
+        }
+
+        $cards = UnifiedInventory::where('binder_page_id', $binderPage->id)
+            ->where('binder_slot', $slot)
+            ->orderBy('position_in_slot')
+            ->get();
+
+        foreach ($cards as $index => $card) {
+            if ($card->position_in_slot !== $index) {
+                $card->update(['position_in_slot' => $index]);
+            }
+        }
     }
 
     /**

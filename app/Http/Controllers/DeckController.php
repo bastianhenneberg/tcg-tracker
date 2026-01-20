@@ -29,20 +29,44 @@ class DeckController extends Controller
         private DeckValidationService $validationService
     ) {}
 
-    public function index(string $slug): Response
+    public function index(Request $request, string $slug): Response
     {
         $game = Game::where('slug', $slug)->firstOrFail();
 
-        $decks = Deck::where('user_id', Auth::id())
+        $query = Deck::where('user_id', Auth::id())
             ->whereHas('gameFormat', fn ($q) => $q->where('game_id', $game->id))
             ->with(['gameFormat'])
             ->withCount('cards')
-            ->orderByDesc('updated_at')
-            ->get();
+            ->withExists('inventoryAssignments as is_inventory_active');
+
+        // Handle sorting
+        $sortField = $request->input('sort', 'updated_at');
+        $sortDirection = $request->input('direction', 'desc');
+
+        // Map frontend sort fields to database fields
+        $sortMap = [
+            'name' => 'name',
+            'format' => 'game_format_id',
+            'cards_count' => 'cards_count',
+            'updated_at' => 'updated_at',
+            'created_at' => 'created_at',
+        ];
+
+        if (isset($sortMap[$sortField])) {
+            $query->orderBy($sortMap[$sortField], $sortDirection);
+        } else {
+            $query->orderByDesc('updated_at');
+        }
+
+        $decks = $query->paginate(25)->withQueryString();
 
         return Inertia::render('decks/index', [
             'game' => $game,
             'decks' => $decks,
+            'sort' => [
+                'field' => $sortField,
+                'direction' => $sortDirection,
+            ],
         ]);
     }
 
@@ -139,6 +163,9 @@ class DeckController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // Check if deck has inventory assignments
+        $deck->loadExists('inventoryAssignments as is_inventory_active');
+
         return Inertia::render('decks/builder', [
             'game' => $game,
             'deck' => $deck->load('gameFormat'),
@@ -219,6 +246,25 @@ class DeckController extends Controller
         ]);
     }
 
+    public function reorderCards(Request $request, string $slug, Deck $deck): JsonResponse
+    {
+        $this->authorize('update', $deck);
+
+        $validated = $request->validate([
+            'positions' => ['required', 'array'],
+            'positions.*.id' => ['required', 'integer', 'exists:deck_cards,id'],
+            'positions.*.position' => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($validated['positions'] as $item) {
+            DeckCard::where('id', $item['id'])
+                ->where('deck_id', $deck->id)
+                ->update(['position' => $item['position']]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function validate(string $slug, Deck $deck): JsonResponse
     {
         $this->authorize('view', $deck);
@@ -232,8 +278,9 @@ class DeckController extends Controller
 
         $query = $request->input('q', '');
         $perPage = min((int) $request->input('per_page', 20), 100);
+        $collectionOnly = $request->boolean('collection_only', $deck->use_collection_only);
 
-        $results = $this->deckbuilderService->searchCards($deck, $query, $perPage);
+        $results = $this->deckbuilderService->searchCards($deck, $query, $perPage, $collectionOnly);
 
         return response()->json($results);
     }

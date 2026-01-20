@@ -26,6 +26,7 @@ export interface Deck {
     metadata?: Record<string, unknown>;
     game_format?: GameFormat;
     cards_count?: number;
+    is_inventory_active?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -38,6 +39,7 @@ export interface DeckZone {
     min_cards: number;
     max_cards: number | null;
     is_required: boolean;
+    counts_towards_deck: boolean;
     sort_order: number;
     created_at: string;
     updated_at: string;
@@ -50,6 +52,7 @@ export interface DeckCard {
     printing_id: number;
     quantity: number;
     position: number;
+    owned_quantity?: number;
     printing?: UnifiedPrinting;
     zone?: DeckZone;
     created_at: string;

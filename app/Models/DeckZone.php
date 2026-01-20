@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeckZone extends Model
 {
+    /** @use HasFactory<\Database\Factories\DeckZoneFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'game_format_id',
         'slug',
@@ -15,6 +19,7 @@ class DeckZone extends Model
         'min_cards',
         'max_cards',
         'is_required',
+        'counts_towards_deck',
         'sort_order',
     ];
 
@@ -24,6 +29,7 @@ class DeckZone extends Model
             'min_cards' => 'integer',
             'max_cards' => 'integer',
             'is_required' => 'boolean',
+            'counts_towards_deck' => 'boolean',
             'sort_order' => 'integer',
         ];
     }
@@ -46,5 +52,10 @@ class DeckZone extends Model
     public function scopeRequired($query)
     {
         return $query->where('is_required', true);
+    }
+
+    public function scopeCountingTowardsDeck($query)
+    {
+        return $query->where('counts_towards_deck', true);
     }
 }

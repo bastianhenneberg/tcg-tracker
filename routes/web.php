@@ -6,6 +6,7 @@ use App\Http\Controllers\BoxController;
 use App\Http\Controllers\CustomCardController;
 use App\Http\Controllers\DataMappingController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DeckInventoryController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuickAddController;
@@ -57,6 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('binder-pages/{binderPage}/assign', [BinderPageController::class, 'assignCard'])->name('binder-pages.assign');
     Route::post('binder-pages/{binderPage}/remove', [BinderPageController::class, 'removeCard'])->name('binder-pages.remove');
     Route::post('binder-pages/{binderPage}/move', [BinderPageController::class, 'moveCard'])->name('binder-pages.move');
+    Route::post('binder-pages/{binderPage}/move-to-slot', [BinderPageController::class, 'moveCardToSlot'])->name('binder-pages.move-to-slot');
+    Route::post('binder-pages/{binderPage}/reorder-stack', [BinderPageController::class, 'reorderStack'])->name('binder-pages.reorder-stack');
     Route::get('binder-pages/{binderPage}/available-cards', [BinderPageController::class, 'availableCards'])->name('binder-pages.available-cards');
 
     // Unified Scanner (all games)
@@ -117,12 +120,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Builder
         Route::get('decks/{deck}/builder', [DeckController::class, 'builder'])->name('decks.builder');
         Route::post('decks/{deck}/cards', [DeckController::class, 'addCard'])->name('decks.add-card');
+        Route::patch('decks/{deck}/cards/reorder', [DeckController::class, 'reorderCards'])->name('decks.reorder-cards');
         Route::delete('decks/{deck}/cards/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card');
         Route::patch('decks/{deck}/cards/{card}/move', [DeckController::class, 'moveCard'])->name('decks.move-card');
         Route::patch('decks/{deck}/cards/{card}/quantity', [DeckController::class, 'updateQuantity'])->name('decks.update-quantity');
         Route::get('decks/{deck}/validate', [DeckController::class, 'validate'])->name('decks.validate');
         Route::get('decks/{deck}/search', [DeckController::class, 'searchCards'])->name('decks.search');
         Route::get('decks/{deck}/export/{format?}', [DeckController::class, 'export'])->name('decks.export');
+
+        // Deck Inventory Assignments (mark as "in deck")
+        Route::post('decks/{deck}/mark-in-deck', [DeckInventoryController::class, 'markInDeck'])->name('decks.mark-in-deck');
+        Route::delete('decks/{deck}/mark-in-deck', [DeckInventoryController::class, 'clearMarkings'])->name('decks.clear-markings');
     });
 
     // Notifications

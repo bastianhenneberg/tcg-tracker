@@ -80,8 +80,9 @@ class DeckValidationService
         $errors = [];
         $format = $deck->gameFormat;
 
-        // Get all zones for this format
+        // Get all zones for this format (only those that count towards deck)
         $zones = DeckZone::where('game_format_id', $format->id)
+            ->countingTowardsDeck()
             ->orderBy('sort_order')
             ->get();
 
@@ -168,8 +169,14 @@ class DeckValidationService
         $format = $deck->gameFormat;
         $rules = $this->playsetService->getRulesForFormat($deck->user_id, $format->id);
 
-        // Group deck cards by card name across all zones
+        // Get zone IDs that count towards deck (exclude maybe zone etc.)
+        $countingZoneIds = DeckZone::where('game_format_id', $format->id)
+            ->countingTowardsDeck()
+            ->pluck('id');
+
+        // Group deck cards by card name across counting zones only
         $cardsByName = $deck->cards()
+            ->whereIn('deck_zone_id', $countingZoneIds)
             ->with('printing.card')
             ->get()
             ->groupBy(fn (DeckCard $dc) => $dc->printing->card->name);

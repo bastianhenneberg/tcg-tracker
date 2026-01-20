@@ -2,6 +2,7 @@
 
 # Ralph Wiggum Loop - TCG Tracker
 # Autonomous AI Agent Loop mit frischem Context pro Iteration
+# MIT LIVE OUTPUT!
 #
 # Basierend auf: https://github.com/snarktank/ralph
 #
@@ -20,6 +21,7 @@ PROMPT_FILE=".claude/prompt.md"
 PROGRESS_FILE=".claude/progress.txt"
 LAST_BRANCH_FILE=".claude/.last-branch"
 ARCHIVE_DIR=".claude/archive"
+OUTPUT_FILE="/tmp/ralph-output-$$.txt"
 
 # ===== Funktionen =====
 log() {
@@ -70,6 +72,24 @@ get_next_story() {
   jq -r '.userStories | map(select(.passes != true)) | sort_by(.priority) | .[0] | "\(.id): \(.title)"' "$PRD_FILE" 2>/dev/null || echo "unknown"
 }
 
+get_story_count() {
+  local done=$(jq '[.userStories[] | select(.passes == true)] | length' "$PRD_FILE" 2>/dev/null || echo "0")
+  local total=$(jq '.userStories | length' "$PRD_FILE" 2>/dev/null || echo "0")
+  echo "$done/$total"
+}
+
+cleanup() {
+  log "🛑 Loop abgebrochen (Ctrl+C)"
+  rm -f "$OUTPUT_FILE"
+  echo ""
+  echo "Session kann fortgesetzt werden mit:"
+  echo "  ./ralph-loop.sh"
+  exit 130
+}
+
+# ===== Setup =====
+trap cleanup SIGINT SIGTERM
+
 # ===== Validierung =====
 if [[ ! -f "$PRD_FILE" ]]; then
   echo "❌ Fehler: $PRD_FILE nicht gefunden!"
@@ -79,16 +99,7 @@ if [[ ! -f "$PRD_FILE" ]]; then
   echo '  "project": "TCG Tracker",'
   echo '  "branchName": "feature/xyz",'
   echo '  "description": "Feature-Beschreibung",'
-  echo '  "userStories": ['
-  echo '    {'
-  echo '      "id": "US-001",'
-  echo '      "title": "Story Titel",'
-  echo '      "description": "Als User möchte ich...",'
-  echo '      "acceptanceCriteria": ["Kriterium 1", "Kriterium 2"],'
-  echo '      "priority": 1,'
-  echo '      "passes": false'
-  echo '    }'
-  echo '  ]'
+  echo '  "userStories": [...]'
   echo '}'
   exit 1
 fi
@@ -121,7 +132,7 @@ fi
 # ===== Header =====
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🔄 RALPH WIGGUM LOOP                                        ║"
+echo "║  🔄 RALPH WIGGUM LOOP (Live Output)                          ║"
 echo "║  Autonomous AI Agent with Fresh Context per Iteration        ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║  Branch:         $(printf '%-43s' "${CURRENT_BRANCH:-main}") ║"
@@ -145,17 +156,20 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     echo "║  ✅ ALLE STORIES ABGESCHLOSSEN!                              ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     log "Alle Stories complete nach $((i-1)) Iterationen"
+    rm -f "$OUTPUT_FILE"
     exit 0
   fi
 
   NEXT_STORY=$(get_next_story)
+  STORY_COUNT=$(get_story_count)
 
   echo ""
   echo "┌──────────────────────────────────────────────────────────────┐"
-  echo "│  ITERATION $i/$MAX_ITERATIONS                                              │"
+  echo "│  ITERATION $i/$MAX_ITERATIONS (Stories: $STORY_COUNT)                          │"
   echo "│  Next: $(printf '%-54s' "$NEXT_STORY") │"
   echo "└──────────────────────────────────────────────────────────────┘"
   log "Iteration $i gestartet - $NEXT_STORY"
+  echo ""
 
   # Baue den Prompt zusammen
   FULL_PROMPT=$(cat "$PROMPT_FILE")
@@ -178,24 +192,38 @@ $(cat "$PROGRESS_FILE")
 \`\`\`
 "
 
-  # Starte NEUE Claude Session (frischer Context!)
-  # --dangerously-skip-permissions für autonome Ausführung
-  # --output-format text für lesbaren Output
-  OUTPUT=$(echo "$FULL_PROMPT" | claude --dangerously-skip-permissions 2>&1) || true
+  # Starte NEUE Claude Session mit LIVE OUTPUT!
+  # Schreibe Prompt in temp file, dann pipe mit unbuffer/script
+  PROMPT_TMP="/tmp/ralph-prompt-$$.txt"
+  echo "$FULL_PROMPT" > "$PROMPT_TMP"
 
-  echo "$OUTPUT"
+  # Versuche unbuffer (beste Option), sonst script, sonst stdbuf
+  if command -v unbuffer &> /dev/null; then
+    unbuffer claude --dangerously-skip-permissions < "$PROMPT_TMP" 2>&1 | tee "$OUTPUT_FILE"
+  else
+    # script -q simuliert TTY für live output
+    script -q -f "$OUTPUT_FILE" -c "claude --dangerously-skip-permissions < \"$PROMPT_TMP\""
+  fi
+
+  rm -f "$PROMPT_TMP"
+
+  CLAUDE_EXIT=$?
+
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   # Prüfe auf Completion Signal
-  if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
+  if grep -q "<promise>COMPLETE</promise>" "$OUTPUT_FILE" 2>/dev/null; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║  ✅ COMPLETE SIGNAL EMPFANGEN!                               ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     log "Complete signal nach Iteration $i"
+    rm -f "$OUTPUT_FILE"
     exit 0
   fi
 
-  log "Iteration $i abgeschlossen"
+  log "Iteration $i abgeschlossen - $(get_story_count) Stories erledigt"
 
   # Pause zwischen Iterationen
   if [[ $i -lt $MAX_ITERATIONS ]]; then
@@ -210,11 +238,14 @@ echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  ⚠️  MAX ITERATIONEN ($MAX_ITERATIONS) ERREICHT                            ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║  Status: $(printf '%-52s' "$(get_story_count) Stories erledigt") ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║  Offene Stories:                                             ║"
 jq -r '.userStories[] | select(.passes != true) | "║    [\(.priority)] \(.id): \(.title)"' "$PRD_FILE" 2>/dev/null | head -5
 echo "╠══════════════════════════════════════════════════════════════╣"
-echo "║  Fortsetzen: ./ralph-loop.sh $MAX_ITERATIONS                          ║"
+echo "║  Fortsetzen: ./ralph-loop.sh                                 ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 log "Max Iterationen erreicht"
 
+rm -f "$OUTPUT_FILE"
 exit 1

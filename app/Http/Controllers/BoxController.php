@@ -11,15 +11,36 @@ use Inertia\Response;
 
 class BoxController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $boxes = Box::where('user_id', Auth::id())
-            ->withCount('lots')
-            ->orderBy('name')
-            ->get();
+        $query = Box::where('user_id', Auth::id())
+            ->withCount('lots');
+
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Sorting
+        $sortField = $request->input('sort', 'name');
+        $sortDirection = $request->input('direction', 'asc');
+        $allowedSorts = ['name', 'created_at', 'lots_count'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection === 'desc' ? 'desc' : 'asc');
+        }
+
+        $boxes = $query->paginate($request->input('per_page', 25))->withQueryString();
 
         return Inertia::render('inventory/boxes/index', [
             'boxes' => $boxes,
+            'filters' => [
+                'search' => $request->input('search'),
+                'sort' => $sortField,
+                'direction' => $sortDirection,
+            ],
         ]);
     }
 
