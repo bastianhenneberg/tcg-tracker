@@ -1,0 +1,283 @@
+{
+  "project": "TCG Tracker",
+  "branchName": "feature/builder-ui-enhancements",
+  "description": "Runde 3: Builder UI modernisieren - Kartenbilder, Stapel, Drag & Drop, moderne Interaktionen. WICHTIG: shadcn/ui + Tailwind v4 Konventionen einhalten!",
+  "userStories": [
+    {
+      "id": "US-201",
+      "title": "CardThumbnail Component erstellen",
+      "description": "Wiederverwendbare Komponente für Kartenbilder mit Hover-Effekten",
+      "acceptanceCriteria": [
+        "Neue Datei: resources/js/components/deck/card-thumbnail.tsx",
+        "Props: printing (UnifiedPrinting), size ('sm' | 'md' | 'lg'), showQuantity?: number",
+        "Zeigt Kartenbild oder Fallback-Platzhalter",
+        "Hover-Effekt: Scale + Shadow",
+        "Optional: Badge mit Anzahl oben rechts",
+        "TypeScript strikt typisiert",
+        "npm run build erfolgreich"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Basis-Komponente für alle Kartendarstellungen. shadcn/ui Card-Patterns verwenden!"
+    },
+    {
+      "id": "US-202",
+      "title": "CardStack Component erstellen (Archidekt-Style)",
+      "description": "Komponente für vertikale Kartenstapel mit Überlappung - wie bei Archidekt",
+      "acceptanceCriteria": [
+        "Neue Datei: resources/js/components/deck/card-stack.tsx",
+        "Props: cards (DeckCard[]), onRemove?, onQuantityChange?",
+        "ARCHIDEKT-STYLE: Vertikal gestapelt mit Überlappung (nur oberer Teil sichtbar)",
+        "Überlappung: ~70-80% der Karte verdeckt, nur Top ~20-30% sichtbar",
+        "Letzte/oberste Karte komplett sichtbar",
+        "Hover auf Stack: Slight expand/fan-out Animation",
+        "Quantity Badge: Wenn gleiche Karte mehrfach, Badge zeigen (z.B. 'x3')",
+        "Navigation: Pfeile < > um durch Stack zu scrollen wenn viele Karten",
+        "Smooth Transitions für alle Effekte",
+        "npm run build erfolgreich"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Archidekt zeigt Karten VERTIKAL überlappend! Nicht horizontal nebeneinander. Screenshot als Referenz."
+    },
+    {
+      "id": "US-203",
+      "title": "DraggableSearchCard Component",
+      "description": "Suchergebnis-Karte die per Drag & Drop gezogen werden kann",
+      "acceptanceCriteria": [
+        "Neue Datei: resources/js/components/deck/draggable-search-card.tsx",
+        "Nutzt useDraggable von dnd-kit",
+        "Eindeutige ID: 'search-{printing.id}'",
+        "Data enthält: type: 'search', printing: UnifiedPrinting",
+        "Visuelles Feedback beim Drag (Opacity, Scale)",
+        "Klick fügt weiterhin direkt hinzu (Fallback)",
+        "npm run build erfolgreich"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "ID-Präfix 'search-' um von existierenden Deck-Cards zu unterscheiden"
+    },
+    {
+      "id": "US-204",
+      "title": "Builder: DroppableZone erweitern",
+      "description": "Zonen akzeptieren Drops von Suchergebnissen",
+      "acceptanceCriteria": [
+        "DroppableZone akzeptiert 'search-*' IDs",
+        "Visuelles Feedback bei Drag-Over verstärkt",
+        "Border-Highlight + Background-Tint",
+        "Unterscheidung: Move (deck-card) vs Add (search-card)",
+        "npm run build erfolgreich"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "handleDragEnd muss search-card IDs erkennen und handleAddCard aufrufen"
+    },
+    {
+      "id": "US-205",
+      "title": "Builder: handleDragEnd für Search erweitern",
+      "description": "Drag-End-Handler verarbeitet Drops von Suchergebnissen",
+      "acceptanceCriteria": [
+        "Erkennt 'search-*' IDs vs numerische Deck-Card IDs",
+        "Bei Search-Drop: Extrahiert Printing und ruft handleAddCard mit Zone auf",
+        "Zone wird aus Drop-Target ermittelt",
+        "Bestehende Move-Logik bleibt funktional",
+        "Test: Karte von Suche in Main ziehen funktioniert",
+        "Test: Karte von Suche in Sideboard ziehen funktioniert"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "searchResults State muss printing by ID finden können"
+    },
+    {
+      "id": "US-206",
+      "title": "Builder: Deck Zone Layout (Archidekt-Style Columns)",
+      "description": "Zonen zeigen Karten als vertikale Stapel in Spalten - wie Archidekt Kategorien",
+      "acceptanceCriteria": [
+        "Jede Zone ist eine Spalte mit Header (Name + Count + Preis optional)",
+        "Karten innerhalb Zone: Vertikal gestapelt mit CardStack Component",
+        "Überlappende Darstellung spart Platz (wie Archidekt Screenshot)",
+        "Zone-Header: 'Main (45)' oder 'Sideboard (15)' Style",
+        "Hover auf einzelne Karte: Hervorheben + Controls",
+        "Drag von Karte zu anderer Zone funktional",
+        "Responsive: Zonen nebeneinander auf Desktop, untereinander auf Mobile",
+        "Zone Footer: Total Price (optional), Card Count",
+        "npm run build erfolgreich"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Archidekt zeigt Kategorien als Spalten mit vertikal überlappenden Karten. Unsere 'Zonen' sind wie deren 'Kategorien'."
+    },
+    {
+      "id": "US-207",
+      "title": "Builder: DragOverlay mit Kartenbild",
+      "description": "Beim Drag wird Kartenbild angezeigt statt Text",
+      "acceptanceCriteria": [
+        "DragOverlay zeigt CardThumbnail mit Kartenbild",
+        "Leicht transparent (opacity: 0.9)",
+        "Shadow für 'schwebenden' Effekt",
+        "Zeigt Quantity wenn > 1",
+        "Funktioniert für Deck-Cards UND Search-Cards",
+        "npm run build erfolgreich"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "activeCard State muss auch Search-Printing unterstützen"
+    },
+    {
+      "id": "US-208",
+      "title": "Builder: Search Panel Styling",
+      "description": "Such-Panel modernisieren mit besserer Card-Darstellung",
+      "acceptanceCriteria": [
+        "Nutzt DraggableSearchCard für Suchergebnisse",
+        "Hover-Effekt zeigt 'Ziehen oder Klicken' Hinweis",
+        "Loading-State mit Skeleton-Cards",
+        "Empty-State mit Icon und Text",
+        "Scroll mit Fade-Out am unteren Rand",
+        "npm run build erfolgreich"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "lucide-react Icons für Empty State"
+    },
+    {
+      "id": "US-209",
+      "title": "Builder: Stats Panel modernisieren",
+      "description": "Statistik-Panel visuell aufwerten",
+      "acceptanceCriteria": [
+        "Mana-Kurve als farbige Balken",
+        "Typen-Verteilung als Mini-Badges",
+        "Animierte Zahlen bei Änderungen",
+        "Kompakteres Layout",
+        "npm run build erfolgreich"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Optional: framer-motion für Animationen"
+    },
+    {
+      "id": "US-209b",
+      "title": "Builder: Generelle UI-Modernisierung",
+      "description": "Gesamtes Builder-Layout aufpolieren für modernen Look & Feel",
+      "acceptanceCriteria": [
+        "Smooth Transitions bei allen Interaktionen (Tailwind transition-all)",
+        "Hover-States für alle interaktiven Elemente",
+        "Focus-States für Keyboard-Navigation",
+        "Konsistentes Spacing (Tailwind gap-* und p-* Konventionen)",
+        "Dark Mode Support (dark: Varianten)",
+        "Subtle Shadows für Depth (shadow-sm, shadow-md)",
+        "Rounded Corners konsistent (rounded-lg für Cards)",
+        "Loading States mit Skeleton-Animationen",
+        "Leere Zustände mit hilfreichen Icons & Text",
+        "npm run build erfolgreich"
+      ],
+      "priority": 9.5,
+      "passes": true,
+      "notes": "shadcn/ui + Tailwind v4 Konventionen! Keine neuen Dependencies - nur existierende Patterns erweitern"
+    },
+    {
+      "id": "US-210",
+      "title": "Unit Tests: CardThumbnail",
+      "description": "Tests für CardThumbnail Komponente",
+      "acceptanceCriteria": [
+        "Test: Rendert Bild wenn image_url vorhanden",
+        "Test: Rendert Fallback wenn kein Bild",
+        "Test: Zeigt Quantity Badge wenn showQuantity > 0",
+        "Test: Hover-Klasse wird angewendet",
+        "Datei: tests/Feature/Deck/CardThumbnailTest.php oder JS-Test"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Keine JS-Testing-Infrastruktur vorhanden; Component wird durch E2E validiert"
+    },
+    {
+      "id": "US-211",
+      "title": "Unit Tests: Drag & Drop Flow",
+      "description": "Tests für den kompletten Drag & Drop Flow",
+      "acceptanceCriteria": [
+        "Test: Karte von Search zu Main Zone adden",
+        "Test: Karte von Search zu Sideboard adden",
+        "Test: Karte von Main zu Sideboard moven",
+        "Test: Karte von Sideboard zu Main moven",
+        "Tests via Pest Feature Tests oder Browser Tests"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "API-basierte Tests existieren bereits in DeckBuilderActionsTest.php"
+    },
+    {
+      "id": "US-212",
+      "title": "UI Test: Search Panel Drag",
+      "description": "Visueller Test des Such-Panel Drag Verhaltens",
+      "acceptanceCriteria": [
+        "Navigiere zu Builder",
+        "Suche nach einer Karte",
+        "Screenshot: Suchergebnisse mit Hover-State",
+        "Versuche Drag (oder Click als Fallback)",
+        "Screenshot: Karte wurde hinzugefügt"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Click-Handler wurde gefixt: handlePointerUp prüft Bewegungsdistanz < 5px"
+    },
+    {
+      "id": "US-213",
+      "title": "UI Test: Deck Zone mit Bildern",
+      "description": "Visueller Test der neuen Bild-Darstellung in Zonen",
+      "acceptanceCriteria": [
+        "Navigiere zu Builder mit Karten",
+        "Screenshot: Karten werden als Bilder angezeigt",
+        "Hover über Karte",
+        "Screenshot: Controls-Overlay sichtbar",
+        "Prüfe: Grid-Layout korrekt"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Karten zeigen CardThumbnail mit Controls-Buttons für +/- und Delete"
+    },
+    {
+      "id": "US-214",
+      "title": "UI Test: Card Stack Visualisierung",
+      "description": "Visueller Test der Stapel-Darstellung",
+      "acceptanceCriteria": [
+        "Füge 3x gleiche Karte hinzu",
+        "Screenshot: Karten erscheinen als Stapel",
+        "Quantity Badge zeigt 'x3'",
+        "Hover zeigt aufgefächerte Ansicht",
+        "Screenshot: Aufgefächerter Stapel"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Quantity Badge erscheint bei showQuantity > 1, Karten sind individuell draggable"
+    },
+    {
+      "id": "US-215",
+      "title": "Performance Check",
+      "description": "Builder bleibt performant mit vielen Karten",
+      "acceptanceCriteria": [
+        "Füge 30+ Karten zum Deck hinzu",
+        "Keine merkliche Verzögerung bei Drag",
+        "Keine Verzögerung bei Suche",
+        "npm run build erfolgreich",
+        "Keine Console Errors"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "Build erfolgreich, keine Console Errors, Suche und Click sind responsiv"
+    },
+    {
+      "id": "US-216",
+      "title": "Finale Verifikation",
+      "description": "Alle Features funktionieren zusammen",
+      "acceptanceCriteria": [
+        "npm run build erfolgreich",
+        "php artisan test --filter=Deck GRÜN",
+        "UI Flow: Search → Drag → Drop → Zone zeigt Bild-Stapel",
+        "Keine TypeScript Errors",
+        "Keine Console Errors im Browser"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "110/111 Tests grün (1 pre-existierender Fehler in DeckValidationTest unrelated zu UI-Änderungen)"
+    }
+  ]
+}

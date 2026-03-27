@@ -27,7 +27,7 @@ import {
     type UnifiedInventory,
 } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
-import { Download, Edit, Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Download, Edit, Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -67,6 +67,8 @@ export default function InventoryIndex({
         lot_id: '',
     });
     const [saving, setSaving] = useState(false);
+    const [showChangeLotDialog, setShowChangeLotDialog] = useState(false);
+    const [targetLotId, setTargetLotId] = useState<string>('');
 
     // Reload data when the page becomes visible (tab switching)
     useEffect(() => {
@@ -130,6 +132,21 @@ export default function InventoryIndex({
             `${baseUrl}/inventory/delete-multiple`,
             { ids: selectedIds },
             { onSuccess: () => setSelectedItems([]) }
+        );
+    };
+
+    const handleChangeLot = () => {
+        if (selectedIds.length === 0 || !targetLotId) return;
+        router.post(
+            `${baseUrl}/inventory/change-lot`,
+            { ids: selectedIds, lot_id: parseInt(targetLotId) },
+            {
+                onSuccess: () => {
+                    setSelectedItems([]);
+                    setShowChangeLotDialog(false);
+                    setTargetLotId('');
+                },
+            }
         );
     };
 
@@ -361,6 +378,12 @@ export default function InventoryIndex({
                         <Heart className="mr-2 h-4 w-4" />
                         Zur Sammlung
                     </Button>
+                    {lots.length > 0 && (
+                        <Button variant="outline" size="sm" onClick={() => setShowChangeLotDialog(true)}>
+                            <ArrowRightLeft className="mr-2 h-4 w-4" />
+                            Lot wechseln
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={handleMarkSold}>
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Verkauft
@@ -511,6 +534,42 @@ export default function InventoryIndex({
                         </Button>
                         <Button onClick={handleSaveEdit} disabled={saving}>
                             {saving ? 'Speichern...' : 'Speichern'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Change Lot Dialog */}
+            <Dialog open={showChangeLotDialog} onOpenChange={setShowChangeLotDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Lot wechseln</DialogTitle>
+                        <DialogDescription>
+                            Wähle das Ziel-Lot für die {selectedIds.length} ausgewählte(n) Karte(n).
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        <Select value={targetLotId} onValueChange={setTargetLotId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Ziel-Lot auswählen..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {lots.map((lot) => (
+                                    <SelectItem key={lot.id} value={lot.id.toString()}>
+                                        Lot #{lot.lot_number}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowChangeLotDialog(false)}>
+                            Abbrechen
+                        </Button>
+                        <Button onClick={handleChangeLot} disabled={!targetLotId}>
+                            Verschieben
                         </Button>
                     </DialogFooter>
                 </DialogContent>

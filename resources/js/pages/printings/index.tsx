@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { DataTable, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -12,13 +12,12 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
     type Game,
-    type PaginatedData,
     type UnifiedPrinting,
     type UnifiedSet,
 } from '@/types/unified';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 interface Props {
@@ -66,6 +65,77 @@ export default function PrintingsIndex({
             { preserveState: true, preserveScroll: true }
         );
     };
+
+    const handleRowClick = (printing: UnifiedPrinting) => {
+        router.visit(`${baseUrl}/printings/${printing.id}`);
+    };
+
+    const columns = useMemo<ColumnDef<UnifiedPrinting, unknown>[]>(
+        () => [
+            {
+                id: 'card',
+                accessorFn: (row) => row.card?.name ?? '',
+                header: 'Karte',
+                cell: ({ row }) => {
+                    const printing = row.original;
+                    return (
+                        <div className="flex items-center gap-3">
+                            {printing.image_url && (
+                                <img
+                                    src={printing.image_url}
+                                    alt={printing.card?.name}
+                                    className="h-12 w-auto rounded"
+                                />
+                            )}
+                            <div>
+                                <p className="font-medium">{printing.card?.name}</p>
+                                <p className="text-muted-foreground text-sm">
+                                    #{printing.collector_number}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                },
+            },
+            {
+                id: 'set',
+                accessorFn: (row) => row.set_name ?? row.set_code ?? '',
+                header: 'Set',
+                cell: ({ row }) => (
+                    <span className="text-sm">
+                        {row.original.set_name ?? row.original.set_code}
+                    </span>
+                ),
+            },
+            {
+                id: 'rarity',
+                accessorKey: 'rarity',
+                header: 'Seltenheit',
+                cell: ({ row }) =>
+                    row.original.rarity_label ? (
+                        <Badge variant="outline" className="text-xs">
+                            {row.original.rarity_label}
+                        </Badge>
+                    ) : (
+                        '-'
+                    ),
+            },
+            {
+                id: 'finish',
+                accessorKey: 'finish',
+                header: 'Finish',
+                cell: ({ row }) =>
+                    row.original.finish_label && row.original.finish !== 'standard' ? (
+                        <Badge variant="secondary" className="text-xs">
+                            {row.original.finish_label}
+                        </Badge>
+                    ) : (
+                        <span className="text-muted-foreground text-sm">Standard</span>
+                    ),
+            },
+        ],
+        []
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -116,7 +186,7 @@ export default function PrintingsIndex({
                                     handleFilterChange('rarity', value === 'all' ? undefined : value)
                                 }
                             >
-                                <SelectTrigger className="w-[140px]">
+                                <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Alle Seltenheiten" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -153,70 +223,17 @@ export default function PrintingsIndex({
                     </div>
                 </div>
 
-                {/* Grid */}
-                {printings.data.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                        <Sparkles className="h-12 w-12 text-muted-foreground/50" />
-                        <p className="mt-2 text-muted-foreground">Keine Printings gefunden</p>
-                    </div>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {printings.data.map((printing) => (
-                            <Link
-                                key={printing.id}
-                                href={`${baseUrl}/printings/${printing.id}`}
-                                className="group flex gap-3 rounded-lg border p-3 transition-colors hover:bg-accent"
-                            >
-                                {printing.image_url && (
-                                    <img
-                                        src={printing.image_url}
-                                        alt={printing.card?.name}
-                                        className="h-20 w-auto rounded"
-                                    />
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-medium truncate">
-                                        {printing.card?.name}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        {printing.set_name ?? printing.set_code}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        #{printing.collector_number}
-                                    </p>
-                                    <div className="mt-1 flex gap-1">
-                                        {printing.rarity_label && (
-                                            <Badge variant="outline" className="text-xs">
-                                                {printing.rarity_label}
-                                            </Badge>
-                                        )}
-                                        {printing.finish_label && printing.finish !== 'standard' && (
-                                            <Badge variant="secondary" className="text-xs">
-                                                {printing.finish_label}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {printings.last_page > 1 && (
-                    <div className="flex items-center justify-center gap-2">
-                        {printings.links.map((link, index) => (
-                            <Button
-                                key={index}
-                                variant={link.active ? 'default' : 'outline'}
-                                size="sm"
-                                disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={printings}
+                    onRowClick={handleRowClick}
+                    emptyState={
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Sparkles className="h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-2 text-muted-foreground">Keine Printings gefunden</p>
+                        </div>
+                    }
+                />
             </div>
         </AppLayout>
     );

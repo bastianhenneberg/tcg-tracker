@@ -16,7 +16,7 @@ import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Archive, Camera, Database, Gamepad2, GitMerge, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Target } from 'lucide-react';
+import { Archive, BookOpen, Camera, Database, Gamepad2, GitMerge, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Swords, Target } from 'lucide-react';
 import { useMemo } from 'react';
 import AppLogo from './app-logo';
 
@@ -35,6 +35,12 @@ const mainNavItems: NavItem[] = [
         title: 'Lots',
         href: lotsIndex(),
         icon: Layers,
+        prefetch: false, // Always load fresh data
+    },
+    {
+        title: 'Binders',
+        href: '/binders',
+        icon: BookOpen,
         prefetch: false, // Always load fresh data
     },
     {
@@ -76,6 +82,12 @@ const getGameNavItems = (slug: string): NavItem[] => [
         title: 'Sammlung',
         href: `/g/${slug}/collection`,
         icon: Heart,
+        prefetch: false, // Always load fresh data
+    },
+    {
+        title: 'Decks',
+        href: `/g/${slug}/decks`,
+        icon: Swords,
         prefetch: false, // Always load fresh data
     },
     {

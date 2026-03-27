@@ -27,14 +27,21 @@ import { type BreadcrumbItem } from '@/types';
 import { type Box, type Lot } from '@/types/inventory';
 import { type UnifiedInventory, getConditionLabel } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
-import { ChevronDown, Download, Edit, Heart, Layers, Package, Search, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ArrowRightLeft, ChevronDown, Download, Edit, Heart, Layers, Package, Search, ShoppingCart, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
+
+interface OtherLot {
+    id: number;
+    lot_number: number;
+    name: string;
+}
 
 interface Props {
     lot: Lot;
     items: PaginatedData<UnifiedInventory>;
     boxes: Box[];
+    otherLots: OtherLot[];
     filters: Record<string, string | undefined>;
     conditions: Record<string, string>;
     foilings: Record<string, string>;
@@ -48,6 +55,7 @@ export default function LotShow({
     lot,
     items,
     boxes,
+    otherLots,
     filters,
     conditions,
     foilings,
@@ -66,6 +74,8 @@ export default function LotShow({
     const [deleting, setDeleting] = useState(false);
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedItems, setSelectedItems] = useState<UnifiedInventory[]>([]);
+    const [showChangeLotDialog, setShowChangeLotDialog] = useState(false);
+    const [targetLotId, setTargetLotId] = useState<string>('');
 
     // Define columns for DataTable
     const columns = useMemo<ColumnDef<UnifiedInventory, unknown>[]>(
@@ -249,6 +259,21 @@ export default function LotShow({
         );
     };
 
+    const handleChangeLot = () => {
+        if (selectedIds.length === 0 || !targetLotId) return;
+        router.post(
+            '/g/fab/inventory/change-lot',
+            { ids: selectedIds, lot_id: parseInt(targetLotId) },
+            {
+                onSuccess: () => {
+                    setSelectedItems([]);
+                    setShowChangeLotDialog(false);
+                    setTargetLotId('');
+                },
+            }
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Lot #${lot.lot_number}`} />
@@ -399,6 +424,12 @@ export default function LotShow({
                         <Heart className="mr-2 h-4 w-4" />
                         Zur Sammlung
                     </Button>
+                    {otherLots.length > 0 && (
+                        <Button variant="outline" size="sm" onClick={() => setShowChangeLotDialog(true)}>
+                            <ArrowRightLeft className="mr-2 h-4 w-4" />
+                            Lot wechseln
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={handleMarkSold}>
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Verkauft
@@ -537,6 +568,42 @@ export default function LotShow({
                         </Button>
                         <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                             {deleting ? 'Löschen...' : 'Löschen'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Change Lot Dialog */}
+            <Dialog open={showChangeLotDialog} onOpenChange={setShowChangeLotDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Lot wechseln</DialogTitle>
+                        <DialogDescription>
+                            Wähle das Ziel-Lot für die {selectedIds.length} ausgewählte(n) Karte(n).
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        <Select value={targetLotId} onValueChange={setTargetLotId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Ziel-Lot auswählen..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {otherLots.map((l) => (
+                                    <SelectItem key={l.id} value={l.id.toString()}>
+                                        {l.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowChangeLotDialog(false)}>
+                            Abbrechen
+                        </Button>
+                        <Button onClick={handleChangeLot} disabled={!targetLotId}>
+                            Verschieben
                         </Button>
                     </DialogFooter>
                 </DialogContent>

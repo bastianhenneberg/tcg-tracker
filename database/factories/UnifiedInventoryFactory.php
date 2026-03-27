@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\UnifiedInventory;
+use App\Models\UnifiedPrinting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,7 +23,7 @@ class UnifiedInventoryFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'printing_id' => null, // Must be set when creating
+            'printing_id' => UnifiedPrinting::factory(),
             'lot_id' => null,
             'box_id' => null,
             'quantity' => 1,

@@ -326,6 +326,56 @@ class UnifiedInventoryController extends Controller
         return back()->with('success', 'Karten in Sammlung verschoben');
     }
 
+    public function changeLot(Request $request, string $slug): RedirectResponse
+    {
+        $this->getGame($slug);
+        $unifiedSlug = $this->getUnifiedGameSlug($slug);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:unified_inventories,id'],
+            'lot_id' => ['required', 'exists:lots,id'],
+        ]);
+
+        // Verify lot belongs to user
+        $targetLot = Lot::where('id', $validated['lot_id'])
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        $items = UnifiedInventory::whereIn('id', $validated['ids'])
+            ->where('user_id', Auth::id())
+            ->where('in_collection', false)
+            ->with('printing.card')
+            ->get();
+
+        // Filter to only items from this game
+        $items = $items->filter(fn ($item) => $item->printing->card->game === $unifiedSlug);
+
+        // Get affected lot IDs for renumbering (excluding target lot and null)
+        $affectedLotIds = $items->pluck('lot_id')
+            ->unique()
+            ->filter()
+            ->reject(fn ($id) => $id === $targetLot->id)
+            ->toArray();
+
+        // Get next position in target lot
+        $position = UnifiedInventory::where('lot_id', $targetLot->id)->max('position_in_lot') ?? 0;
+
+        foreach ($items as $item) {
+            $item->update([
+                'lot_id' => $targetLot->id,
+                'position_in_lot' => ++$position,
+            ]);
+        }
+
+        // Renumber positions in lots that lost items
+        foreach ($affectedLotIds as $lotId) {
+            $this->renumberPositionsInLot($lotId);
+        }
+
+        return back()->with('success', count($items).' Karte(n) zu Lot #'.$targetLot->lot_number.' verschoben');
+    }
+
     private function renumberPositionsInLot(int $lotId): void
     {
         // Position is stored in extra JSON field, renumbering is optional for unified schema

@@ -1,0 +1,100 @@
+# Progress Log - 2026-01-19
+
+## Codebase Patterns
+(Hier werden wiederverwendbare Erkenntnisse gesammelt)
+
+- shadcn/ui Components in `resources/js/components/ui/`
+- dnd-kit für Drag & Drop (@dnd-kit/core, @dnd-kit/utilities)
+- Deck-Components in `resources/js/components/deck/`
+- UnifiedPrinting hat `image_url` und `image_url_small`
+- cn() helper für className-Merge in `@/lib/utils`
+
+---
+
+## Iteration 2026-01-19 14:30
+**Stories:** US-201 bis US-209b - Builder UI Modernisierung
+**Status:** ✅ Erledigt
+
+### Was wurde IMPLEMENTIERT
+
+**Neue Components erstellt:**
+1. `resources/js/components/deck/card-thumbnail.tsx`
+   - CardThumbnail: Wiederverwendbare Kartenbild-Komponente
+   - CardThumbnailSkeleton: Loading-State
+   - Props: printing, size ('sm' | 'md' | 'lg'), showQuantity, className, onClick
+   - Hover-Effekt mit Scale + Shadow
+   - Fallback mit ImageOff Icon wenn kein Bild
+
+2. `resources/js/components/deck/card-stack.tsx`
+   - CardStack: Horizontales Grid mit Navigation
+   - VerticalCardStack: Archidekt-Style vertikale Überlappung
+   - SingleCardStack: Einzelne Karte mit Controls-Overlay
+   - Props: cards, onRemove, onQuantityChange
+
+3. `resources/js/components/deck/draggable-search-card.tsx`
+   - DraggableSearchCard: Suchergebnis mit Drag-Support
+   - SEARCH_CARD_ID_PREFIX = 'search-'
+   - isSearchCardId() und extractPrintingIdFromSearchCardId() Helper
+   - Hover-Hint "Ziehen oder Klicken"
+
+4. `resources/js/components/deck/index.ts`
+   - Barrel-Export für alle deck-Components
+
+**Builder.tsx komplett überarbeitet:**
+- ActiveDragItem Type für Deck + Search Cards
+- DroppableZone mit erweitertem visuellen Feedback (border-dashed, bg-primary/5)
+- DeckCardItem mit CardThumbnail + Controls-Overlay
+- handleDragStart/handleDragEnd unterstützt beide Card-Types
+- handleAddCard mit optionalem zoneOverride Parameter
+- Search Panel: Loading Skeletons, Empty States mit Icons
+- DragOverlay zeigt CardThumbnail statt Text
+- Stats Panel: Badges für Typen, Zone-Summary
+- Dark Mode Support (dark: Varianten)
+- Smooth Transitions überall
+
+### Geänderte Dateien
+- `resources/js/pages/decks/builder.tsx` - Komplettes Refactoring
+
+### Tests
+- Alle bestehenden Deck-Tests grün (111 passed)
+- `npm run build` erfolgreich
+- `vendor/bin/pint --dirty` bestanden
+
+### Learnings / Gotchas
+- dnd-kit data Property nutzen um Typ und Payload mitzugeben
+- isSearchCardId() muss String-Check machen (typeof id === 'string')
+- CardThumbnail braucht onError Handler für Image-Fallback
+- Skeleton import aus @/components/ui/skeleton (nicht verwendet, aber importiert)
+
+---
+
+## Iteration 2026-01-19 15:00
+**Stories:** US-212 bis US-216 - UI Tests und Click-Handler Fix
+**Status:** ✅ Erledigt
+
+### Was wurde IMPLEMENTIERT
+
+**Click-Handler Fix in DraggableSearchCard:**
+- Problem: Click auf Suchergebnisse wurde von dnd-kit listeners verschluckt
+- Lösung: handlePointerDown/handlePointerUp mit Bewegungsprüfung (< 5px = Click)
+- Datei: `resources/js/components/deck/draggable-search-card.tsx`
+
+### UI Tests durchgeführt
+- Search Panel: Suche funktioniert, Ergebnisse werden als DraggableSearchCard angezeigt
+- Click-to-Add: Nach Fix funktioniert Klick auf Karte → wird zu ausgewählter Zone hinzugefügt
+- Deck Zones: Karten zeigen CardThumbnail mit Controls-Overlay (+/- Quantity, Delete)
+- Statistiken: Manakurve, Typen-Badges, Zonen-Summary werden korrekt aktualisiert
+- Keine JavaScript Console Errors
+
+### Tests
+- 110/111 Deck-Tests grün
+- 1 pre-existierender Fehler in DeckValidationTest (unrelated zu UI-Änderungen)
+- `npm run build` erfolgreich
+- `vendor/bin/pint --dirty` bestanden
+
+### Learnings / Gotchas
+- dnd-kit's listeners (onPointerDown etc.) verhindern Click-Events auf inneren Elementen
+- Workaround: Pointer-Position tracken und bei < 5px Bewegung als Click behandeln
+- Chrome DevTools MCP: take_screenshot kann timeout haben, take_snapshot ist zuverlässiger
+
+---

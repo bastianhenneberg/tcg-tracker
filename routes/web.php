@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\BinderController;
+use App\Http\Controllers\BinderPageController;
 use App\Http\Controllers\BoxController;
 use App\Http\Controllers\CustomCardController;
 use App\Http\Controllers\DataMappingController;
+use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DeckInventoryController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuickAddController;
@@ -39,6 +43,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('lots/{lot}', [LotController::class, 'update'])->name('lots.update');
     Route::delete('lots/{lot}', [LotController::class, 'destroy'])->name('lots.destroy');
 
+    // Binders (Collection Organization)
+    Route::get('binders', [BinderController::class, 'index'])->name('binders.index');
+    Route::post('binders', [BinderController::class, 'store'])->name('binders.store');
+    Route::get('binders/{binder}', [BinderController::class, 'show'])->name('binders.show');
+    Route::patch('binders/{binder}', [BinderController::class, 'update'])->name('binders.update');
+    Route::delete('binders/{binder}', [BinderController::class, 'destroy'])->name('binders.destroy');
+    Route::post('binders/{binder}/pages', [BinderController::class, 'addPage'])->name('binders.add-page');
+
+    // Binder Pages
+    Route::get('binder-pages/{binderPage}', [BinderPageController::class, 'show'])->name('binder-pages.show');
+    Route::patch('binder-pages/{binderPage}', [BinderPageController::class, 'update'])->name('binder-pages.update');
+    Route::delete('binder-pages/{binderPage}', [BinderPageController::class, 'destroy'])->name('binder-pages.destroy');
+    Route::post('binder-pages/{binderPage}/assign', [BinderPageController::class, 'assignCard'])->name('binder-pages.assign');
+    Route::post('binder-pages/{binderPage}/remove', [BinderPageController::class, 'removeCard'])->name('binder-pages.remove');
+    Route::post('binder-pages/{binderPage}/move', [BinderPageController::class, 'moveCard'])->name('binder-pages.move');
+    Route::post('binder-pages/{binderPage}/move-to-slot', [BinderPageController::class, 'moveCardToSlot'])->name('binder-pages.move-to-slot');
+    Route::post('binder-pages/{binderPage}/reorder-stack', [BinderPageController::class, 'reorderStack'])->name('binder-pages.reorder-stack');
+    Route::get('binder-pages/{binderPage}/available-cards', [BinderPageController::class, 'availableCards'])->name('binder-pages.available-cards');
+
     // Unified Scanner (all games)
     Route::prefix('scanner')->name('scanner.')->group(function () {
         Route::get('/', [ScannerController::class, 'index'])->name('index');
@@ -72,6 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('inventory/{item}', [UnifiedInventoryController::class, 'destroy'])->name('inventory.destroy');
         Route::post('inventory/mark-sold', [UnifiedInventoryController::class, 'markSold'])->name('inventory.mark-sold');
         Route::post('inventory/move-to-collection', [UnifiedInventoryController::class, 'moveToCollection'])->name('inventory.move-to-collection');
+        Route::post('inventory/change-lot', [UnifiedInventoryController::class, 'changeLot'])->name('inventory.change-lot');
         Route::post('inventory/delete-multiple', [UnifiedInventoryController::class, 'destroyMultiple'])->name('inventory.delete-multiple');
         Route::get('inventory/export', [UnifiedInventoryController::class, 'export'])->name('inventory.export');
 
@@ -81,6 +105,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('collection/{item}', [UnifiedCollectionController::class, 'destroy'])->name('collection.destroy');
         Route::post('collection/delete-multiple', [UnifiedCollectionController::class, 'destroyMultiple'])->name('collection.delete-multiple');
         Route::post('collection/move-to-inventory', [UnifiedCollectionController::class, 'moveToInventory'])->name('collection.move-to-inventory');
+    });
+
+    // Decks & Deckbuilder
+    Route::prefix('g/{slug}')->group(function () {
+        Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
+        Route::get('decks/create', [DeckController::class, 'create'])->name('decks.create');
+        Route::post('decks', [DeckController::class, 'store'])->name('decks.store');
+        Route::get('decks/{deck}', [DeckController::class, 'show'])->name('decks.show');
+        Route::get('decks/{deck}/edit', [DeckController::class, 'edit'])->name('decks.edit');
+        Route::patch('decks/{deck}', [DeckController::class, 'update'])->name('decks.update');
+        Route::delete('decks/{deck}', [DeckController::class, 'destroy'])->name('decks.destroy');
+
+        // Builder
+        Route::get('decks/{deck}/builder', [DeckController::class, 'builder'])->name('decks.builder');
+        Route::post('decks/{deck}/cards', [DeckController::class, 'addCard'])->name('decks.add-card');
+        Route::patch('decks/{deck}/cards/reorder', [DeckController::class, 'reorderCards'])->name('decks.reorder-cards');
+        Route::delete('decks/{deck}/cards/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card');
+        Route::patch('decks/{deck}/cards/{card}/move', [DeckController::class, 'moveCard'])->name('decks.move-card');
+        Route::patch('decks/{deck}/cards/{card}/quantity', [DeckController::class, 'updateQuantity'])->name('decks.update-quantity');
+        Route::get('decks/{deck}/validate', [DeckController::class, 'validate'])->name('decks.validate');
+        Route::get('decks/{deck}/search', [DeckController::class, 'searchCards'])->name('decks.search');
+        Route::get('decks/{deck}/export/{format?}', [DeckController::class, 'export'])->name('decks.export');
+
+        // Deck Inventory Assignments (mark as "in deck")
+        Route::post('decks/{deck}/mark-in-deck', [DeckInventoryController::class, 'markInDeck'])->name('decks.mark-in-deck');
+        Route::delete('decks/{deck}/mark-in-deck', [DeckInventoryController::class, 'clearMarkings'])->name('decks.clear-markings');
     });
 
     // Notifications

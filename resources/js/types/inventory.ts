@@ -118,3 +118,29 @@ export interface CollectionStats {
     unique_cards: number;
     total_cards: number;
 }
+
+export interface Binder {
+    id: number;
+    user_id: number;
+    name: string;
+    description: string | null;
+    color: string | null;
+    created_at: string;
+    updated_at: string;
+    pages_count?: number;
+    inventory_items_count?: number;
+    pages?: BinderPage[];
+}
+
+export interface BinderPage {
+    id: number;
+    user_id: number;
+    binder_id: number;
+    page_number: number;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+    binder?: Binder;
+    inventory_items_count?: number;
+    inventory_items?: UnifiedInventoryItem[];
+}

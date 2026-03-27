@@ -60,6 +60,7 @@ export interface UnifiedPrinting {
     external_ids: Record<string, string>;
     card?: UnifiedCard;
     set?: UnifiedSet;
+    owned_quantity?: number;
     created_at: string;
     updated_at: string;
 }
@@ -93,6 +94,10 @@ export interface UnifiedInventory {
     user_id: number;
     printing_id: number;
     lot_id?: number;
+    binder_id?: number;
+    binder_page_id?: number;
+    binder_slot?: number;
+    position_in_slot?: number;
     condition: string;
     language: string;
     quantity: number;
@@ -105,6 +110,9 @@ export interface UnifiedInventory {
     printing?: UnifiedPrinting;
     lot?: Lot;
     available_printings?: AvailablePrinting[];
+    // Deck assignment fields (populated by backend for binder views)
+    is_in_deck?: boolean;
+    deck_names?: string[];
     created_at: string;
     updated_at: string;
 }

@@ -1,0 +1,261 @@
+{
+  "project": "TCG Tracker",
+  "branchName": "feature/decklists-round2",
+  "description": "Runde 2: Tests schreiben & UI mit Chrome Extension verifizieren. IMPLEMENTIEREN, nicht nur validieren!",
+  "userStories": [
+    {
+      "id": "US-101",
+      "title": "Deck Model Tests",
+      "description": "Schreibe Pest-Tests für das Deck Model",
+      "acceptanceCriteria": [
+        "Test: Deck kann erstellt werden",
+        "Test: Deck hat user() Relation",
+        "Test: Deck hat gameFormat() Relation",
+        "Test: Deck hat cards() Relation",
+        "Test: Deck casts funktionieren (is_public, metadata)",
+        "Datei: tests/Feature/Deck/DeckModelTest.php",
+        "php artisan test --filter=DeckModelTest GRÜN"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Nutze Pest Syntax: it('...', function() {})"
+    },
+    {
+      "id": "US-102",
+      "title": "DeckZone & DeckCard Model Tests",
+      "description": "Schreibe Pest-Tests für DeckZone und DeckCard Models",
+      "acceptanceCriteria": [
+        "Test: DeckZone kann erstellt werden",
+        "Test: DeckZone hat gameFormat() Relation",
+        "Test: DeckCard hat deck() Relation",
+        "Test: DeckCard hat zone() Relation",
+        "Test: DeckCard hat printing() Relation zu UnifiedPrinting",
+        "Datei: tests/Feature/Deck/DeckZoneModelTest.php",
+        "Datei: tests/Feature/Deck/DeckCardModelTest.php",
+        "php artisan test --filter=DeckZone GRÜN",
+        "php artisan test --filter=DeckCard GRÜN"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-103",
+      "title": "DeckPolicy Tests",
+      "description": "Schreibe Tests für die Deck Authorization Policy",
+      "acceptanceCriteria": [
+        "Test: Owner kann Deck updaten",
+        "Test: Nicht-Owner kann Deck NICHT updaten",
+        "Test: Owner kann Deck löschen",
+        "Test: Nicht-Owner kann Deck NICHT löschen",
+        "Test: Jeder kann öffentliches Deck sehen",
+        "Test: Nur Owner kann privates Deck sehen",
+        "Datei: tests/Feature/Deck/DeckPolicyTest.php",
+        "php artisan test --filter=DeckPolicyTest GRÜN"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-104",
+      "title": "DeckValidationService Tests",
+      "description": "Schreibe Tests für die Deck-Validierung",
+      "acceptanceCriteria": [
+        "Test: Playset-Limit wird erkannt (z.B. max 3 Kopien)",
+        "Test: Zone min_cards wird geprüft",
+        "Test: Zone max_cards wird geprüft",
+        "Test: Collection-Only Check funktioniert",
+        "Test: Valides Deck gibt keine Fehler",
+        "Datei: tests/Feature/Deck/DeckValidationTest.php",
+        "php artisan test --filter=DeckValidationTest GRÜN"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "DeckValidationService muss ggf. erst implementiert werden"
+    },
+    {
+      "id": "US-105",
+      "title": "DeckbuilderService Tests",
+      "description": "Schreibe Tests für den Deckbuilder Service",
+      "acceptanceCriteria": [
+        "Test: addCard() fügt Karte hinzu",
+        "Test: removeCard() entfernt Karte",
+        "Test: moveCard() verschiebt zwischen Zonen",
+        "Test: updateQuantity() ändert Anzahl",
+        "Test: getStatistics() gibt korrektes Array zurück",
+        "Test: exportAsText() gibt korrekten String zurück",
+        "Datei: tests/Feature/Deck/DeckbuilderServiceTest.php",
+        "php artisan test --filter=DeckbuilderServiceTest GRÜN"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "DeckbuilderService muss ggf. erst implementiert werden"
+    },
+    {
+      "id": "US-106",
+      "title": "DeckController CRUD Tests",
+      "description": "Schreibe Tests für die Controller CRUD Actions",
+      "acceptanceCriteria": [
+        "Test: index zeigt nur eigene Decks",
+        "Test: store erstellt neues Deck",
+        "Test: show zeigt Deck-Details",
+        "Test: update aktualisiert Deck (nur Owner)",
+        "Test: destroy löscht Deck (nur Owner)",
+        "Test: Unauthorized User wird abgewiesen",
+        "Datei: tests/Feature/Deck/DeckControllerTest.php",
+        "php artisan test --filter=DeckControllerTest GRÜN"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-107",
+      "title": "DeckController Builder Actions Tests",
+      "description": "Schreibe Tests für die Builder API Actions",
+      "acceptanceCriteria": [
+        "Test: addCard Action fügt Karte hinzu",
+        "Test: removeCard Action entfernt Karte",
+        "Test: moveCard Action verschiebt Karte",
+        "Test: updateQuantity Action ändert Anzahl",
+        "Test: searchCards Action gibt Ergebnisse",
+        "Test: export Action gibt Download Response",
+        "Datei: tests/Feature/Deck/DeckBuilderActionsTest.php",
+        "php artisan test --filter=DeckBuilderActionsTest GRÜN"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-108",
+      "title": "npm run build erfolgreich",
+      "description": "Frontend Build muss ohne Fehler durchlaufen",
+      "acceptanceCriteria": [
+        "npm run build ohne TypeScript Errors",
+        "npm run build ohne ESLint Errors",
+        "Alle Deck-bezogenen Imports auflösbar"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-109",
+      "title": "UI Test: Deck Index Page",
+      "description": "Verifiziere Deck Index Page mit Chrome Extension",
+      "acceptanceCriteria": [
+        "Navigiere zu /g/fab/decks",
+        "Screenshot: Seite lädt ohne Fehler",
+        "Finde: 'Neues Deck' Button existiert",
+        "Klicke: 'Neues Deck' Button",
+        "Screenshot: Redirect zu /create erfolgt"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Nutze mcp__claude-in-chrome__* Tools, NICHT chrome-devtools!"
+    },
+    {
+      "id": "US-110",
+      "title": "UI Test: Deck Create Flow",
+      "description": "Teste Deck-Erstellung End-to-End",
+      "acceptanceCriteria": [
+        "Navigiere zu /g/fab/decks/create",
+        "Screenshot: Formular wird angezeigt",
+        "Fülle aus: Name = 'Test Deck'",
+        "Wähle: Format aus Dropdown",
+        "Klicke: Submit Button",
+        "Screenshot: Redirect zu Builder erfolgt"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Nutze mcp__claude-in-chrome__form_input für Formularfelder"
+    },
+    {
+      "id": "US-111",
+      "title": "UI Test: Builder Card Search",
+      "description": "Teste Kartensuche im Builder",
+      "acceptanceCriteria": [
+        "Navigiere zu Builder Page eines Decks",
+        "Screenshot: 3-Spalten Layout sichtbar",
+        "Finde: Search Input",
+        "Fülle aus: Suchbegriff eingeben",
+        "Warte: 500ms für Debounce",
+        "Screenshot: Suchergebnisse werden angezeigt"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-112",
+      "title": "UI Test: Builder Add Card",
+      "description": "Teste Karte zum Deck hinzufügen",
+      "acceptanceCriteria": [
+        "Suche nach einer Karte",
+        "Klicke auf Karte in Suchergebnissen",
+        "Screenshot: Karte erscheint in Deck Zone",
+        "Prüfe: Card Count hat sich erhöht"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-113",
+      "title": "UI Test: Builder Drag & Drop",
+      "description": "Teste Drag & Drop zwischen Zonen",
+      "acceptanceCriteria": [
+        "Finde: Karte in Main Zone",
+        "Drag: Karte von Main zu Sideboard",
+        "Screenshot: Karte ist jetzt in Sideboard",
+        "Prüfe: Zone Counts haben sich aktualisiert"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Nutze mcp__claude-in-chrome__computer action=left_click_drag"
+    },
+    {
+      "id": "US-114",
+      "title": "UI Test: Validation Errors",
+      "description": "Teste Validierungsanzeige",
+      "acceptanceCriteria": [
+        "Füge 4+ Kopien einer Karte hinzu (über Playset-Limit)",
+        "Screenshot: Validierungsfehler wird angezeigt",
+        "Entferne Karte bis unter Limit",
+        "Screenshot: Fehler verschwindet / Deck ist valid"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-115",
+      "title": "UI Test: Export Function",
+      "description": "Teste Export-Funktion",
+      "acceptanceCriteria": [
+        "Navigiere zu Deck Show oder Builder",
+        "Finde: Export Button",
+        "Klicke: Export Button",
+        "Prüfe: Download wird gestartet oder Preview angezeigt"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-116",
+      "title": "Alle Tests grün",
+      "description": "Finale Verifikation dass alle Tests durchlaufen",
+      "acceptanceCriteria": [
+        "php artisan test --filter=Deck - ALLE GRÜN",
+        "Keine skipped Tests (außer begründet)",
+        "npm run build erfolgreich"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Erst wenn alle vorherigen Stories passes: true"
+    }
+  ]
+}
