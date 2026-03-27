@@ -3,9 +3,19 @@
         "claude_code",
         "opencode"
     ],
-    "editors": [
-        "claude_code",
-        "opencode"
+    "guidelines": true,
+    "herd_mcp": false,
+    "mcp": true,
+    "packages": [
+        "laravel/fortify"
     ],
-    "guidelines": []
+    "sail": false,
+    "skills": [
+        "laravel-best-practices",
+        "wayfinder-development",
+        "pest-testing",
+        "inertia-react-development",
+        "tailwindcss-development",
+        "fortify-development"
+    ]
 }
