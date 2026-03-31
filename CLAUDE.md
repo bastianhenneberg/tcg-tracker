@@ -1,15 +1,7 @@
 # TCG Tracker - Claude Instructions
 
-## Session Memory
-**WICHTIG:** Lies zu Beginn jeder Session die neueste Session-Datei in `.claude/sessions/` um den Kontext zu verstehen.
-
-Aktuelle Sessions:
-- `.claude/sessions/2026-01-04.md` - Unified Inventory Migration & Cleanup
-
-### Session Memory Regeln
-- Am Ende jeder Session: Erstelle/aktualisiere die Session-Datei mit Datum
-- Dokumentiere: Erledigte Aufgaben, offene Punkte, wichtige Entscheidungen
-- Nutze das Format aus bestehenden Session-Dateien
+## AI Brain
+**Projekt-Slug:** `tcg-tracker`
 
 ---
 

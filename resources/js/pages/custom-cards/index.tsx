@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { index as customCardsIndex } from '@/routes/custom-cards';
-import { type BreadcrumbItem, type PaginatedData } from '@/types';
+import { type BreadcrumbItem } from '@/types';
+import { type PaginatedData } from '@/types/unified';
 import { getPitchColor } from '@/types/unified';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
@@ -424,7 +425,7 @@ function CreateCardDialog({
     } | null>(null);
     const [hoveredCard, setHoveredCard] = useState<{ image_url: string | null } | null>(null);
 
-    const { data, setData, post, processing, reset, errors } = useForm({
+    const { data, setData, post, processing, reset, errors, transform } = useForm({
         game_id: selectedGameId ?? games[0]?.id ?? 0,
         name: '',
         linked_fab_card_id: null as number | null,
@@ -472,12 +473,12 @@ function CreateCardDialog({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        transform((data) => ({
+            ...data,
+            types: data.types ? data.types.split(',').map((t: string) => t.trim()) : null,
+            traits: data.traits ? data.traits.split(',').map((t: string) => t.trim()) : null,
+        }));
         post('/custom-cards/create', {
-            data: {
-                ...data,
-                types: data.types ? data.types.split(',').map((t) => t.trim()) : null,
-                traits: data.traits ? data.traits.split(',').map((t) => t.trim()) : null,
-            },
             onSuccess: () => {
                 reset();
                 setLinkedFabCard(null);
@@ -750,7 +751,7 @@ function EditCardDialog({
     } | null>(null);
     const [hoveredCard, setHoveredCard] = useState<{ image_url: string | null } | null>(null);
 
-    const { data, setData, patch, processing, reset } = useForm({
+    const { data, setData, patch, processing, reset, transform } = useForm({
         name: '',
         linked_fab_card_id: null as number | null,
         types: '',
@@ -816,12 +817,12 @@ function EditCardDialog({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!card) return;
+        transform((data) => ({
+            ...data,
+            types: data.types ? data.types.split(',').map((t: string) => t.trim()) : null,
+            traits: data.traits ? data.traits.split(',').map((t: string) => t.trim()) : null,
+        }));
         patch(`/custom-cards/${card.id}`, {
-            data: {
-                ...data,
-                types: data.types ? data.types.split(',').map((t) => t.trim()) : null,
-                traits: data.traits ? data.traits.split(',').map((t) => t.trim()) : null,
-            },
             onSuccess: () => {
                 reset();
                 onClose();

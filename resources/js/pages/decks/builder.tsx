@@ -530,8 +530,8 @@ export default function DeckBuilder({
                 if (pitch) {
                     const targetPitch = pitchColorToValue[pitch];
                     printing = printings.find(p => {
-                        const cardPitch = getCardPitch(p.card as Record<string, unknown>);
-                        const cardColor = getCardColor(p.card as Record<string, unknown>);
+                        const cardPitch = getCardPitch(p.card as unknown as Record<string, unknown>);
+                        const cardColor = getCardColor(p.card as unknown as Record<string, unknown>);
                         return p.card?.name?.toLowerCase() === name.toLowerCase() &&
                             (cardPitch === targetPitch || cardColor === pitch);
                     });
@@ -920,21 +920,22 @@ export default function DeckBuilder({
     // Update local state from API response
     const updateLocalState = (data: DeckBuilderResponse) => {
         if (data.deckCard) {
+            const deckCard = data.deckCard;
             setDeckCards((prev) => {
                 const newState = [...prev];
-                const zoneIdx = newState.findIndex((zc) => zc.zone.id === data.deckCard?.deck_zone_id);
+                const zoneIdx = newState.findIndex((zc) => zc.zone.id === deckCard.deck_zone_id);
                 if (zoneIdx >= 0) {
-                    const existingIdx = newState[zoneIdx].cards.findIndex((c) => c.id === data.deckCard?.id);
+                    const existingIdx = newState[zoneIdx].cards.findIndex((c) => c.id === deckCard.id);
                     if (existingIdx >= 0) {
                         // Preserve owned_quantity when updating existing card
                         const existingOwnedQty = newState[zoneIdx].cards[existingIdx].owned_quantity;
                         newState[zoneIdx].cards[existingIdx] = {
-                            ...data.deckCard,
+                            ...deckCard,
                             owned_quantity: existingOwnedQty,
                         };
                     } else {
                         // For new cards, try to find owned_quantity from search results or existing cards
-                        const printingId = data.deckCard.printing_id;
+                        const printingId = deckCard.printing_id;
                         let ownedQty = 0;
 
                         // Check search results for owned_quantity
@@ -953,7 +954,7 @@ export default function DeckBuilder({
                         }
 
                         newState[zoneIdx].cards.push({
-                            ...data.deckCard,
+                            ...deckCard,
                             owned_quantity: ownedQty,
                         });
                     }

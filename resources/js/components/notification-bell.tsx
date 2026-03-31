@@ -25,6 +25,7 @@ interface PageProps {
         items: Notification[];
         unread_count: number;
     };
+    [key: string]: unknown;
 }
 
 export function NotificationBell() {

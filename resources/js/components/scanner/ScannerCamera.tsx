@@ -44,8 +44,8 @@ export function ScannerCamera({
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const trackRef = useRef<MediaStreamTrack | null>(null);
-    const bulkScanIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const bulkCountdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const bulkScanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const bulkCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const stopBulkScan = useCallback(() => {
         if (bulkScanIntervalRef.current) {

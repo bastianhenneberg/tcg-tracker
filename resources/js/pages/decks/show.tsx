@@ -199,7 +199,7 @@ export default function DecksShow({ game, deck, zones, validation, statistics }:
                                                         >
                                                             <CardThumbnail
                                                                 printing={card.printing!}
-                                                                quantity={card.quantity}
+                                                                showQuantity={card.quantity}
                                                                 size="md"
                                                             />
                                                         </HoverCardPreview>
@@ -231,7 +231,7 @@ export default function DecksShow({ game, deck, zones, validation, statistics }:
                                                     >
                                                         <CardThumbnail
                                                             printing={card.printing!}
-                                                            quantity={card.quantity}
+                                                            showQuantity={card.quantity}
                                                             size="md"
                                                         />
                                                     </HoverCardPreview>

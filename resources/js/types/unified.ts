@@ -106,6 +106,7 @@ export interface UnifiedInventory {
     sold_at?: string;
     notes?: string;
     in_collection: boolean;
+    extra?: Record<string, unknown>;
     position_in_lot?: number;
     printing?: UnifiedPrinting;
     lot?: Lot;
@@ -211,7 +212,7 @@ export function getLanguageLabel(language: string | null): string {
 }
 
 // Helper to get color indicator for FAB pitch
-export function getPitchColor(pitch?: number | string): string {
+export function getPitchColor(pitch?: number | string | null): string {
     const p = typeof pitch === 'string' ? parseInt(pitch, 10) : pitch;
     switch (p) {
         case 1:

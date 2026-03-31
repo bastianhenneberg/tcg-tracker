@@ -23,12 +23,12 @@ import {
     type CardMatch,
     type ScannedCard,
     type OllamaStatus,
-    type ScannerSettings as ScannerSettingsType,
     type PendingCard,
     type BulkModeSettings,
     type RecognitionResult,
     type ScannerFlash,
 } from '@/components/scanner';
+import { type ScannerSettings as ScannerSettingsType } from '@/components/scanner/types';
 
 interface Props {
     games: Game[];
@@ -293,7 +293,7 @@ export default function ScannerIndex({
         setConfirmingAll(true);
 
         for (const pending of pendingCards) {
-            const confirmData: Record<string, unknown> = {
+            const confirmData = {
                 game: selectedGame.slug,
                 lot_id: selectedLotId,
                 condition: pending.condition,
@@ -303,7 +303,7 @@ export default function ScannerIndex({
             };
 
             await new Promise<void>((resolve) => {
-                router.post('/scanner/confirm', confirmData, {
+                router.post('/scanner/confirm', confirmData as Record<string, unknown> as any, {
                     preserveState: true,
                     preserveScroll: true,
                     onFinish: () => resolve(),
@@ -320,7 +320,7 @@ export default function ScannerIndex({
         (newBulkMode: BulkModeSettings) => {
             router.post(
                 '/scanner/settings',
-                { game: selectedGame.slug, bulkMode: newBulkMode },
+                { game: selectedGame.slug, bulkMode: newBulkMode } as any,
                 {
                     preserveState: true,
                     preserveScroll: true,

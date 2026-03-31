@@ -86,7 +86,7 @@ export default function BoxShow({ box }: Props) {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge>{lot.inventory_cards_count ?? 0}</Badge>
+                                                <Badge>{lot.inventory_items_count ?? 0}</Badge>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {lot.scanned_at
