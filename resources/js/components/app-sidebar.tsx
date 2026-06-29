@@ -16,7 +16,7 @@ import { index as boxesIndex } from '@/routes/boxes';
 import { index as lotsIndex } from '@/routes/lots';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Archive, BookOpen, Camera, Database, Gamepad2, GitMerge, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Swords, Target } from 'lucide-react';
+import { Archive, BookOpen, Camera, Database, FolderSearch, Gamepad2, GitMerge, Heart, Keyboard, Layers, LayoutGrid, Library, Package, PenSquare, Sparkles, Swords, Target } from 'lucide-react';
 import { useMemo } from 'react';
 import AppLogo from './app-logo';
 
@@ -42,6 +42,12 @@ const mainNavItems: NavItem[] = [
         href: '/binders',
         icon: BookOpen,
         prefetch: false, // Always load fresh data
+    },
+    {
+        title: 'Ordner-Scanner',
+        href: '/scanner/folder',
+        icon: FolderSearch,
+        prefetch: false,
     },
     {
         title: 'Spiele verwalten',

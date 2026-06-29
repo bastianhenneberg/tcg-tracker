@@ -2,11 +2,18 @@
 
 namespace App\Services\Mtg;
 
+use App\Contracts\CardMatcherInterface;
+use App\Models\UnifiedCard;
 use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 
-class MtgCardMatcherService
+class MtgCardMatcherService implements CardMatcherInterface
 {
+    public function getGameSlug(): string
+    {
+        return 'mtg';
+    }
+
     /**
      * Find a card printing that matches the recognition result.
      *
@@ -133,7 +140,7 @@ class MtgCardMatcherService
             return collect();
         }
 
-        $normalizedQuery = \App\Models\UnifiedCard::normalize($query);
+        $normalizedQuery = UnifiedCard::normalize($query);
 
         return UnifiedPrinting::query()
             ->with(['card', 'set'])

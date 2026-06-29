@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomCardController;
 use App\Http\Controllers\DataMappingController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckInventoryController;
+use App\Http\Controllers\FolderScanController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuickAddController;
@@ -70,6 +71,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/confirm-bulk', [ScannerController::class, 'confirmBulk'])->name('confirm-bulk');
         Route::post('/lot', [ScannerController::class, 'createLot'])->name('create-lot');
         Route::post('/settings', [ScannerController::class, 'saveSettings'])->name('save-settings');
+
+        // Folder scanner (network scanner drop folder → Ollama → inventory)
+        Route::get('/folder', [FolderScanController::class, 'index'])->name('folder');
+        Route::post('/folder', [FolderScanController::class, 'scan'])->name('folder.scan');
     });
 
     // Quick Add (keyboard-optimized manual entry)

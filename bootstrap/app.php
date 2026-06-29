@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind the reverse proxy (…proxy.peppermint-digital.com, TLS terminated there)
+        // so Laravel generates correct https asset/links from X-Forwarded-* headers.
+        $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [

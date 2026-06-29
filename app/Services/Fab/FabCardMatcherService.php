@@ -2,14 +2,21 @@
 
 namespace App\Services\Fab;
 
+use App\Contracts\CardMatcherInterface;
 use App\Models\Custom\CustomPrinting;
 use App\Models\Fab\FabPrinting;
+use App\Models\UnifiedCard;
 use App\Models\UnifiedPrinting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
-class FabCardMatcherService
+class FabCardMatcherService implements CardMatcherInterface
 {
+    public function getGameSlug(): string
+    {
+        return 'fab';
+    }
+
     /**
      * Find a card printing that matches the recognition result.
      *
@@ -335,7 +342,7 @@ class FabCardMatcherService
         $parsedPitch = $parsed['pitch'];
         $parsedFoiling = $parsed['foiling'];
 
-        $normalizedQuery = \App\Models\UnifiedCard::normalize($baseQuery);
+        $normalizedQuery = UnifiedCard::normalize($baseQuery);
 
         // Search in unified printings for FAB
         $fabResults = UnifiedPrinting::query()
