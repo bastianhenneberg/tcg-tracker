@@ -175,11 +175,13 @@ class CardImportService
         array $printingData,
         UnifiedCard $card
     ): UnifiedPrinting {
-        // Find associated set
-        $setCode = $printingData['set_id'] ?? null;
+        // Find associated set. Different sources expose the set code under different
+        // keys ("set_id" for FAB/One Piece, "set" for Scryfall/MTG) and casing, so we
+        // normalize to the uppercase code stored on UnifiedSet.
+        $setCode = $printingData['set_id'] ?? $printingData['set'] ?? null;
         $set = $setCode
             ? UnifiedSet::where('game', $mapper->getGameSlug())
-                ->where('code', $setCode)
+                ->where('code', strtoupper($setCode))
                 ->first()
             : null;
 

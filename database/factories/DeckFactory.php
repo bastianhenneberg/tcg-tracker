@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Deck;
 use App\Models\GameFormat;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Deck>
+ * @extends Factory<Deck>
  */
 class DeckFactory extends Factory
 {
@@ -24,7 +25,9 @@ class DeckFactory extends Factory
             'name' => fake()->words(3, true),
             'description' => fake()->optional()->sentence(),
             'is_public' => fake()->boolean(20),
-            'use_collection_only' => fake()->boolean(30),
+            // Default to false so deck factories are deterministic; use the
+            // collectionOnly() state when a collection-restricted deck is needed.
+            'use_collection_only' => false,
             'metadata' => null,
         ];
     }

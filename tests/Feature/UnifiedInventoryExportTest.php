@@ -5,8 +5,9 @@ use App\Models\UnifiedCard;
 use App\Models\UnifiedInventory;
 use App\Models\UnifiedPrinting;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -25,8 +26,10 @@ it('exports inventory as CSV', function () {
     $card = UnifiedCard::factory()->forGame('fab')->create(['name' => 'Test Card']);
     $printing = UnifiedPrinting::factory()->forCard($card)->create([
         'collector_number' => 'WTR001',
+        'set_code' => 'TESTSET', // no Cardmarket mapping -> empty idProduct
         'set_name' => 'Welcome to Rathe',
         'finish' => 'S', // Standard/non-foil
+        'finish_label' => 'Standard',
     ]);
 
     UnifiedInventory::factory()->create([
@@ -55,8 +58,9 @@ it('exports inventory as CSV', function () {
     // Check header row
     expect($content)->toContain('idProduct,quantity,name,set,condition,language,isFoil,price,comment');
 
-    // Check data row - idProduct is number only (without set prefix)
-    expect($content)->toContain('001'); // WTR001 -> 001
+    // idProduct is the Cardmarket ID resolved via CSV lookup; it stays empty
+    // when no Cardmarket mapping exists (as for this synthetic card/set).
+    expect($content)->toContain(',1,"Test Card (Regular)"'); // empty idProduct, then quantity + name
     expect($content)->toContain('Test Card');
     expect($content)->toContain('NM');
     expect($content)->toContain('English');
@@ -153,6 +157,11 @@ it('includes color in card name for FAB', function () {
         'name' => 'Colored Card',
         'game_specific' => ['color' => 'Blue', 'pitch' => 3],
     ]);
+    // A second pitch version of the same name -> color is added for disambiguation
+    UnifiedCard::factory()->forGame('fab')->create([
+        'name' => 'Colored Card',
+        'game_specific' => ['color' => 'Red', 'pitch' => 1],
+    ]);
     $printing = UnifiedPrinting::factory()->forCard($card)->create([
         'collector_number' => 'WTR003',
         'finish' => 'S',
@@ -180,6 +189,11 @@ it('includes color and foil type together for FAB', function () {
     $card = UnifiedCard::factory()->forGame('fab')->create([
         'name' => 'Colorful Foil Card',
         'game_specific' => ['color' => 'Red', 'pitch' => 1],
+    ]);
+    // A second pitch version of the same name -> color is added for disambiguation
+    UnifiedCard::factory()->forGame('fab')->create([
+        'name' => 'Colorful Foil Card',
+        'game_specific' => ['color' => 'Blue', 'pitch' => 3],
     ]);
     $printing = UnifiedPrinting::factory()->forCard($card)->create([
         'collector_number' => 'WTR004',
