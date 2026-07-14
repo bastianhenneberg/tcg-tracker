@@ -10,7 +10,7 @@ import {
     type UnifiedSet,
 } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
-import { Library } from 'lucide-react';
+import { Library, Printer } from 'lucide-react';
 
 interface Props {
     game: Game;
@@ -38,6 +38,15 @@ export default function SetShow({ game, set, printings }: Props) {
                             &larr; Zurück
                         </Button>
                     </Link>
+                    <Link
+                        href={`${baseUrl}/sets/${set.id}/print`}
+                        className="ml-auto"
+                    >
+                        <Button variant="outline" size="sm">
+                            <Printer className="mr-1 h-4 w-4" />
+                            Druckblatt für Ordner
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* Set Info */}
@@ -54,7 +63,9 @@ export default function SetShow({ game, set, printings }: Props) {
                                 <Library className="h-12 w-12 text-muted-foreground" />
                             )}
                             <div>
-                                <CardTitle className="text-2xl">{set.name}</CardTitle>
+                                <CardTitle className="text-2xl">
+                                    {set.name}
+                                </CardTitle>
                                 <p className="text-muted-foreground">
                                     [{set.code}] - {set.printings_count} Karten
                                 </p>
@@ -65,22 +76,34 @@ export default function SetShow({ game, set, printings }: Props) {
                         <div className="grid gap-4 sm:grid-cols-3">
                             {set.set_type && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Typ</span>
-                                    <p className="font-medium capitalize">{set.set_type}</p>
+                                    <span className="text-sm text-muted-foreground">
+                                        Typ
+                                    </span>
+                                    <p className="font-medium capitalize">
+                                        {set.set_type}
+                                    </p>
                                 </div>
                             )}
                             {set.released_at && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Release</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        Release
+                                    </span>
                                     <p className="font-medium">
-                                        {new Date(set.released_at).toLocaleDateString('de-DE')}
+                                        {new Date(
+                                            set.released_at,
+                                        ).toLocaleDateString('de-DE')}
                                     </p>
                                 </div>
                             )}
                             {set.card_count && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Kartenzahl (offiziell)</span>
-                                    <p className="font-medium">{set.card_count}</p>
+                                    <span className="text-sm text-muted-foreground">
+                                        Kartenzahl (offiziell)
+                                    </span>
+                                    <p className="font-medium">
+                                        {set.card_count}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -89,12 +112,16 @@ export default function SetShow({ game, set, printings }: Props) {
 
                 {/* Printings */}
                 <div>
-                    <h2 className="text-xl font-bold mb-4">Karten in diesem Set</h2>
+                    <h2 className="mb-4 text-xl font-bold">
+                        Karten in diesem Set
+                    </h2>
 
                     {printings.data.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 border rounded-lg">
+                        <div className="flex flex-col items-center justify-center rounded-lg border py-12">
                             <Library className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="mt-2 text-muted-foreground">Keine Karten in diesem Set</p>
+                            <p className="mt-2 text-muted-foreground">
+                                Keine Karten in diesem Set
+                            </p>
                         </div>
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -111,28 +138,38 @@ export default function SetShow({ game, set, printings }: Props) {
                                             className="h-20 w-auto rounded"
                                         />
                                     ) : (
-                                        <div className="h-20 w-14 bg-muted rounded flex items-center justify-center">
-                                            <span className="text-xs text-muted-foreground">?</span>
+                                        <div className="flex h-20 w-14 items-center justify-center rounded bg-muted">
+                                            <span className="text-xs text-muted-foreground">
+                                                ?
+                                            </span>
                                         </div>
                                     )}
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-medium truncate">
+                                        <p className="truncate font-medium">
                                             {printing.card?.name}
                                         </p>
-                                        <p className="text-muted-foreground text-sm">
+                                        <p className="text-sm text-muted-foreground">
                                             #{printing.collector_number}
                                         </p>
                                         <div className="mt-1 flex gap-1">
                                             {printing.rarity_label && (
-                                                <Badge variant="outline" className="text-xs">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs"
+                                                >
                                                     {printing.rarity_label}
                                                 </Badge>
                                             )}
-                                            {printing.finish_label && printing.finish !== 'standard' && (
-                                                <Badge variant="secondary" className="text-xs">
-                                                    {printing.finish_label}
-                                                </Badge>
-                                            )}
+                                            {printing.finish_label &&
+                                                printing.finish !==
+                                                    'standard' && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs"
+                                                    >
+                                                        {printing.finish_label}
+                                                    </Badge>
+                                                )}
                                         </div>
                                     </div>
                                 </Link>
@@ -142,15 +179,21 @@ export default function SetShow({ game, set, printings }: Props) {
 
                     {/* Pagination */}
                     {printings.last_page > 1 && (
-                        <div className="flex items-center justify-center gap-2 mt-6">
+                        <div className="mt-6 flex items-center justify-center gap-2">
                             {printings.links.map((link, index) => (
                                 <Button
                                     key={index}
-                                    variant={link.active ? 'default' : 'outline'}
+                                    variant={
+                                        link.active ? 'default' : 'outline'
+                                    }
                                     size="sm"
                                     disabled={!link.url}
-                                    onClick={() => link.url && router.get(link.url)}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    onClick={() =>
+                                        link.url && router.get(link.url)
+                                    }
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
                                 />
                             ))}
                         </div>

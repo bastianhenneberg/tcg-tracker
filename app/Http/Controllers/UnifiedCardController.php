@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BinderPage;
 use App\Models\Game;
 use App\Models\UnifiedCard;
 use App\Models\UnifiedPrinting;
@@ -319,6 +320,55 @@ class UnifiedCardController extends Controller
             'set' => $set,
             'printings' => $printings,
             'rarities' => $this->getRarities($game),
+        ]);
+    }
+
+    /**
+     * Printable binder placement sheet for a whole set.
+     *
+     * Renders every card of the set in physical 3x3 binder pages (9 pockets each),
+     * ordered by collector number. Printing variants (foilings) that share a
+     * collector number collapse into a single pocket so the layout mirrors how the
+     * cards sit in the folder.
+     */
+    public function printSet(string $slug, int $setId): Response
+    {
+        $game = $this->getGame($slug);
+        $unifiedSlug = $this->getUnifiedGameSlug($slug);
+
+        $set = UnifiedSet::where('game', $unifiedSlug)
+            ->findOrFail($setId);
+
+        $printings = UnifiedPrinting::where('set_id', $set->id)
+            ->with('card:id,name')
+            ->orderByRaw('is_variant asc, is_promo asc, id asc')
+            ->get();
+
+        // One pocket per collector number (base card wins via the ordering above).
+        $slots = $printings
+            ->unique('collector_number')
+            ->sortBy('collector_number', SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn (UnifiedPrinting $printing): array => [
+                'id' => $printing->id,
+                'collector_number' => $printing->collector_number,
+                'name' => $printing->card?->name,
+                'rarity_label' => $printing->rarity_label,
+                'image_url' => $printing->image_url_small ?: $printing->image_url,
+            ])
+            ->values();
+
+        // Chunk into physical binder pages of 9 pockets.
+        $pages = $slots
+            ->chunk(BinderPage::SLOTS_PER_PAGE)
+            ->map->values()
+            ->values();
+
+        return Inertia::render('sets/print', [
+            'game' => $game,
+            'set' => $set,
+            'pages' => $pages,
+            'slotsPerPage' => BinderPage::SLOTS_PER_PAGE,
+            'cardCount' => $slots->count(),
         ]);
     }
 }

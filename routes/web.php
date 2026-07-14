@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('printings/{printing}', [UnifiedCardController::class, 'printing'])->name('printings.show');
         Route::get('sets', [UnifiedCardController::class, 'sets'])->name('sets');
         Route::get('sets/{set}', [UnifiedCardController::class, 'set'])->name('sets.show');
+        Route::get('sets/{set}/print', [UnifiedCardController::class, 'printSet'])->name('sets.print');
 
         // Inventory
         Route::get('inventory', [UnifiedInventoryController::class, 'index'])->name('inventory');
