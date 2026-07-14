@@ -65,6 +65,7 @@ class BinderController extends Controller
 
         return Inertia::render('collection/binders/index', [
             'binders' => $binders,
+            'games' => $this->officialGames(),
             'filters' => [
                 'search' => $request->input('search'),
                 'sort' => $sortField,

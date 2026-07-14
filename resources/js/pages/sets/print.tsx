@@ -47,6 +47,9 @@ export default function SetPrint({
                     .binder-page { break-after: page; }
                     .binder-page:last-child { break-after: auto; }
                     html, body { background: #fff !important; }
+                    /* Strong black text for the no-image (compact) layout */
+                    .pocket-compact, .pocket-compact * { color: #000 !important; }
+                    .pocket-compact { border-color: #000 !important; }
                 }
                 .binder-page { break-inside: avoid; }
             `}</style>
@@ -146,7 +149,7 @@ export default function SetPrint({
                                                                 </span>
                                                             </>
                                                         ) : (
-                                                            <div className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center">
+                                                            <div className="pocket-compact flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-black">
                                                                 <span className="text-lg leading-none font-bold">
                                                                     #
                                                                     {
@@ -158,7 +161,7 @@ export default function SetPrint({
                                                                         '—'}
                                                                 </span>
                                                                 {slot.rarity_label && (
-                                                                    <span className="text-[10px] text-muted-foreground uppercase">
+                                                                    <span className="text-[10px] text-neutral-600 uppercase">
                                                                         {
                                                                             slot.rarity_label
                                                                         }
