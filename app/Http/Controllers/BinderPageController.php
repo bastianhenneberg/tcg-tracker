@@ -356,7 +356,10 @@ class BinderPageController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('printing.card', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('printing.card', fn ($c) => $c->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('printing', fn ($p) => $p->where('collector_number', 'like', "%{$search}%"));
+            });
         }
 
         if ($request->filled('game')) {
