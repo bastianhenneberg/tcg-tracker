@@ -1,14 +1,16 @@
 import FolderScanController from '@/actions/App/Http/Controllers/FolderScanController';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { FolderSearch, Loader2 } from 'lucide-react';
+import { Deferred, Head, router, useForm } from '@inertiajs/react';
+import { FolderSearch, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface GameOption {
@@ -45,6 +47,12 @@ interface ScanStatus {
     } | null;
 }
 
+interface OllamaStatus {
+    available: boolean;
+    host: string;
+    model: string;
+}
+
 interface Props {
     games: GameOption[];
     lots: LotOption[];
@@ -52,11 +60,36 @@ interface Props {
     conditions: Record<string, string>;
     languages: Record<string, string>;
     scanStatus: ScanStatus | null;
+    ollamaStatus?: OllamaStatus;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Ordner-Scanner', href: '/scanner/folder' }];
 
-export default function FolderScanner({ games, lots, defaultPath, conditions, languages, scanStatus }: Props) {
+function OllamaIndicator({ ollamaStatus }: { ollamaStatus?: OllamaStatus }) {
+    const recheck = () => router.reload({ only: ['ollamaStatus'] });
+
+    return (
+        <div className="flex items-center gap-2">
+            <Deferred data="ollamaStatus" fallback={<Skeleton className="h-6 w-40" />}>
+                {ollamaStatus ? (
+                    <Badge
+                        variant={ollamaStatus.available ? 'default' : 'destructive'}
+                        className="gap-1.5"
+                        title={`${ollamaStatus.host} · ${ollamaStatus.model}`}
+                    >
+                        <span className={`h-2 w-2 rounded-full ${ollamaStatus.available ? 'bg-green-400' : 'bg-red-200'}`} />
+                        {ollamaStatus.available ? `KI-Server verbunden (${ollamaStatus.model})` : 'KI-Server offline'}
+                    </Badge>
+                ) : null}
+            </Deferred>
+            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={recheck} title="KI-Server neu prüfen">
+                <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+        </div>
+    );
+}
+
+export default function FolderScanner({ games, lots, defaultPath, conditions, languages, scanStatus, ollamaStatus }: Props) {
     const form = useForm({
         game: games[0]?.slug ?? '',
         path: defaultPath,
@@ -89,13 +122,16 @@ export default function FolderScanner({ games, lots, defaultPath, conditions, la
             <Head title="Ordner-Scanner" />
 
             <div className="space-y-6 p-6">
-                <div>
-                    <h1 className="flex items-center gap-2 text-3xl font-bold">
-                        <FolderSearch className="h-7 w-7" /> Ordner-Scanner
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Liest gescannte Karten (PDF/Bilder) aus einem Ordner, erkennt sie per KI und fügt Treffer ins Inventar ein.
-                    </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h1 className="flex items-center gap-2 text-3xl font-bold">
+                            <FolderSearch className="h-7 w-7" /> Ordner-Scanner
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Liest gescannte Karten (PDF/Bilder) aus einem Ordner, erkennt sie per KI und fügt Treffer ins Inventar ein.
+                        </p>
+                    </div>
+                    <OllamaIndicator ollamaStatus={ollamaStatus} />
                 </div>
 
                 <Card>

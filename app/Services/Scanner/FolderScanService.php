@@ -135,27 +135,63 @@ class FolderScanService
         $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
         if (in_array($ext, self::IMAGE_EXTENSIONS, true)) {
-            return [base64_encode((string) file_get_contents($file))];
+            return [base64_encode($this->normalizeOrientation((string) file_get_contents($file)))];
         }
 
-        // PDF: rasterize pages to JPEG via poppler's pdftoppm.
+        // PDF: rasterize pages to JPEG via poppler's pdftoppm. 300 DPI matches typical
+        // flatbed scans and gives the vision model enough detail for the set code/number.
         $tmpDir = sys_get_temp_dir().'/tcg-scan-'.Str::random(8);
         mkdir($tmpDir, 0775, true);
 
         try {
-            Process::timeout(120)->run(['pdftoppm', '-jpeg', '-r', '200', $file, $tmpDir.'/page']);
+            Process::timeout(120)->run(['pdftoppm', '-jpeg', '-r', '300', $file, $tmpDir.'/page']);
 
             $images = [];
             $pages = glob($tmpDir.'/page*.jpg') ?: [];
             sort($pages);
             foreach ($pages as $page) {
-                $images[] = base64_encode((string) file_get_contents($page));
+                $images[] = base64_encode($this->normalizeOrientation((string) file_get_contents($page)));
             }
 
             return $images;
         } finally {
             array_map('unlink', glob($tmpDir.'/*') ?: []);
             @rmdir($tmpDir);
+        }
+    }
+
+    /**
+     * TCG cards are portrait. Flatbed scanners frequently capture them sideways, which
+     * badly degrades vision recognition (especially the small set code/number), so rotate
+     * any landscape page 90° clockwise to upright before sending it to the model.
+     */
+    protected function normalizeOrientation(string $jpegBytes): string
+    {
+        $image = @imagecreatefromstring($jpegBytes);
+        if ($image === false) {
+            return $jpegBytes;
+        }
+
+        try {
+            if (imagesx($image) <= imagesy($image)) {
+                return $jpegBytes; // already portrait (or square)
+            }
+
+            $rotated = imagerotate($image, -90, 0); // GD angles are counter-clockwise → -90 = clockwise
+            if ($rotated === false) {
+                return $jpegBytes;
+            }
+
+            try {
+                ob_start();
+                imagejpeg($rotated, null, 90);
+
+                return (string) ob_get_clean();
+            } finally {
+                imagedestroy($rotated);
+            }
+        } finally {
+            imagedestroy($image);
         }
     }
 

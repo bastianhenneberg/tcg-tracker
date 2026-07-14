@@ -42,10 +42,13 @@ class FabCardMatcherService implements CardMatcherInterface
             }
         }
 
-        // Strategy 1: Exact match by collector number in main DB
+        // Strategy 1: Exact match by collector number in main DB.
+        // A bare collector number is NOT unique across FAB sets, so only trust it when the
+        // recognized name agrees with the matched card (or no name was recognized at all).
+        // Otherwise a stray number silently imports a completely different card.
         if ($collectorNumber) {
             $exactMatch = $this->findByCollectorNumber($collectorNumber, $foiling);
-            if ($exactMatch) {
+            if ($exactMatch && $this->namesConsistent($cardName, $exactMatch->card?->name)) {
                 return [
                     'match' => $exactMatch,
                     'confidence' => 'high',
@@ -99,6 +102,43 @@ class FabCardMatcherService implements CardMatcherInterface
             'alternatives' => collect(),
             'is_custom' => false,
         ];
+    }
+
+    /**
+     * Whether a recognized card name is consistent with a candidate card name.
+     *
+     * Returns true when there is no recognized name to compare against, so non-name
+     * lookups (e.g. collector number only) keep working. Comparison is done on a
+     * normalized form and tolerates minor OCR noise via a similarity threshold.
+     */
+    protected function namesConsistent(?string $recognizedName, ?string $candidateName): bool
+    {
+        if (! $recognizedName || ! $candidateName) {
+            return true;
+        }
+
+        $a = $this->normalizeForComparison($recognizedName);
+        $b = $this->normalizeForComparison($candidateName);
+
+        if ($a === '' || $b === '') {
+            return true;
+        }
+
+        if ($a === $b || str_contains($a, $b) || str_contains($b, $a)) {
+            return true;
+        }
+
+        similar_text($a, $b, $percent);
+
+        return $percent >= 80.0;
+    }
+
+    /**
+     * Normalize a name to lowercase alphanumerics for tolerant comparison.
+     */
+    protected function normalizeForComparison(string $value): string
+    {
+        return (string) preg_replace('/[^a-z0-9]/', '', strtolower($value));
     }
 
     /**
@@ -312,22 +352,23 @@ class FabCardMatcherService implements CardMatcherInterface
                 }
             });
 
-        if ($setCode) {
-            $query->where(function ($q) use ($setCode) {
-                $q->where('set_code', $setCode)
-                    ->orWhereHas('set', fn ($setQ) => $setQ->where('code', $setCode));
-            });
-        }
-
         if ($foiling) {
             $query->where('finish', $foiling);
         }
 
-        return $query->orderByRaw('CASE WHEN EXISTS (
+        // Exact name first, then prefer the recognized set code. The set code is only a
+        // ranking signal, NOT a filter: the vision model frequently misreads it (or the
+        // card is from a set not yet imported), and a wrong set code must not discard an
+        // otherwise correct name match.
+        $query->orderByRaw('CASE WHEN EXISTS (
             SELECT 1 FROM unified_cards WHERE unified_cards.id = unified_printings.card_id AND unified_cards.name = ?
-        ) THEN 0 ELSE 1 END', [$baseName])
-            ->limit(10)
-            ->get();
+        ) THEN 0 ELSE 1 END', [$baseName]);
+
+        if ($setCode) {
+            $query->orderByRaw('CASE WHEN set_code = ? THEN 0 ELSE 1 END', [$setCode]);
+        }
+
+        return $query->limit(10)->get();
     }
 
     /**

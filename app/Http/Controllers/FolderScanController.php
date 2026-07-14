@@ -6,6 +6,7 @@ use App\Jobs\ScanCardFolderJob;
 use App\Models\Game;
 use App\Models\Lot;
 use App\Models\UnifiedInventory;
+use App\Services\OllamaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +50,7 @@ class FolderScanController extends Controller
             'conditions' => UnifiedInventory::CONDITIONS,
             'languages' => UnifiedInventory::LANGUAGES,
             'scanStatus' => Cache::get(ScanCardFolderJob::statusKey($userId)),
+            'ollamaStatus' => Inertia::defer(fn () => app(OllamaService::class)->getStatus()),
         ]);
     }
 

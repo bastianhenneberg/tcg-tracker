@@ -107,3 +107,37 @@ it('runs the tcg:scan-folder command in dry-run', function () {
     @unlink($dir.'/card-001.jpg');
     @rmdir($dir);
 });
+
+function jpegOfSize(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagejpeg($image);
+    $bytes = (string) ob_get_clean();
+    imagedestroy($image);
+
+    return $bytes;
+}
+
+function normalizeOrientation(string $bytes): string
+{
+    $service = app(FolderScanService::class);
+    $method = (new ReflectionClass($service))->getMethod('normalizeOrientation');
+    $method->setAccessible(true);
+
+    return $method->invoke($service, $bytes);
+}
+
+it('rotates a landscape scan to portrait before recognition', function () {
+    $out = normalizeOrientation(jpegOfSize(200, 100));
+
+    [$width, $height] = getimagesizefromstring($out);
+    expect($width)->toBe(100)->and($height)->toBe(200);
+});
+
+it('leaves a portrait scan unchanged', function () {
+    $out = normalizeOrientation(jpegOfSize(100, 200));
+
+    [$width, $height] = getimagesizefromstring($out);
+    expect($width)->toBe(100)->and($height)->toBe(200);
+});
