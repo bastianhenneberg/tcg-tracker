@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\BinderPageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BinderPage extends Model
 {
-    /** @use HasFactory<\Database\Factories\BinderPageFactory> */
+    /** @use HasFactory<BinderPageFactory> */
     use HasFactory;
 
     /**
@@ -37,6 +38,14 @@ class BinderPage extends Model
     public function inventoryItems(): HasMany
     {
         return $this->hasMany(UnifiedInventory::class)->orderBy('binder_slot');
+    }
+
+    /**
+     * Set-template pockets for this page (each points at a printing, owned or not).
+     */
+    public function templateSlots(): HasMany
+    {
+        return $this->hasMany(BinderPageSlot::class)->orderBy('slot');
     }
 
     /**

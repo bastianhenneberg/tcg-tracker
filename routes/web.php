@@ -47,10 +47,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Binders (Collection Organization)
     Route::get('binders', [BinderController::class, 'index'])->name('binders.index');
     Route::post('binders', [BinderController::class, 'store'])->name('binders.store');
+    Route::get('binders/available-sets', [BinderController::class, 'availableSets'])->name('binders.available-sets');
     Route::get('binders/{binder}', [BinderController::class, 'show'])->name('binders.show');
     Route::patch('binders/{binder}', [BinderController::class, 'update'])->name('binders.update');
     Route::delete('binders/{binder}', [BinderController::class, 'destroy'])->name('binders.destroy');
     Route::post('binders/{binder}/pages', [BinderController::class, 'addPage'])->name('binders.add-page');
+    Route::post('binders/{binder}/generate-from-set', [BinderController::class, 'generateFromSet'])->name('binders.generate-from-set');
 
     // Binder Pages
     Route::get('binder-pages/{binderPage}', [BinderPageController::class, 'show'])->name('binder-pages.show');
