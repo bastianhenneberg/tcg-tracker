@@ -76,5 +76,10 @@
         "@tailwindcss/oxide-win32-x64-msvc": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1",
         "lightningcss-win32-x64-msvc": "^1.29.1"
+    },
+    "overrides": {
+        "browserslist": "^4.28.7",
+        "js-yaml": "^4.3.2",
+        "@humanfs/node": "^0.16.8"
     }
 }
