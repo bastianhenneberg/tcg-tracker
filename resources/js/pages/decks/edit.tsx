@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -50,7 +56,7 @@ export default function DecksEdit({ game, deck, formats }: Props) {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold">Deck bearbeiten</h1>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-sm text-muted-foreground">
                             Bearbeite die Einstellungen für {deck.name}
                         </p>
                     </div>
@@ -63,7 +69,12 @@ export default function DecksEdit({ game, deck, formats }: Props) {
                             Deck-Einstellungen
                         </CardTitle>
                         <CardDescription>
-                            Format: {formats.find((f) => f.id === deck.game_format_id)?.name}
+                            Format:{' '}
+                            {
+                                formats.find(
+                                    (f) => f.id === deck.game_format_id,
+                                )?.name
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -73,20 +84,31 @@ export default function DecksEdit({ game, deck, formats }: Props) {
                                 <Input
                                     id="name"
                                     value={form.data.name}
-                                    onChange={(e) => form.setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData('name', e.target.value)
+                                    }
                                     autoFocus
                                 />
                                 {form.errors.name && (
-                                    <p className="text-destructive text-sm">{form.errors.name}</p>
+                                    <p className="text-sm text-destructive">
+                                        {form.errors.name}
+                                    </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="description">Beschreibung</Label>
+                                <Label htmlFor="description">
+                                    Beschreibung
+                                </Label>
                                 <Textarea
                                     id="description"
                                     value={form.data.description}
-                                    onChange={(e) => form.setData('description', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'description',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="Optionale Beschreibung deines Decks..."
                                     rows={3}
                                 />
@@ -95,31 +117,41 @@ export default function DecksEdit({ game, deck, formats }: Props) {
                             <div className="space-y-4 rounded-lg border p-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="use_collection_only">Nur eigene Sammlung</Label>
-                                        <p className="text-muted-foreground text-sm">
-                                            Nur Karten aus deiner Sammlung verwenden
+                                        <Label htmlFor="use_collection_only">
+                                            Nur eigene Sammlung
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Nur Karten aus deiner Sammlung
+                                            verwenden
                                         </p>
                                     </div>
                                     <Switch
                                         id="use_collection_only"
                                         checked={form.data.use_collection_only}
                                         onCheckedChange={(checked) =>
-                                            form.setData('use_collection_only', checked)
+                                            form.setData(
+                                                'use_collection_only',
+                                                checked,
+                                            )
                                         }
                                     />
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="is_public">Öffentlich</Label>
-                                        <p className="text-muted-foreground text-sm">
+                                        <Label htmlFor="is_public">
+                                            Öffentlich
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground">
                                             Andere können das Deck sehen
                                         </p>
                                     </div>
                                     <Switch
                                         id="is_public"
                                         checked={form.data.is_public}
-                                        onCheckedChange={(checked) => form.setData('is_public', checked)}
+                                        onCheckedChange={(checked) =>
+                                            form.setData('is_public', checked)
+                                        }
                                     />
                                 </div>
                             </div>
@@ -130,7 +162,10 @@ export default function DecksEdit({ game, deck, formats }: Props) {
                                         Abbrechen
                                     </Button>
                                 </Link>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={form.processing}
+                                >
                                     Speichern
                                 </Button>
                             </div>

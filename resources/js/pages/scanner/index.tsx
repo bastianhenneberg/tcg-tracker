@@ -1,31 +1,37 @@
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 import { toast } from 'sonner';
+import { useDebouncedCallback } from 'use-debounce';
 
 import {
-    ScannerCamera,
-    ScannerSearch,
-    ScannerPendingCards,
-    ScannerCardEditor,
-    ScannerLotSelector,
-    ScannerInventoryList,
-    ScannerSettings,
     ScannerBulkMode,
+    ScannerCamera,
+    ScannerCardEditor,
+    ScannerInventoryList,
+    ScannerLotSelector,
+    ScannerPendingCards,
+    ScannerSearch,
+    ScannerSettings,
+    type Box,
+    type BulkModeSettings,
+    type CardMatch,
     type Game,
     type Lot,
-    type Box,
-    type CardMatch,
-    type ScannedCard,
     type OllamaStatus,
     type PendingCard,
-    type BulkModeSettings,
     type RecognitionResult,
+    type ScannedCard,
     type ScannerFlash,
 } from '@/components/scanner';
 import { type ScannerSettings as ScannerSettingsType } from '@/components/scanner/types';
@@ -72,32 +78,49 @@ export default function ScannerIndex({
     ];
 
     // Lot state
-    const [selectedLotId, setSelectedLotId] = useState<number | null>(initialSelectedLotId ?? lots[0]?.id ?? null);
+    const [selectedLotId, setSelectedLotId] = useState<number | null>(
+        initialSelectedLotId ?? lots[0]?.id ?? null,
+    );
     const [creatingLot, setCreatingLot] = useState(false);
 
     // Search state
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-    const [searchResults, setSearchResults] = useState<CardMatch[]>(initialSearchResults);
+    const [searchResults, setSearchResults] =
+        useState<CardMatch[]>(initialSearchResults);
     const [searching, setSearching] = useState(false);
 
     // Selected card state
-    const [selectedCondition, setSelectedCondition] = useState<string>(initialSettings.bulkMode.defaultCondition);
-    const [selectedFoiling, setSelectedFoiling] = useState<string | null>(initialSettings.bulkMode.defaultFoiling);
-    const [selectedLanguage, setSelectedLanguage] = useState<string>(initialSettings.bulkMode.defaultLanguage);
+    const [selectedCondition, setSelectedCondition] = useState<string>(
+        initialSettings.bulkMode.defaultCondition,
+    );
+    const [selectedFoiling, setSelectedFoiling] = useState<string | null>(
+        initialSettings.bulkMode.defaultFoiling,
+    );
+    const [selectedLanguage, setSelectedLanguage] = useState<string>(
+        initialSettings.bulkMode.defaultLanguage,
+    );
 
     // Recognition state
     const [recognizing, setRecognizing] = useState(false);
-    const [notFoundRecognition, setNotFoundRecognition] = useState<RecognitionResult | null>(null);
+    const [notFoundRecognition, setNotFoundRecognition] =
+        useState<RecognitionResult | null>(null);
 
     // Scanned cards in current lot
-    const [scannedCards, setScannedCards] = useState<ScannedCard[]>(initialLotInventory);
-    const [lotCardCount, setLotCardCount] = useState(initialLotInventory.length);
+    const [scannedCards, setScannedCards] =
+        useState<ScannedCard[]>(initialLotInventory);
+    const [lotCardCount, setLotCardCount] = useState(
+        initialLotInventory.length,
+    );
 
     // Bulk mode state
-    const [bulkMode, setBulkMode] = useState<BulkModeSettings>(initialSettings.bulkMode);
+    const [bulkMode, setBulkMode] = useState<BulkModeSettings>(
+        initialSettings.bulkMode,
+    );
     const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
     const [replacingCardId, setReplacingCardId] = useState<string | null>(null);
-    const [editingPendingId, setEditingPendingId] = useState<string | null>(null);
+    const [editingPendingId, setEditingPendingId] = useState<string | null>(
+        null,
+    );
     const [confirmingAll, setConfirmingAll] = useState(false);
 
     // Update search results when props change
@@ -113,7 +136,9 @@ export default function ScannerIndex({
     }, [initialLotInventory]);
 
     // Get the currently editing pending card
-    const editingPendingCard = editingPendingId ? pendingCards.find((p) => p.id === editingPendingId) ?? null : null;
+    const editingPendingCard = editingPendingId
+        ? (pendingCards.find((p) => p.id === editingPendingId) ?? null)
+        : null;
 
     // Handle flash messages from backend
     useEffect(() => {
@@ -131,7 +156,11 @@ export default function ScannerIndex({
             };
 
             if (replacingCardId) {
-                setPendingCards((prev) => prev.map((p) => (p.id === replacingCardId ? newPendingCard : p)));
+                setPendingCards((prev) =>
+                    prev.map((p) =>
+                        p.id === replacingCardId ? newPendingCard : p,
+                    ),
+                );
                 setReplacingCardId(null);
             } else {
                 setPendingCards((prev) => [newPendingCard, ...prev]);
@@ -183,7 +212,7 @@ export default function ScannerIndex({
                 preserveState: true,
                 preserveScroll: true,
                 only: ['searchResults', 'searchQuery'],
-            }
+            },
         );
     }, 300);
 
@@ -209,7 +238,11 @@ export default function ScannerIndex({
     // Lot handling
     const handleSelectLot = (lotId: number) => {
         setSelectedLotId(lotId);
-        router.get('/scanner', { game: selectedGame.slug, lot_id: lotId }, { preserveState: true, preserveScroll: true });
+        router.get(
+            '/scanner',
+            { game: selectedGame.slug, lot_id: lotId },
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
     const handleCreateLot = (boxId: string | null, notes: string) => {
@@ -225,7 +258,7 @@ export default function ScannerIndex({
                 preserveState: true,
                 preserveScroll: true,
                 only: ['lots', 'flash'],
-            }
+            },
         );
     };
 
@@ -239,7 +272,7 @@ export default function ScannerIndex({
                 preserveState: true,
                 preserveScroll: true,
                 onFinish: () => setRecognizing(false),
-            }
+            },
         );
     };
 
@@ -249,7 +282,8 @@ export default function ScannerIndex({
 
             const base64 = await new Promise<string>((resolve) => {
                 const reader = new FileReader();
-                reader.onload = (event) => resolve(event.target?.result as string);
+                reader.onload = (event) =>
+                    resolve(event.target?.result as string);
                 reader.readAsDataURL(file);
             });
 
@@ -261,22 +295,28 @@ export default function ScannerIndex({
                     preserveState: true,
                     preserveScroll: true,
                     onFinish: () => setRecognizing(false),
-                }
+                },
             );
         }
     };
 
     // Pending cards management
     const updatePendingCardCondition = (id: string, condition: string) => {
-        setPendingCards((prev) => prev.map((p) => (p.id === id ? { ...p, condition } : p)));
+        setPendingCards((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, condition } : p)),
+        );
     };
 
     const updatePendingCardFoiling = (id: string, foiling: string | null) => {
-        setPendingCards((prev) => prev.map((p) => (p.id === id ? { ...p, foiling } : p)));
+        setPendingCards((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, foiling } : p)),
+        );
     };
 
     const updatePendingCardLanguage = (id: string, language: string) => {
-        setPendingCards((prev) => prev.map((p) => (p.id === id ? { ...p, language } : p)));
+        setPendingCards((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, language } : p)),
+        );
     };
 
     const removePendingCard = (id: string) => {
@@ -303,7 +343,7 @@ export default function ScannerIndex({
             };
 
             await new Promise<void>((resolve) => {
-                router.post('/scanner/confirm', confirmData as Record<string, unknown> as any, {
+                router.post('/scanner/confirm', confirmData, {
                     preserveState: true,
                     preserveScroll: true,
                     onFinish: () => resolve(),
@@ -320,14 +360,14 @@ export default function ScannerIndex({
         (newBulkMode: BulkModeSettings) => {
             router.post(
                 '/scanner/settings',
-                { game: selectedGame.slug, bulkMode: newBulkMode } as any,
+                { game: selectedGame.slug, bulkMode: newBulkMode },
                 {
                     preserveState: true,
                     preserveScroll: true,
-                }
+                },
             );
         },
-        [selectedGame.slug]
+        [selectedGame.slug],
     );
 
     const handleBulkModeChange = (newBulkMode: BulkModeSettings) => {
@@ -360,10 +400,15 @@ export default function ScannerIndex({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">Kartenscanner</h1>
-                        <p className="text-muted-foreground">Scanne Karten für dein Inventar</p>
+                        <p className="text-muted-foreground">
+                            Scanne Karten für dein Inventar
+                        </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Select value={selectedGame.slug} onValueChange={handleGameChange}>
+                        <Select
+                            value={selectedGame.slug}
+                            onValueChange={handleGameChange}
+                        >
                             <SelectTrigger className="w-[200px]">
                                 <SelectValue placeholder="Spiel wählen" />
                             </SelectTrigger>
@@ -377,7 +422,7 @@ export default function ScannerIndex({
                         </Select>
                         {ollamaStatus.available ? (
                             <Badge variant="outline" className="gap-1">
-                                <CheckCircle className="h-3 w-3 text-green-500" />
+                                <CheckCircle className="h-3 w-3 text-success" />
                                 KI bereit
                             </Badge>
                         ) : (
@@ -475,7 +520,10 @@ export default function ScannerIndex({
                             onClear={() => setPendingCards([])}
                         />
 
-                        <ScannerInventoryList scannedCards={scannedCards} lotCardCount={lotCardCount} />
+                        <ScannerInventoryList
+                            scannedCards={scannedCards}
+                            lotCardCount={lotCardCount}
+                        />
                     </div>
                 </div>
             </div>

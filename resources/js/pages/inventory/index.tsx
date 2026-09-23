@@ -1,6 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTable, DataTableToolbar, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
+import {
+    DataTable,
+    DataTableToolbar,
+    type ColumnDef,
+    type PaginatedData,
+} from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -21,13 +26,17 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import {
-    type Game,
-    type Lot,
-    type UnifiedInventory,
-} from '@/types/unified';
+import { type Game, type Lot, type UnifiedInventory } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRightLeft, Download, Edit, Heart, Package, ShoppingCart, Trash2 } from 'lucide-react';
+import {
+    ArrowRightLeft,
+    Download,
+    Edit,
+    Heart,
+    Package,
+    ShoppingCart,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -56,7 +65,9 @@ export default function InventoryIndex({
     const baseUrl = `/g/${game.slug}`;
     const [search, setSearch] = useState(filters.search ?? '');
     const [selectedItems, setSelectedItems] = useState<UnifiedInventory[]>([]);
-    const [editingItem, setEditingItem] = useState<UnifiedInventory | null>(null);
+    const [editingItem, setEditingItem] = useState<UnifiedInventory | null>(
+        null,
+    );
     const selectedIds = selectedItems.map((item) => item.id);
     const [editForm, setEditForm] = useState({
         condition: '',
@@ -78,7 +89,11 @@ export default function InventoryIndex({
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        return () =>
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
     }, []);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -90,7 +105,7 @@ export default function InventoryIndex({
         router.get(
             `${baseUrl}/inventory`,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -103,7 +118,7 @@ export default function InventoryIndex({
         router.get(
             `${baseUrl}/inventory`,
             { ...filters, [key]: value || undefined, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -112,7 +127,7 @@ export default function InventoryIndex({
         router.post(
             `${baseUrl}/inventory/mark-sold`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
@@ -121,17 +136,18 @@ export default function InventoryIndex({
         router.post(
             `${baseUrl}/inventory/move-to-collection`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
     const handleDeleteMultiple = () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`${selectedIds.length} Karte(n) wirklich löschen?`)) return;
+        if (!confirm(`${selectedIds.length} Karte(n) wirklich löschen?`))
+            return;
         router.post(
             `${baseUrl}/inventory/delete-multiple`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
@@ -146,7 +162,7 @@ export default function InventoryIndex({
                     setShowChangeLotDialog(false);
                     setTargetLotId('');
                 },
-            }
+            },
         );
     };
 
@@ -181,7 +197,7 @@ export default function InventoryIndex({
                     setSaving(false);
                 },
                 onError: () => setSaving(false),
-            }
+            },
         );
     };
 
@@ -215,8 +231,12 @@ export default function InventoryIndex({
                                 />
                             )}
                             <div>
-                                <p className="font-medium hover:underline">{item.printing?.card?.name}</p>
-                                <p className="text-muted-foreground text-sm">#{item.printing?.collector_number}</p>
+                                <p className="font-medium hover:underline">
+                                    {item.printing?.card?.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    #{item.printing?.collector_number}
+                                </p>
                             </div>
                         </Link>
                     );
@@ -224,11 +244,13 @@ export default function InventoryIndex({
             },
             {
                 id: 'set',
-                accessorFn: (row) => row.printing?.set_name ?? row.printing?.set_code ?? '',
+                accessorFn: (row) =>
+                    row.printing?.set_name ?? row.printing?.set_code ?? '',
                 header: 'Set',
                 cell: ({ row }) => (
                     <span className="text-sm">
-                        {row.original.printing?.set_name ?? row.original.printing?.set_code}
+                        {row.original.printing?.set_name ??
+                            row.original.printing?.set_code}
                     </span>
                 ),
             },
@@ -238,7 +260,9 @@ export default function InventoryIndex({
                 header: 'Foiling',
                 cell: ({ row }) => (
                     <span className="text-sm">
-                        {row.original.printing?.finish_label ?? row.original.printing?.finish ?? '-'}
+                        {row.original.printing?.finish_label ??
+                            row.original.printing?.finish ??
+                            '-'}
                     </span>
                 ),
             },
@@ -247,7 +271,10 @@ export default function InventoryIndex({
                 accessorKey: 'condition',
                 header: 'Zustand',
                 cell: ({ row }) => (
-                    <Badge variant="outline">{conditions[row.original.condition] ?? row.original.condition}</Badge>
+                    <Badge variant="outline">
+                        {conditions[row.original.condition] ??
+                            row.original.condition}
+                    </Badge>
                 ),
             },
             {
@@ -256,7 +283,9 @@ export default function InventoryIndex({
                 header: 'Lot',
                 cell: ({ row }) =>
                     row.original.lot ? (
-                        <span className="text-muted-foreground text-sm">#{row.original.lot.lot_number}</span>
+                        <span className="text-sm text-muted-foreground">
+                            #{row.original.lot.lot_number}
+                        </span>
                     ) : null,
             },
             {
@@ -265,7 +294,9 @@ export default function InventoryIndex({
                 header: () => <span className="block text-right">Preis</span>,
                 cell: ({ row }) => (
                     <span className="block text-right">
-                        {row.original.purchase_price ? `€${row.original.purchase_price.toFixed(2)}` : '-'}
+                        {row.original.purchase_price
+                            ? `€${row.original.purchase_price.toFixed(2)}`
+                            : '-'}
                     </span>
                 ),
             },
@@ -287,7 +318,7 @@ export default function InventoryIndex({
                 ),
             },
         ],
-        [baseUrl, conditions, openEditDialog]
+        [baseUrl, conditions, openEditDialog],
     );
 
     return (
@@ -297,9 +328,12 @@ export default function InventoryIndex({
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">{game.name} - Inventar</h1>
-                        <p className="text-muted-foreground text-sm">
-                            {stats.total} Karten im Inventar, {stats.sold} verkauft
+                        <h1 className="text-2xl font-bold">
+                            {game.name} - Inventar
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {stats.total} Karten im Inventar, {stats.sold}{' '}
+                            verkauft
                         </p>
                     </div>
                 </div>
@@ -319,19 +353,26 @@ export default function InventoryIndex({
                         <Select
                             value={filters.condition ?? 'all'}
                             onValueChange={(value) =>
-                                handleFilterChange('condition', value === 'all' ? undefined : value)
+                                handleFilterChange(
+                                    'condition',
+                                    value === 'all' ? undefined : value,
+                                )
                             }
                         >
                             <SelectTrigger className="w-[160px]">
                                 <SelectValue placeholder="Alle Zustände" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Alle Zustände</SelectItem>
-                                {Object.entries(conditions).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="all">
+                                    Alle Zustände
+                                </SelectItem>
+                                {Object.entries(conditions).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
 
@@ -339,16 +380,24 @@ export default function InventoryIndex({
                             <Select
                                 value={filters.lot ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('lot', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'lot',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Lots" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Lots</SelectItem>
+                                    <SelectItem value="all">
+                                        Alle Lots
+                                    </SelectItem>
                                     {lots.map((lot) => (
-                                        <SelectItem key={lot.id} value={lot.id.toString()}>
+                                        <SelectItem
+                                            key={lot.id}
+                                            value={lot.id.toString()}
+                                        >
                                             Lot #{lot.lot_number}
                                         </SelectItem>
                                     ))}
@@ -356,11 +405,7 @@ export default function InventoryIndex({
                             </Select>
                         )}
 
-                        <Button
-                            variant="outline"
-                            size="default"
-                            asChild
-                        >
+                        <Button variant="outline" size="default" asChild>
                             <a
                                 href={`${baseUrl}/inventory/export${filters.lot ? `?lot=${filters.lot}` : ''}${filters.condition ? `${filters.lot ? '&' : '?'}condition=${filters.condition}` : ''}`}
                                 download
@@ -374,21 +419,37 @@ export default function InventoryIndex({
 
                 {/* Bulk Actions */}
                 <DataTableToolbar selectedCount={selectedItems.length}>
-                    <Button variant="outline" size="sm" onClick={handleMoveToCollection}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleMoveToCollection}
+                    >
                         <Heart className="mr-2 h-4 w-4" />
                         Zur Sammlung
                     </Button>
                     {lots.length > 0 && (
-                        <Button variant="outline" size="sm" onClick={() => setShowChangeLotDialog(true)}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowChangeLotDialog(true)}
+                        >
                             <ArrowRightLeft className="mr-2 h-4 w-4" />
                             Lot wechseln
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleMarkSold}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleMarkSold}
+                    >
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Verkauft
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={handleDeleteMultiple}>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteMultiple}
+                    >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Löschen
                     </Button>
@@ -404,19 +465,25 @@ export default function InventoryIndex({
                     emptyState={
                         <div className="flex flex-col items-center justify-center py-8">
                             <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                            <p className="mt-2 text-muted-foreground">Keine Karten im Inventar</p>
+                            <p className="mt-2 text-muted-foreground">
+                                Keine Karten im Inventar
+                            </p>
                         </div>
                     }
                 />
             </div>
 
             {/* Edit Dialog */}
-            <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+            <Dialog
+                open={!!editingItem}
+                onOpenChange={(open) => !open && setEditingItem(null)}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Karte bearbeiten</DialogTitle>
                         <DialogDescription>
-                            {editingItem?.printing?.card?.name} - #{editingItem?.printing?.collector_number}
+                            {editingItem?.printing?.card?.name} - #
+                            {editingItem?.printing?.collector_number}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
@@ -425,17 +492,27 @@ export default function InventoryIndex({
                                 <Label>Zustand</Label>
                                 <Select
                                     value={editForm.condition}
-                                    onValueChange={(v) => setEditForm({ ...editForm, condition: v })}
+                                    onValueChange={(v) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            condition: v,
+                                        })
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(conditions).map(([key, label]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {label}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(conditions).map(
+                                            ([key, label]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={key}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -443,41 +520,64 @@ export default function InventoryIndex({
                                 <Label>Sprache</Label>
                                 <Select
                                     value={editForm.language}
-                                    onValueChange={(v) => setEditForm({ ...editForm, language: v })}
+                                    onValueChange={(v) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            language: v,
+                                        })
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(languages).map(([key, label]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {label}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(languages).map(
+                                            ([key, label]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={key}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        {editingItem?.available_printings && editingItem.available_printings.length > 1 && (
-                            <div className="space-y-2">
-                                <Label>Foiling</Label>
-                                <Select
-                                    value={editForm.printing_id}
-                                    onValueChange={(v) => setEditForm({ ...editForm, printing_id: v })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {editingItem.available_printings.map((p) => (
-                                            <SelectItem key={p.id} value={p.id.toString()}>
-                                                {p.finish_label || p.finish} ({p.collector_number})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
+                        {editingItem?.available_printings &&
+                            editingItem.available_printings.length > 1 && (
+                                <div className="space-y-2">
+                                    <Label>Foiling</Label>
+                                    <Select
+                                        value={editForm.printing_id}
+                                        onValueChange={(v) =>
+                                            setEditForm({
+                                                ...editForm,
+                                                printing_id: v,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {editingItem.available_printings.map(
+                                                (p) => (
+                                                    <SelectItem
+                                                        key={p.id}
+                                                        value={p.id.toString()}
+                                                    >
+                                                        {p.finish_label ||
+                                                            p.finish}{' '}
+                                                        ({p.collector_number})
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Einkaufspreis (€)</Label>
@@ -486,7 +586,12 @@ export default function InventoryIndex({
                                     step="0.01"
                                     min="0"
                                     value={editForm.price}
-                                    onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            price: e.target.value,
+                                        })
+                                    }
                                     placeholder="0.00"
                                 />
                             </div>
@@ -494,15 +599,25 @@ export default function InventoryIndex({
                                 <Label>Lot</Label>
                                 <Select
                                     value={editForm.lot_id || 'none'}
-                                    onValueChange={(v) => setEditForm({ ...editForm, lot_id: v === 'none' ? '' : v })}
+                                    onValueChange={(v) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            lot_id: v === 'none' ? '' : v,
+                                        })
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Kein Lot" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Kein Lot</SelectItem>
+                                        <SelectItem value="none">
+                                            Kein Lot
+                                        </SelectItem>
                                         {lots.map((lot) => (
-                                            <SelectItem key={lot.id} value={lot.id.toString()}>
+                                            <SelectItem
+                                                key={lot.id}
+                                                value={lot.id.toString()}
+                                            >
                                                 Lot #{lot.lot_number}
                                             </SelectItem>
                                         ))}
@@ -514,7 +629,12 @@ export default function InventoryIndex({
                             <Label>Notizen</Label>
                             <Textarea
                                 value={editForm.notes}
-                                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                onChange={(e) =>
+                                    setEditForm({
+                                        ...editForm,
+                                        notes: e.target.value,
+                                    })
+                                }
                                 placeholder="Optionale Notizen..."
                                 rows={3}
                             />
@@ -529,7 +649,10 @@ export default function InventoryIndex({
                             <Trash2 className="mr-2 h-4 w-4" />
                             Löschen
                         </Button>
-                        <Button variant="outline" onClick={() => setEditingItem(null)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditingItem(null)}
+                        >
                             Abbrechen
                         </Button>
                         <Button onClick={handleSaveEdit} disabled={saving}>
@@ -540,23 +663,33 @@ export default function InventoryIndex({
             </Dialog>
 
             {/* Change Lot Dialog */}
-            <Dialog open={showChangeLotDialog} onOpenChange={setShowChangeLotDialog}>
+            <Dialog
+                open={showChangeLotDialog}
+                onOpenChange={setShowChangeLotDialog}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Lot wechseln</DialogTitle>
                         <DialogDescription>
-                            Wähle das Ziel-Lot für die {selectedIds.length} ausgewählte(n) Karte(n).
+                            Wähle das Ziel-Lot für die {selectedIds.length}{' '}
+                            ausgewählte(n) Karte(n).
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="py-4">
-                        <Select value={targetLotId} onValueChange={setTargetLotId}>
+                        <Select
+                            value={targetLotId}
+                            onValueChange={setTargetLotId}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Ziel-Lot auswählen..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {lots.map((lot) => (
-                                    <SelectItem key={lot.id} value={lot.id.toString()}>
+                                    <SelectItem
+                                        key={lot.id}
+                                        value={lot.id.toString()}
+                                    >
                                         Lot #{lot.lot_number}
                                     </SelectItem>
                                 ))}
@@ -565,10 +698,16 @@ export default function InventoryIndex({
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowChangeLotDialog(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowChangeLotDialog(false)}
+                        >
                             Abbrechen
                         </Button>
-                        <Button onClick={handleChangeLot} disabled={!targetLotId}>
+                        <Button
+                            onClick={handleChangeLot}
+                            disabled={!targetLotId}
+                        >
                             Verschieben
                         </Button>
                     </DialogFooter>

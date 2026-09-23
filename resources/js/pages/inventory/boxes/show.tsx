@@ -1,7 +1,20 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { index as boxesIndex, show as boxShow } from '@/routes/boxes';
 import { show as lotShow } from '@/routes/lots';
@@ -38,7 +51,9 @@ export default function BoxShow({ box }: Props) {
                             {box.name}
                         </h1>
                         {box.description && (
-                            <p className="text-muted-foreground">{box.description}</p>
+                            <p className="text-muted-foreground">
+                                {box.description}
+                            </p>
                         )}
                     </div>
                     <Button variant="outline" asChild>
@@ -70,30 +85,47 @@ export default function BoxShow({ box }: Props) {
                                 </TableHeader>
                                 <TableBody>
                                     {box.lots.map((lot) => (
-                                        <TableRow key={lot.id} className="cursor-pointer">
+                                        <TableRow
+                                            key={lot.id}
+                                            className="cursor-pointer"
+                                        >
                                             <TableCell>
-                                                <Link href={lotShow(lot).url} className="font-medium hover:underline">
+                                                <Link
+                                                    href={lotShow(lot).url}
+                                                    className="font-medium hover:underline"
+                                                >
                                                     #{lot.lot_number}
                                                 </Link>
                                             </TableCell>
                                             <TableCell>
-                                                {lot.card_range_start && lot.card_range_end ? (
+                                                {lot.card_range_start &&
+                                                lot.card_range_end ? (
                                                     <Badge variant="outline">
-                                                        {lot.card_range_start} - {lot.card_range_end}
+                                                        {lot.card_range_start} -{' '}
+                                                        {lot.card_range_end}
                                                     </Badge>
                                                 ) : (
-                                                    <span className="text-muted-foreground">-</span>
+                                                    <span className="text-muted-foreground">
+                                                        -
+                                                    </span>
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge>{lot.inventory_items_count ?? 0}</Badge>
+                                                <Badge>
+                                                    {lot.inventory_items_count ??
+                                                        0}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {lot.scanned_at
-                                                    ? new Date(lot.scanned_at).toLocaleDateString('de-DE')
+                                                    ? new Date(
+                                                          lot.scanned_at,
+                                                      ).toLocaleDateString(
+                                                          'de-DE',
+                                                      )
                                                     : '-'}
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground max-w-xs truncate">
+                                            <TableCell className="max-w-xs truncate text-muted-foreground">
                                                 {lot.notes ?? '-'}
                                             </TableCell>
                                         </TableRow>
@@ -102,10 +134,13 @@ export default function BoxShow({ box }: Props) {
                             </Table>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-8">
-                                <Layers className="text-muted-foreground mb-4 h-12 w-12" />
-                                <h3 className="text-lg font-medium">Keine Lots</h3>
-                                <p className="text-muted-foreground mb-4 text-center">
-                                    Starte eine Scan-Session um ein neues Lot zu erstellen.
+                                <Layers className="mb-4 h-12 w-12 text-muted-foreground" />
+                                <h3 className="text-lg font-medium">
+                                    Keine Lots
+                                </h3>
+                                <p className="mb-4 text-center text-muted-foreground">
+                                    Starte eine Scan-Session um ein neues Lot zu
+                                    erstellen.
                                 </p>
                                 <Button asChild>
                                     <Link href="/scan">Scanner öffnen</Link>

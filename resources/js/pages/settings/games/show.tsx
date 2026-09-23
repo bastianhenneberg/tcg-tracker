@@ -10,7 +10,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -51,9 +57,11 @@ interface Props {
 
 export default function GameShow({ game, attributeTypes }: Props) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isAddAttributeDialogOpen, setIsAddAttributeDialogOpen] = useState(false);
+    const [isAddAttributeDialogOpen, setIsAddAttributeDialogOpen] =
+        useState(false);
     const [isAddFormatDialogOpen, setIsAddFormatDialogOpen] = useState(false);
-    const [selectedAttributeType, setSelectedAttributeType] = useState<string>('rarity');
+    const [selectedAttributeType, setSelectedAttributeType] =
+        useState<string>('rarity');
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Spiele', href: '/settings/games' },
@@ -62,14 +70,21 @@ export default function GameShow({ game, attributeTypes }: Props) {
 
     const canEdit = !game.is_official;
 
-    const groupedAttributes = Object.entries(attributeTypes).map(([type, label]) => ({
-        type,
-        label,
-        attributes: game.attributes.filter((a) => a.type === type),
-    }));
+    const groupedAttributes = Object.entries(attributeTypes).map(
+        ([type, label]) => ({
+            type,
+            label,
+            attributes: game.attributes.filter((a) => a.type === type),
+        }),
+    );
 
     const handleDeleteGame = () => {
-        if (!confirm(`"${game.name}" wirklich löschen? Alle zugehörigen Daten werden gelöscht.`)) return;
+        if (
+            !confirm(
+                `"${game.name}" wirklich löschen? Alle zugehörigen Daten werden gelöscht.`,
+            )
+        )
+            return;
         router.delete(`/settings/games/${game.id}`, {
             onSuccess: () => router.visit('/settings/games'),
         });
@@ -100,16 +115,24 @@ export default function GameShow({ game, attributeTypes }: Props) {
                             )}
                         </div>
                         {game.description && (
-                            <p className="mt-2 text-muted-foreground">{game.description}</p>
+                            <p className="mt-2 text-muted-foreground">
+                                {game.description}
+                            </p>
                         )}
                     </div>
                     {canEdit && (
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditDialogOpen(true)}
+                            >
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Bearbeiten
                             </Button>
-                            <Button variant="destructive" onClick={handleDeleteGame}>
+                            <Button
+                                variant="destructive"
+                                onClick={handleDeleteGame}
+                            >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Löschen
                             </Button>
@@ -122,10 +145,15 @@ export default function GameShow({ game, attributeTypes }: Props) {
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-semibold">Formate</h2>
-                            <p className="text-sm text-muted-foreground">Spielformate mit unterschiedlichen Regeln</p>
+                            <p className="text-sm text-muted-foreground">
+                                Spielformate mit unterschiedlichen Regeln
+                            </p>
                         </div>
                         {canEdit && (
-                            <Button size="sm" onClick={() => setIsAddFormatDialogOpen(true)}>
+                            <Button
+                                size="sm"
+                                onClick={() => setIsAddFormatDialogOpen(true)}
+                            >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Format hinzufügen
                             </Button>
@@ -141,8 +169,13 @@ export default function GameShow({ game, attributeTypes }: Props) {
                                 >
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium">{format.name}</span>
-                                            <Badge variant="outline" className="text-xs">
+                                            <span className="font-medium">
+                                                {format.name}
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs"
+                                            >
                                                 {format.slug}
                                             </Badge>
                                         </div>
@@ -157,9 +190,11 @@ export default function GameShow({ game, attributeTypes }: Props) {
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => {
-                                                if (confirm('Format löschen?')) {
+                                                if (
+                                                    confirm('Format löschen?')
+                                                ) {
                                                     router.delete(
-                                                        `/settings/games/${game.id}/formats/${format.id}`
+                                                        `/settings/games/${game.id}/formats/${format.id}`,
                                                     );
                                                 }
                                             }}
@@ -171,7 +206,9 @@ export default function GameShow({ game, attributeTypes }: Props) {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">Keine Formate definiert.</p>
+                        <p className="text-sm text-muted-foreground">
+                            Keine Formate definiert.
+                        </p>
                     )}
                 </div>
 
@@ -180,10 +217,17 @@ export default function GameShow({ game, attributeTypes }: Props) {
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-semibold">Attribute</h2>
-                            <p className="text-sm text-muted-foreground">Seltenheiten, Foilings, Sprachen und mehr</p>
+                            <p className="text-sm text-muted-foreground">
+                                Seltenheiten, Foilings, Sprachen und mehr
+                            </p>
                         </div>
                         {canEdit && (
-                            <Button size="sm" onClick={() => setIsAddAttributeDialogOpen(true)}>
+                            <Button
+                                size="sm"
+                                onClick={() =>
+                                    setIsAddAttributeDialogOpen(true)
+                                }
+                            >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Attribut hinzufügen
                             </Button>
@@ -191,45 +235,54 @@ export default function GameShow({ game, attributeTypes }: Props) {
                     </div>
 
                     <div className="space-y-4">
-                        {groupedAttributes.map(({ type, label, attributes }) => (
-                            <div key={type} className="space-y-2">
-                                <h4 className="text-sm font-medium">{label}</h4>
-                                {attributes.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {attributes.map((attr) => (
-                                            <Badge
-                                                key={attr.id}
-                                                variant="secondary"
-                                                className="gap-1"
-                                            >
-                                                {attr.label}
-                                                <span className="text-muted-foreground">
-                                                    ({attr.key})
-                                                </span>
-                                                {canEdit && (
-                                                    <button
-                                                        className="ml-1 hover:text-destructive"
-                                                        onClick={() => {
-                                                            if (confirm('Attribut löschen?')) {
-                                                                router.delete(
-                                                                    `/settings/games/${game.id}/attributes/${attr.id}`
-                                                                );
-                                                            }
-                                                        }}
-                                                    >
-                                                        ×
-                                                    </button>
-                                                )}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">
-                                        Keine {label.toLowerCase()} definiert.
-                                    </p>
-                                )}
-                            </div>
-                        ))}
+                        {groupedAttributes.map(
+                            ({ type, label, attributes }) => (
+                                <div key={type} className="space-y-2">
+                                    <h4 className="text-sm font-medium">
+                                        {label}
+                                    </h4>
+                                    {attributes.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {attributes.map((attr) => (
+                                                <Badge
+                                                    key={attr.id}
+                                                    variant="secondary"
+                                                    className="gap-1"
+                                                >
+                                                    {attr.label}
+                                                    <span className="text-muted-foreground">
+                                                        ({attr.key})
+                                                    </span>
+                                                    {canEdit && (
+                                                        <button
+                                                            className="ml-1 hover:text-destructive"
+                                                            onClick={() => {
+                                                                if (
+                                                                    confirm(
+                                                                        'Attribut löschen?',
+                                                                    )
+                                                                ) {
+                                                                    router.delete(
+                                                                        `/settings/games/${game.id}/attributes/${attr.id}`,
+                                                                    );
+                                                                }
+                                                            }}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    )}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            Keine {label.toLowerCase()}{' '}
+                                            definiert.
+                                        </p>
+                                    )}
+                                </div>
+                            ),
+                        )}
                     </div>
                 </div>
 
@@ -303,12 +356,18 @@ function EditGameDialog({
                         <Textarea
                             id="edit-description"
                             value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
+                            onChange={(e) =>
+                                setData('description', e.target.value)
+                            }
                             rows={3}
                         />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>
@@ -358,7 +417,8 @@ function AddAttributeDialog({
                 <DialogHeader>
                     <DialogTitle>Attribut hinzufügen</DialogTitle>
                     <DialogDescription>
-                        Füge eine neue Seltenheit, Foiling, Sprache oder ähnliches hinzu.
+                        Füge eine neue Seltenheit, Foiling, Sprache oder
+                        ähnliches hinzu.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -375,11 +435,13 @@ function AddAttributeDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.entries(attributeTypes).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                {Object.entries(attributeTypes).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -389,7 +451,9 @@ function AddAttributeDialog({
                             <Input
                                 id="attr-key"
                                 value={data.key}
-                                onChange={(e) => setData('key', e.target.value.toUpperCase())}
+                                onChange={(e) =>
+                                    setData('key', e.target.value.toUpperCase())
+                                }
                                 placeholder="z.B. R, RF, EN"
                                 required
                             />
@@ -399,14 +463,20 @@ function AddAttributeDialog({
                             <Input
                                 id="attr-label"
                                 value={data.label}
-                                onChange={(e) => setData('label', e.target.value)}
+                                onChange={(e) =>
+                                    setData('label', e.target.value)
+                                }
                                 placeholder="z.B. Rare, Rainbow Foil"
                                 required
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>
@@ -464,17 +534,25 @@ function AddFormatDialog({
                         />
                     </div>
                     <div>
-                        <Label htmlFor="format-description">Beschreibung (optional)</Label>
+                        <Label htmlFor="format-description">
+                            Beschreibung (optional)
+                        </Label>
                         <Textarea
                             id="format-description"
                             value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
+                            onChange={(e) =>
+                                setData('description', e.target.value)
+                            }
                             placeholder="Beschreibe die Regeln dieses Formats..."
                             rows={3}
                         />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>

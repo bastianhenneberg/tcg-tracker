@@ -76,7 +76,11 @@ export default function CollectionIndex({
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        return () =>
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
     }, []);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -88,7 +92,7 @@ export default function CollectionIndex({
         router.get(
             `${baseUrl}/collection`,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -101,13 +105,13 @@ export default function CollectionIndex({
         router.get(
             `${baseUrl}/collection`,
             { ...filters, [key]: value || undefined, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
     const toggleSelection = (id: number) => {
         setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
         );
     };
 
@@ -121,11 +125,16 @@ export default function CollectionIndex({
 
     const handleDeleteMultiple = () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`${selectedIds.length} Karte(n) wirklich aus der Sammlung entfernen?`)) return;
+        if (
+            !confirm(
+                `${selectedIds.length} Karte(n) wirklich aus der Sammlung entfernen?`,
+            )
+        )
+            return;
         router.post(
             `${baseUrl}/collection/delete-multiple`,
             { ids: selectedIds },
-            { onSuccess: () => setSelectedIds([]) }
+            { onSuccess: () => setSelectedIds([]) },
         );
     };
 
@@ -140,7 +149,7 @@ export default function CollectionIndex({
                     setShowMoveDialog(false);
                     setSelectedLotId('');
                 },
-            }
+            },
         );
     };
 
@@ -151,8 +160,10 @@ export default function CollectionIndex({
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">{game.name} - Sammlung</h1>
-                        <p className="text-muted-foreground text-sm">
+                        <h1 className="text-2xl font-bold">
+                            {game.name} - Sammlung
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
                             {stats.total} Karten ({stats.unique} einzigartig)
                         </p>
                     </div>
@@ -173,19 +184,26 @@ export default function CollectionIndex({
                         <Select
                             value={filters.condition ?? 'all'}
                             onValueChange={(value) =>
-                                handleFilterChange('condition', value === 'all' ? undefined : value)
+                                handleFilterChange(
+                                    'condition',
+                                    value === 'all' ? undefined : value,
+                                )
                             }
                         >
                             <SelectTrigger className="w-[160px]">
                                 <SelectValue placeholder="Alle Zustände" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Alle Zustände</SelectItem>
-                                {Object.entries(conditions).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="all">
+                                    Alle Zustände
+                                </SelectItem>
+                                {Object.entries(conditions).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -226,7 +244,8 @@ export default function CollectionIndex({
                                     <Checkbox
                                         checked={
                                             collection.data.length > 0 &&
-                                            selectedIds.length === collection.data.length
+                                            selectedIds.length ===
+                                                collection.data.length
                                         }
                                         onCheckedChange={toggleAll}
                                     />
@@ -234,13 +253,18 @@ export default function CollectionIndex({
                                 <TableHead>Karte</TableHead>
                                 <TableHead>Set</TableHead>
                                 <TableHead>Zustand</TableHead>
-                                <TableHead className="text-center">Anzahl</TableHead>
+                                <TableHead className="text-center">
+                                    Anzahl
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {collection.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">
+                                    <TableCell
+                                        colSpan={5}
+                                        className="py-8 text-center"
+                                    >
                                         <Heart className="mx-auto h-12 w-12 text-muted-foreground/50" />
                                         <p className="mt-2 text-muted-foreground">
                                             Keine Karten in der Sammlung
@@ -252,41 +276,62 @@ export default function CollectionIndex({
                                     <TableRow key={item.id}>
                                         <TableCell>
                                             <Checkbox
-                                                checked={selectedIds.includes(item.id)}
-                                                onCheckedChange={() => toggleSelection(item.id)}
+                                                checked={selectedIds.includes(
+                                                    item.id,
+                                                )}
+                                                onCheckedChange={() =>
+                                                    toggleSelection(item.id)
+                                                }
                                             />
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 {item.printing?.image_url && (
                                                     <img
-                                                        src={item.printing.image_url}
-                                                        alt={item.printing.card?.name}
+                                                        src={
+                                                            item.printing
+                                                                .image_url
+                                                        }
+                                                        alt={
+                                                            item.printing.card
+                                                                ?.name
+                                                        }
                                                         className="h-12 w-auto rounded"
                                                     />
                                                 )}
                                                 <div>
                                                     <p className="font-medium">
-                                                        {item.printing?.card?.name}
+                                                        {
+                                                            item.printing?.card
+                                                                ?.name
+                                                        }
                                                     </p>
-                                                    <p className="text-muted-foreground text-sm">
-                                                        #{item.printing?.collector_number}
+                                                    <p className="text-sm text-muted-foreground">
+                                                        #
+                                                        {
+                                                            item.printing
+                                                                ?.collector_number
+                                                        }
                                                     </p>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <span className="text-sm">
-                                                {item.printing?.set_name ?? item.printing?.set_code}
+                                                {item.printing?.set_name ??
+                                                    item.printing?.set_code}
                                             </span>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">
-                                                {conditions[item.condition] ?? item.condition}
+                                                {conditions[item.condition] ??
+                                                    item.condition}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <Badge variant="secondary">{item.quantity}x</Badge>
+                                            <Badge variant="secondary">
+                                                {item.quantity}x
+                                            </Badge>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -318,23 +363,31 @@ export default function CollectionIndex({
                     <DialogHeader>
                         <DialogTitle>Ins Inventar verschieben</DialogTitle>
                         <DialogDescription>
-                            Wähle ein Lot aus, in das die {selectedIds.length} Karte(n) verschoben werden sollen.
+                            Wähle ein Lot aus, in das die {selectedIds.length}{' '}
+                            Karte(n) verschoben werden sollen.
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="py-4">
                         {lots.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">
-                                Keine Lots vorhanden. Erstelle zuerst ein Lot unter "Lots".
+                            <p className="text-sm text-muted-foreground">
+                                Keine Lots vorhanden. Erstelle zuerst ein Lot
+                                unter "Lots".
                             </p>
                         ) : (
-                            <Select value={selectedLotId} onValueChange={setSelectedLotId}>
+                            <Select
+                                value={selectedLotId}
+                                onValueChange={setSelectedLotId}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Lot auswählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {lots.map((lot) => (
-                                        <SelectItem key={lot.id} value={lot.id.toString()}>
+                                        <SelectItem
+                                            key={lot.id}
+                                            value={lot.id.toString()}
+                                        >
                                             {lot.name}
                                         </SelectItem>
                                     ))}
@@ -344,7 +397,10 @@ export default function CollectionIndex({
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowMoveDialog(false)}
+                        >
                             Abbrechen
                         </Button>
                         <Button

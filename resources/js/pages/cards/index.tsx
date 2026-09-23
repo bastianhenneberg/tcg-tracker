@@ -10,12 +10,12 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
+    getPitchColor,
     type CardFilters,
     type FilterOptions,
     type Game,
     type PaginatedData,
     type UnifiedCard,
-    getPitchColor,
 } from '@/types/unified';
 import { Head, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
@@ -30,7 +30,13 @@ interface Props {
     types: string[];
 }
 
-export default function CardsIndex({ game, cards, filters, filterOptions, types }: Props) {
+export default function CardsIndex({
+    game,
+    cards,
+    filters,
+    filterOptions,
+    types,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const baseUrl = `/g/${game.slug}/cards`;
 
@@ -43,7 +49,7 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
         router.get(
             baseUrl,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -56,7 +62,7 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
         router.get(
             baseUrl,
             { ...filters, [key]: value || undefined, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -71,7 +77,9 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                 header: 'Name',
                 cell: ({ row }) => {
                     const card = row.original;
-                    const pitch = card.game_specific?.pitch as number | undefined;
+                    const pitch = card.game_specific?.pitch as
+                        | number
+                        | undefined;
                     const pitchColor = getPitchColor(pitch);
 
                     return (
@@ -90,24 +98,25 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                                         <span
                                             className={`inline-block h-3 w-3 rounded-full ${
                                                 pitchColor === 'red'
-                                                    ? 'bg-red-500'
+                                                    ? 'bg-destructive'
                                                     : pitchColor === 'yellow'
-                                                      ? 'bg-yellow-500'
+                                                      ? 'bg-warning'
                                                       : pitchColor === 'blue'
-                                                        ? 'bg-blue-500'
-                                                        : 'bg-gray-300 dark:bg-gray-600'
+                                                        ? 'bg-info'
+                                                        : 'bg-muted'
                                             }`}
                                         />
                                     )}
                                     {card.colors.length > 0 && !pitch && (
-                                        <span className="text-muted-foreground text-xs">
+                                        <span className="text-xs text-muted-foreground">
                                             {card.colors.join('/')}
                                         </span>
                                     )}
                                 </div>
                                 {card.printings?.[0]?.collector_number && (
-                                    <div className="text-muted-foreground text-sm">
-                                        {card.printings[0].set_code} {card.printings[0].collector_number}
+                                    <div className="text-sm text-muted-foreground">
+                                        {card.printings[0].set_code}{' '}
+                                        {card.printings[0].collector_number}
                                     </div>
                                 )}
                             </div>
@@ -118,7 +127,10 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
             {
                 id: 'types',
                 header: 'Typ',
-                cell: ({ row }) => row.original.type_line ?? row.original.types?.join(', ') ?? '-',
+                cell: ({ row }) =>
+                    row.original.type_line ??
+                    row.original.types?.join(', ') ??
+                    '-',
             },
             {
                 id: 'stats',
@@ -139,7 +151,7 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                 cell: ({ row }) => row.original.printings?.length ?? 0,
             },
         ],
-        []
+        [],
     );
 
     return (
@@ -148,7 +160,9 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-2xl font-bold">{game.name} - Kartendatenbank</h1>
+                    <h1 className="text-2xl font-bold">
+                        {game.name} - Kartendatenbank
+                    </h1>
                 </div>
 
                 <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
@@ -167,14 +181,19 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                             <Select
                                 value={filters.type ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('type', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'type',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Alle Typen" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Typen</SelectItem>
+                                    <SelectItem value="all">
+                                        Alle Typen
+                                    </SelectItem>
                                     {types.map((type) => (
                                         <SelectItem key={type} value={type}>
                                             {type}
@@ -189,19 +208,26 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                             <Select
                                 value={filters.pitch ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('pitch', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'pitch',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Pitch" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Pitch</SelectItem>
-                                    {Object.entries(filterOptions.pitch).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Pitch
+                                    </SelectItem>
+                                    {Object.entries(filterOptions.pitch).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -211,19 +237,26 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                             <Select
                                 value={filters.color ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('color', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'color',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Farben" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Farben</SelectItem>
-                                    {Object.entries(filterOptions.colors).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Farben
+                                    </SelectItem>
+                                    {Object.entries(filterOptions.colors).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -233,19 +266,26 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                             <Select
                                 value={filters.format ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('format', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'format',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Alle Formate" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Formate</SelectItem>
-                                    {Object.entries(filterOptions.formats).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Formate
+                                    </SelectItem>
+                                    {Object.entries(filterOptions.formats).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -255,19 +295,26 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                             <Select
                                 value={filters.color ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('color', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'color',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Domains" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Domains</SelectItem>
-                                    {Object.entries(filterOptions.domains).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Domains
+                                    </SelectItem>
+                                    {Object.entries(filterOptions.domains).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -280,9 +327,11 @@ export default function CardsIndex({ game, cards, filters, filterOptions, types 
                     onRowClick={handleRowClick}
                     emptyState={
                         <div className="flex flex-col items-center justify-center py-12">
-                            <Search className="text-muted-foreground mb-4 h-12 w-12" />
-                            <h3 className="text-lg font-medium">Keine Karten gefunden</h3>
-                            <p className="text-muted-foreground text-center">
+                            <Search className="mb-4 h-12 w-12 text-muted-foreground" />
+                            <h3 className="text-lg font-medium">
+                                Keine Karten gefunden
+                            </h3>
+                            <p className="text-center text-muted-foreground">
                                 Versuche einen anderen Suchbegriff oder Filter.
                             </p>
                         </div>

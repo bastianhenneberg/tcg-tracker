@@ -33,15 +33,23 @@ export function NotificationBell() {
     const [open, setOpen] = useState(false);
 
     const markAsRead = (id: string) => {
-        router.post(`/notifications/${id}/read`, {}, {
-            preserveScroll: true,
-        });
+        router.post(
+            `/notifications/${id}/read`,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
     const markAllAsRead = () => {
-        router.post('/notifications/read-all', {}, {
-            preserveScroll: true,
-        });
+        router.post(
+            '/notifications/read-all',
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
     const handleNotificationClick = (notification: Notification) => {
@@ -75,15 +83,17 @@ export function NotificationBell() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="relative group h-9 w-9 cursor-pointer"
+                    className="group relative h-9 w-9 cursor-pointer"
                 >
                     <Bell className="!size-5 opacity-80 group-hover:opacity-100" />
                     {notifications.unread_count > 0 && (
                         <Badge
                             variant="destructive"
-                            className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs"
+                            className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs"
                         >
-                            {notifications.unread_count > 9 ? '9+' : notifications.unread_count}
+                            {notifications.unread_count > 9
+                                ? '9+'
+                                : notifications.unread_count}
                         </Badge>
                     )}
                 </Button>
@@ -105,7 +115,7 @@ export function NotificationBell() {
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                     {notifications.items.length === 0 ? (
-                        <div className="p-4 text-center text-muted-foreground text-sm">
+                        <div className="p-4 text-center text-sm text-muted-foreground">
                             Keine Benachrichtigungen
                         </div>
                     ) : (
@@ -115,13 +125,15 @@ export function NotificationBell() {
                                 className={`flex cursor-pointer items-start gap-3 p-3 ${
                                     !notification.read ? 'bg-muted/50' : ''
                                 }`}
-                                onClick={() => handleNotificationClick(notification)}
+                                onClick={() =>
+                                    handleNotificationClick(notification)
+                                }
                             >
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                                     {getActionIcon(notification.action)}
                                 </div>
                                 <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium leading-none">
+                                    <p className="text-sm leading-none font-medium">
                                         {notification.message}
                                     </p>
                                     <p className="text-xs text-muted-foreground">

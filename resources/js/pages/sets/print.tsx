@@ -124,7 +124,7 @@ export default function SetPrint({
                                             return (
                                                 <div
                                                     key={slotIndex}
-                                                    className="relative flex aspect-[2.5/3.5] flex-col overflow-hidden rounded-md border border-neutral-300 bg-white"
+                                                    className="relative flex aspect-[2.5/3.5] flex-col overflow-hidden rounded-md border border-border bg-white"
                                                 >
                                                     {slot ? (
                                                         showImages &&
@@ -141,7 +141,7 @@ export default function SetPrint({
                                                                     className="h-full w-full object-contain"
                                                                     loading="lazy"
                                                                 />
-                                                                <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                                <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-3xs font-bold text-white">
                                                                     #
                                                                     {
                                                                         slot.collector_number
@@ -161,7 +161,7 @@ export default function SetPrint({
                                                                         '—'}
                                                                 </span>
                                                                 {slot.rarity_label && (
-                                                                    <span className="text-[10px] text-neutral-600 uppercase">
+                                                                    <span className="text-3xs text-muted-foreground uppercase">
                                                                         {
                                                                             slot.rarity_label
                                                                         }
@@ -171,7 +171,7 @@ export default function SetPrint({
                                                         )
                                                     ) : (
                                                         <div className="flex h-full items-center justify-center">
-                                                            <span className="text-xs text-neutral-300">
+                                                            <span className="text-xs text-muted-foreground">
                                                                 leer
                                                             </span>
                                                         </div>

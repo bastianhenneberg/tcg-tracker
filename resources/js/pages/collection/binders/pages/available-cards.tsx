@@ -28,16 +28,25 @@ export default function AvailableCards({ binderPage, cards, filters }: Props) {
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Ordner', href: '/binders' },
-        { title: binderPage.binder.name, href: `/binders/${binderPage.binder.id}` },
-        { title: `Seite ${binderPage.page_number}`, href: `/binder-pages/${binderPage.id}` },
-        { title: 'Karten auswählen', href: `/binder-pages/${binderPage.id}/available-cards` },
+        {
+            title: binderPage.binder.name,
+            href: `/binders/${binderPage.binder.id}`,
+        },
+        {
+            title: `Seite ${binderPage.page_number}`,
+            href: `/binder-pages/${binderPage.id}`,
+        },
+        {
+            title: 'Karten auswählen',
+            href: `/binder-pages/${binderPage.id}/available-cards`,
+        },
     ];
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
         router.get(
             `/binder-pages/${binderPage.id}/available-cards`,
             { search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -59,16 +68,19 @@ export default function AvailableCards({ binderPage, cards, filters }: Props) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold">Verfügbare Karten</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Karten aus deiner Sammlung, die noch keinem Ordner zugewiesen sind
+                        <h1 className="text-2xl font-bold">
+                            Verfügbare Karten
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Karten aus deiner Sammlung, die noch keinem Ordner
+                            zugewiesen sind
                         </p>
                     </div>
                 </div>
 
                 {/* Search */}
                 <div className="relative max-w-md">
-                    <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         placeholder="Karte suchen..."
                         value={search}
@@ -98,8 +110,8 @@ export default function AvailableCards({ binderPage, cards, filters }: Props) {
                                         className="aspect-[2.5/3.5] w-full rounded object-cover"
                                     />
                                 ) : (
-                                    <div className="bg-muted flex aspect-[2.5/3.5] items-center justify-center rounded">
-                                        <span className="text-muted-foreground text-center text-xs">
+                                    <div className="flex aspect-[2.5/3.5] items-center justify-center rounded bg-muted">
+                                        <span className="text-center text-xs text-muted-foreground">
                                             {card.printing?.card?.name}
                                         </span>
                                     </div>
@@ -107,7 +119,7 @@ export default function AvailableCards({ binderPage, cards, filters }: Props) {
                                 <p className="mt-2 truncate text-sm font-medium">
                                     {card.printing?.card?.name}
                                 </p>
-                                <p className="text-muted-foreground truncate text-xs">
+                                <p className="truncate text-xs text-muted-foreground">
                                     {card.printing?.set_name}
                                 </p>
                             </div>

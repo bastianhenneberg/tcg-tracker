@@ -1,9 +1,22 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { Box, Lot } from './types';
@@ -43,20 +56,29 @@ export function ScannerLotSelector({
                     <CardTitle className="text-lg">Lot auswählen</CardTitle>
                 </CardHeader>
                 <CardContent className="flex gap-2">
-                    <Select value={selectedLotId?.toString() ?? ''} onValueChange={(v) => onSelectLot(parseInt(v))}>
+                    <Select
+                        value={selectedLotId?.toString() ?? ''}
+                        onValueChange={(v) => onSelectLot(parseInt(v))}
+                    >
                         <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Lot wählen..." />
                         </SelectTrigger>
                         <SelectContent>
                             {lots.map((lot) => (
-                                <SelectItem key={lot.id} value={lot.id.toString()}>
+                                <SelectItem
+                                    key={lot.id}
+                                    value={lot.id.toString()}
+                                >
                                     Lot #{lot.lot_number}
                                     {lot.box && ` - ${lot.box.name}`}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button variant="outline" onClick={() => setShowCreateLot(true)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowCreateLot(true)}
+                    >
                         <Plus className="mr-2 h-4 w-4" />
                         Neues Lot
                     </Button>
@@ -67,18 +89,26 @@ export function ScannerLotSelector({
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Neues Lot erstellen</DialogTitle>
-                        <DialogDescription>Erstelle ein neues Lot für deine Scan-Session</DialogDescription>
+                        <DialogDescription>
+                            Erstelle ein neues Lot für deine Scan-Session
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label>Karton (optional)</Label>
-                            <Select value={newLotBoxId} onValueChange={setNewLotBoxId}>
+                            <Select
+                                value={newLotBoxId}
+                                onValueChange={setNewLotBoxId}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Karton wählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {boxes.map((box) => (
-                                        <SelectItem key={box.id} value={box.id.toString()}>
+                                        <SelectItem
+                                            key={box.id}
+                                            value={box.id.toString()}
+                                        >
                                             {box.name}
                                         </SelectItem>
                                     ))}
@@ -95,11 +125,21 @@ export function ScannerLotSelector({
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCreateLot(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCreateLot(false)}
+                        >
                             Abbrechen
                         </Button>
-                        <Button onClick={handleCreateLot} disabled={creatingLot}>
-                            {creatingLot ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                        <Button
+                            onClick={handleCreateLot}
+                            disabled={creatingLot}
+                        >
+                            {creatingLot ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Plus className="mr-2 h-4 w-4" />
+                            )}
                             Lot erstellen
                         </Button>
                     </DialogFooter>

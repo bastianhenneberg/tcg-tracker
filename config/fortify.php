@@ -143,8 +143,11 @@ return [
     |
     */
 
-    'features' => [
-        Features::registration(),
+    'features' => array_filter([
+        // Keine Selbstregistrierung. Benutzer legt die Verwaltung an.
+        // Vorgefunden am 23.09.2026 bedingungslos eingeschaltet — uebrig
+        // gebliebenes Geruest aus dem Laravel-Starterkit.
+        env('TCG_TRACKER_ALLOW_REGISTRATION', false) ? Features::registration() : null,
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
@@ -152,6 +155,6 @@ return [
             'confirmPassword' => true,
             // 'window' => 0
         ]),
-    ],
+    ]),
 
 ];

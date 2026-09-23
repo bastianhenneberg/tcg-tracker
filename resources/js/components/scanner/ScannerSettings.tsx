@@ -1,7 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Settings, Timer } from 'lucide-react';
 import type { BulkModeSettings } from './types';
@@ -41,47 +47,64 @@ export function ScannerSettings({
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="space-y-1.5">
                         <Label className="text-sm">Zustand</Label>
-                        <Select value={selectedCondition} onValueChange={onConditionChange}>
+                        <Select
+                            value={selectedCondition}
+                            onValueChange={onConditionChange}
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.entries(conditions).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                {Object.entries(conditions).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-sm">Foiling</Label>
-                        <Select value={selectedFoiling ?? 'none'} onValueChange={(v) => onFoilingChange(v === 'none' ? null : v)}>
+                        <Select
+                            value={selectedFoiling ?? 'none'}
+                            onValueChange={(v) =>
+                                onFoilingChange(v === 'none' ? null : v)
+                            }
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="none">Von Karte</SelectItem>
-                                {Object.entries(foilings).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                {Object.entries(foilings).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-sm">Sprache</Label>
-                        <Select value={selectedLanguage} onValueChange={onLanguageChange}>
+                        <Select
+                            value={selectedLanguage}
+                            onValueChange={onLanguageChange}
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.entries(languages).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                {Object.entries(languages).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -98,7 +121,12 @@ interface ScannerBulkModeProps {
     onCancelReplacing: () => void;
 }
 
-export function ScannerBulkMode({ bulkMode, replacingCardId, onBulkModeChange, onCancelReplacing }: ScannerBulkModeProps) {
+export function ScannerBulkMode({
+    bulkMode,
+    replacingCardId,
+    onBulkModeChange,
+    onCancelReplacing,
+}: ScannerBulkModeProps) {
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -123,7 +151,10 @@ export function ScannerBulkMode({ bulkMode, replacingCardId, onBulkModeChange, o
                             <Select
                                 value={bulkMode.interval.toString()}
                                 onValueChange={(v) => {
-                                    onBulkModeChange({ ...bulkMode, interval: parseInt(v) });
+                                    onBulkModeChange({
+                                        ...bulkMode,
+                                        interval: parseInt(v),
+                                    });
                                 }}
                             >
                                 <SelectTrigger className="w-20">
@@ -131,19 +162,31 @@ export function ScannerBulkMode({ bulkMode, replacingCardId, onBulkModeChange, o
                                 </SelectTrigger>
                                 <SelectContent>
                                     {[3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
-                                        <SelectItem key={s} value={s.toString()}>
+                                        <SelectItem
+                                            key={s}
+                                            value={s.toString()}
+                                        >
                                             {s}s
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <p className="text-sm text-muted-foreground">Nutzt Einstellungen von oben</p>
+                        <p className="text-sm text-muted-foreground">
+                            Nutzt Einstellungen von oben
+                        </p>
                     </div>
                     {replacingCardId && (
-                        <div className="rounded-lg border border-yellow-500 bg-yellow-50 p-3 dark:bg-yellow-950">
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">Scanne jetzt um Karte zu ersetzen...</p>
-                            <Button variant="outline" size="sm" className="mt-2" onClick={onCancelReplacing}>
+                        <div className="rounded-lg border border-warning bg-warning-subtle p-3">
+                            <p className="text-sm text-warning-subtle-foreground">
+                                Scanne jetzt um Karte zu ersetzen...
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2"
+                                onClick={onCancelReplacing}
+                            >
                                 Abbrechen
                             </Button>
                         </div>

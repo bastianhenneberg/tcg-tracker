@@ -17,12 +17,19 @@ use App\Http\Controllers\UnifiedCollectionController;
 use App\Http\Controllers\UnifiedInventoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
+/*
+ * Die Wurzel leitet weiter, sie zeigt nichts eigenes.
+ *
+ * Hier stand bis 23.09.2026 die unveraenderte Startseite aus dem
+ * Laravel-Geruest — 808 Zeilen samt Links auf Laracasts und die
+ * Laravel-Dokumentation, mit 86 ausgeschriebenen Hexfarben. Angemeldete
+ * landeten dort ebenfalls und mussten sich selbst zum Dashboard klicken.
+ */
 Route::get('/', function () {
-    return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

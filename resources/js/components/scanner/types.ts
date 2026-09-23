@@ -60,13 +60,18 @@ export interface ScannerFlash {
     newLot?: { id: number; lot_number: string; box_name?: string };
 }
 
-export interface BulkModeSettings {
+/*
+ * Bewusst `type` und nicht `interface`: Inertia verlangt fuer Formulardaten
+ * `{ [key: string]: FormDataConvertible }`. Ein `interface` bekommt in
+ * TypeScript keine implizite Index-Signatur und erfuellt das nicht.
+ */
+export type BulkModeSettings = {
     enabled: boolean;
     interval: number;
     defaultCondition: string;
     defaultFoiling: string | null;
     defaultLanguage: string;
-}
+};
 
 export interface PendingCard {
     id: string;

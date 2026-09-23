@@ -1,6 +1,6 @@
 import { UnifiedPrinting } from '@/types/unified';
 import { Eye } from 'lucide-react';
-import { useState, useRef, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface HoverCardPreviewProps {
@@ -16,8 +16,15 @@ interface PreviewPosition {
     top: number;
 }
 
-export function HoverCardPreview({ printing, children, onClick, className = '', showEyeIcon = true }: HoverCardPreviewProps) {
-    const [previewPosition, setPreviewPosition] = useState<PreviewPosition | null>(null);
+export function HoverCardPreview({
+    printing,
+    children,
+    onClick,
+    className = '',
+    showEyeIcon = true,
+}: HoverCardPreviewProps) {
+    const [previewPosition, setPreviewPosition] =
+        useState<PreviewPosition | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const calculatePosition = useCallback(() => {
@@ -66,7 +73,7 @@ export function HoverCardPreview({ printing, children, onClick, className = '', 
     return (
         <div
             ref={containerRef}
-            className={`relative cursor-pointer group w-fit ${className}`}
+            className={`group relative w-fit cursor-pointer ${className}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={onClick}
@@ -75,30 +82,33 @@ export function HoverCardPreview({ printing, children, onClick, className = '', 
 
             {/* Hover overlay with eye icon */}
             {showEyeIcon && (
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 opacity-0 transition-colors group-hover:bg-black/20 group-hover:opacity-100">
                     <Eye className="h-6 w-6 text-white drop-shadow-lg" />
                 </div>
             )}
 
             {/* Hover preview - rendered via portal to body */}
-            {previewPosition && printing.image_url && typeof document !== 'undefined' && createPortal(
-                <div
-                    className="pointer-events-none"
-                    style={{
-                        position: 'fixed',
-                        left: previewPosition.left,
-                        top: previewPosition.top,
-                        zIndex: 9999,
-                    }}
-                >
-                    <img
-                        src={printing.image_url}
-                        alt={printing.card?.name}
-                        className="w-64 h-auto rounded-lg shadow-2xl ring-2 ring-white/20"
-                    />
-                </div>,
-                document.body
-            )}
+            {previewPosition &&
+                printing.image_url &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                    <div
+                        className="pointer-events-none"
+                        style={{
+                            position: 'fixed',
+                            left: previewPosition.left,
+                            top: previewPosition.top,
+                            zIndex: 9999,
+                        }}
+                    >
+                        <img
+                            src={printing.image_url}
+                            alt={printing.card?.name}
+                            className="h-auto w-64 rounded-lg shadow-2xl ring-2 ring-white/20"
+                        />
+                    </div>,
+                    document.body,
+                )}
         </div>
     );
 }

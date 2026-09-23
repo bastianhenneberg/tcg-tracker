@@ -1,7 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable, DataTableToolbar, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
+import {
+    DataTable,
+    DataTableToolbar,
+    type ColumnDef,
+    type PaginatedData,
+} from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -18,16 +23,39 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { show as boxShow } from '@/routes/boxes';
-import { destroy as lotDestroy, index as lotsIndex, show as lotShow, update as lotUpdate } from '@/routes/lots';
+import {
+    destroy as lotDestroy,
+    show as lotShow,
+    index as lotsIndex,
+    update as lotUpdate,
+} from '@/routes/lots';
 import { type BreadcrumbItem } from '@/types';
 import { type Box, type Lot } from '@/types/inventory';
-import { type UnifiedInventory, getConditionLabel } from '@/types/unified';
+import { getConditionLabel, type UnifiedInventory } from '@/types/unified';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRightLeft, ChevronDown, Download, Edit, Heart, Layers, Package, Search, ShoppingCart, Trash2, X } from 'lucide-react';
+import {
+    ArrowRightLeft,
+    ChevronDown,
+    Download,
+    Edit,
+    Heart,
+    Layers,
+    Package,
+    Search,
+    ShoppingCart,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -82,11 +110,14 @@ export default function LotShow({
         () => [
             {
                 id: 'position',
-                accessorFn: (row) => (row.extra as Record<string, number>)?.position_in_lot ?? '-',
+                accessorFn: (row) =>
+                    (row.extra as Record<string, number>)?.position_in_lot ??
+                    '-',
                 header: '#',
                 cell: ({ row }) => (
-                    <span className="text-muted-foreground font-mono">
-                        {(row.original.extra as Record<string, number>)?.position_in_lot ?? items.from! + row.index}
+                    <span className="font-mono text-muted-foreground">
+                        {(row.original.extra as Record<string, number>)
+                            ?.position_in_lot ?? items.from! + row.index}
                     </span>
                 ),
             },
@@ -106,8 +137,12 @@ export default function LotShow({
                                 />
                             )}
                             <div>
-                                <div className="font-medium">{item.printing?.card?.name ?? 'Unbekannt'}</div>
-                                <div className="text-muted-foreground text-sm">{item.printing?.collector_number}</div>
+                                <div className="font-medium">
+                                    {item.printing?.card?.name ?? 'Unbekannt'}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                    {item.printing?.collector_number}
+                                </div>
                             </div>
                         </div>
                     );
@@ -115,11 +150,17 @@ export default function LotShow({
             },
             {
                 id: 'set',
-                accessorFn: (row) => row.printing?.set?.name ?? row.printing?.set_name ?? row.printing?.set_code ?? '',
+                accessorFn: (row) =>
+                    row.printing?.set?.name ??
+                    row.printing?.set_name ??
+                    row.printing?.set_code ??
+                    '',
                 header: 'Set',
                 cell: ({ row }) => (
                     <span className="text-muted-foreground">
-                        {row.original.printing?.set?.name ?? row.original.printing?.set_name ?? row.original.printing?.set_code}
+                        {row.original.printing?.set?.name ??
+                            row.original.printing?.set_name ??
+                            row.original.printing?.set_code}
                     </span>
                 ),
             },
@@ -127,22 +168,32 @@ export default function LotShow({
                 id: 'rarity',
                 accessorFn: (row) => row.printing?.rarity ?? '',
                 header: 'Seltenheit',
-                cell: ({ row }) => row.original.printing?.rarity_label ?? row.original.printing?.rarity ?? '-',
+                cell: ({ row }) =>
+                    row.original.printing?.rarity_label ??
+                    row.original.printing?.rarity ??
+                    '-',
             },
             {
                 id: 'foiling',
                 accessorFn: (row) => row.printing?.finish ?? '',
                 header: 'Foiling',
-                cell: ({ row }) => row.original.printing?.finish_label ?? row.original.printing?.finish ?? '-',
+                cell: ({ row }) =>
+                    row.original.printing?.finish_label ??
+                    row.original.printing?.finish ??
+                    '-',
             },
             {
                 id: 'condition',
                 accessorKey: 'condition',
                 header: 'Zustand',
-                cell: ({ row }) => <Badge variant="outline">{getConditionLabel(row.original.condition)}</Badge>,
+                cell: ({ row }) => (
+                    <Badge variant="outline">
+                        {getConditionLabel(row.original.condition)}
+                    </Badge>
+                ),
             },
         ],
-        [items.from]
+        [items.from],
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -162,7 +213,7 @@ export default function LotShow({
         router.get(
             currentUrl,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -175,27 +226,43 @@ export default function LotShow({
         router.get(
             currentUrl,
             { ...filters, [key]: value || undefined, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
     const clearFilters = () => {
         setSearch('');
-        router.get(currentUrl, {}, { preserveState: true, preserveScroll: true });
+        router.get(
+            currentUrl,
+            {},
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
-    const hasActiveFilters = filters.search || filters.condition || filters.foiling || filters.rarity;
+    const hasActiveFilters =
+        filters.search ||
+        filters.condition ||
+        filters.foiling ||
+        filters.rarity;
 
     const currentSort = {
         field: filters.sort ?? 'created_at',
         direction: (filters.direction ?? 'desc') as 'asc' | 'desc',
     };
 
-    const handleSortChange = (sort: { field: string; direction: 'asc' | 'desc' }) => {
+    const handleSortChange = (sort: {
+        field: string;
+        direction: 'asc' | 'desc';
+    }) => {
         router.get(
             currentUrl,
-            { ...filters, sort: sort.field, direction: sort.direction, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            {
+                ...filters,
+                sort: sort.field,
+                direction: sort.direction,
+                page: undefined,
+            },
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -205,8 +272,12 @@ export default function LotShow({
             lotUpdate(lot).url,
             {
                 box_id: parseInt(editForm.box_id),
-                card_range_start: editForm.card_range_start ? parseInt(editForm.card_range_start) : null,
-                card_range_end: editForm.card_range_end ? parseInt(editForm.card_range_end) : null,
+                card_range_start: editForm.card_range_start
+                    ? parseInt(editForm.card_range_start)
+                    : null,
+                card_range_end: editForm.card_range_end
+                    ? parseInt(editForm.card_range_end)
+                    : null,
                 notes: editForm.notes || null,
             },
             {
@@ -215,7 +286,7 @@ export default function LotShow({
                     setSaving(false);
                 },
                 onError: () => setSaving(false),
-            }
+            },
         );
     };
 
@@ -233,11 +304,12 @@ export default function LotShow({
 
     const handleDeleteMultiple = () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`${selectedIds.length} Karte(n) wirklich löschen?`)) return;
+        if (!confirm(`${selectedIds.length} Karte(n) wirklich löschen?`))
+            return;
         router.post(
             '/g/fab/inventory/delete-multiple',
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
@@ -246,7 +318,7 @@ export default function LotShow({
         router.post(
             '/g/fab/inventory/move-to-collection',
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
@@ -255,7 +327,7 @@ export default function LotShow({
         router.post(
             '/g/fab/inventory/mark-sold',
             { ids: selectedIds },
-            { onSuccess: () => setSelectedItems([]) }
+            { onSuccess: () => setSelectedItems([]) },
         );
     };
 
@@ -270,7 +342,7 @@ export default function LotShow({
                     setShowChangeLotDialog(false);
                     setTargetLotId('');
                 },
-            }
+            },
         );
     };
 
@@ -286,10 +358,13 @@ export default function LotShow({
                             <Layers className="h-6 w-6" />
                             Lot #{lot.lot_number}
                         </h1>
-                        <p className="text-muted-foreground flex items-center gap-2">
+                        <p className="flex items-center gap-2 text-muted-foreground">
                             <Package className="h-4 w-4" />
                             {lot.box ? (
-                                <Link href={boxShow(lot.box).url} className="hover:underline">
+                                <Link
+                                    href={boxShow(lot.box).url}
+                                    className="hover:underline"
+                                >
                                     {lot.box.name}
                                 </Link>
                             ) : (
@@ -300,11 +375,17 @@ export default function LotShow({
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditDialog(true)}
+                        >
                             <Edit className="mr-2 h-4 w-4" />
                             Bearbeiten
                         </Button>
-                        <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                        <Button
+                            variant="destructive"
+                            onClick={() => setShowDeleteDialog(true)}
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Löschen
                         </Button>
@@ -317,7 +398,11 @@ export default function LotShow({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/scanner?game=fab&lot=${lot.id}`}>Flesh and Blood</Link>
+                                    <Link
+                                        href={`/scanner?game=fab&lot=${lot.id}`}
+                                    >
+                                        Flesh and Blood
+                                    </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -338,7 +423,7 @@ export default function LotShow({
                 {/* Filters */}
                 <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
                     <div className="relative flex-1">
-                        <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Karte suchen..."
                             value={search}
@@ -350,36 +435,54 @@ export default function LotShow({
                     <div className="flex flex-wrap gap-2">
                         <Select
                             value={filters.condition ?? 'all'}
-                            onValueChange={(value) => handleFilterChange('condition', value === 'all' ? undefined : value)}
+                            onValueChange={(value) =>
+                                handleFilterChange(
+                                    'condition',
+                                    value === 'all' ? undefined : value,
+                                )
+                            }
                         >
                             <SelectTrigger className="w-[160px]">
                                 <SelectValue placeholder="Alle Zustände" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Alle Zustände</SelectItem>
-                                {Object.entries(conditions).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="all">
+                                    Alle Zustände
+                                </SelectItem>
+                                {Object.entries(conditions).map(
+                                    ([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
 
                         {Object.keys(foilings).length > 1 && (
                             <Select
                                 value={filters.foiling ?? 'all'}
-                                onValueChange={(value) => handleFilterChange('foiling', value === 'all' ? undefined : value)}
+                                onValueChange={(value) =>
+                                    handleFilterChange(
+                                        'foiling',
+                                        value === 'all' ? undefined : value,
+                                    )
+                                }
                             >
                                 <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Alle Foilings" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Foilings</SelectItem>
-                                    {Object.entries(foilings).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Foilings
+                                    </SelectItem>
+                                    {Object.entries(foilings).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -387,30 +490,47 @@ export default function LotShow({
                         {Object.keys(rarities).length > 1 && (
                             <Select
                                 value={filters.rarity ?? 'all'}
-                                onValueChange={(value) => handleFilterChange('rarity', value === 'all' ? undefined : value)}
+                                onValueChange={(value) =>
+                                    handleFilterChange(
+                                        'rarity',
+                                        value === 'all' ? undefined : value,
+                                    )
+                                }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Seltenheiten" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Seltenheiten</SelectItem>
-                                    {Object.entries(rarities).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Seltenheiten
+                                    </SelectItem>
+                                    {Object.entries(rarities).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
 
                         {hasActiveFilters && (
-                            <Button variant="ghost" size="icon" onClick={clearFilters} title="Filter zurücksetzen">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={clearFilters}
+                                title="Filter zurücksetzen"
+                            >
                                 <X className="h-4 w-4" />
                             </Button>
                         )}
 
                         <Button variant="outline" size="default" asChild>
-                            <a href={`/g/fab/inventory/export?lot=${lot.id}`} download>
+                            <a
+                                href={`/g/fab/inventory/export?lot=${lot.id}`}
+                                download
+                            >
                                 <Download className="mr-2 h-4 w-4" />
                                 Export
                             </a>
@@ -420,21 +540,37 @@ export default function LotShow({
 
                 {/* Bulk Actions */}
                 <DataTableToolbar selectedCount={selectedItems.length}>
-                    <Button variant="outline" size="sm" onClick={handleMoveToCollection}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleMoveToCollection}
+                    >
                         <Heart className="mr-2 h-4 w-4" />
                         Zur Sammlung
                     </Button>
                     {otherLots.length > 0 && (
-                        <Button variant="outline" size="sm" onClick={() => setShowChangeLotDialog(true)}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowChangeLotDialog(true)}
+                        >
                             <ArrowRightLeft className="mr-2 h-4 w-4" />
                             Lot wechseln
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleMarkSold}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleMarkSold}
+                    >
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Verkauft
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={handleDeleteMultiple}>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteMultiple}
+                    >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Löschen
                     </Button>
@@ -451,17 +587,22 @@ export default function LotShow({
                     getRowId={(row) => row.id.toString()}
                     emptyState={
                         <div className="flex flex-col items-center justify-center py-12">
-                            <Layers className="text-muted-foreground mb-4 h-12 w-12" />
+                            <Layers className="mb-4 h-12 w-12 text-muted-foreground" />
                             <h3 className="text-lg font-medium">
-                                {hasActiveFilters ? 'Keine Ergebnisse' : 'Keine Karten'}
+                                {hasActiveFilters
+                                    ? 'Keine Ergebnisse'
+                                    : 'Keine Karten'}
                             </h3>
-                            <p className="text-muted-foreground mb-4 text-center">
+                            <p className="mb-4 text-center text-muted-foreground">
                                 {hasActiveFilters
                                     ? 'Keine Karten entsprechen den Filterkriterien.'
                                     : 'Dieses Lot enthält noch keine Karten.'}
                             </p>
                             {hasActiveFilters ? (
-                                <Button variant="outline" onClick={clearFilters}>
+                                <Button
+                                    variant="outline"
+                                    onClick={clearFilters}
+                                >
                                     Filter zurücksetzen
                                 </Button>
                             ) : (
@@ -474,7 +615,11 @@ export default function LotShow({
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         <DropdownMenuItem asChild>
-                                            <Link href={`/scanner?game=fab&lot=${lot.id}`}>Flesh and Blood</Link>
+                                            <Link
+                                                href={`/scanner?game=fab&lot=${lot.id}`}
+                                            >
+                                                Flesh and Blood
+                                            </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -488,19 +633,31 @@ export default function LotShow({
             <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Lot #{lot.lot_number} bearbeiten</DialogTitle>
-                        <DialogDescription>Ändere den Karton oder die Notizen für dieses Lot.</DialogDescription>
+                        <DialogTitle>
+                            Lot #{lot.lot_number} bearbeiten
+                        </DialogTitle>
+                        <DialogDescription>
+                            Ändere den Karton oder die Notizen für dieses Lot.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Karton</Label>
-                            <Select value={editForm.box_id} onValueChange={(v) => setEditForm({ ...editForm, box_id: v })}>
+                            <Select
+                                value={editForm.box_id}
+                                onValueChange={(v) =>
+                                    setEditForm({ ...editForm, box_id: v })
+                                }
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {boxes.map((box) => (
-                                        <SelectItem key={box.id} value={box.id.toString()}>
+                                        <SelectItem
+                                            key={box.id}
+                                            value={box.id.toString()}
+                                        >
                                             {box.name}
                                         </SelectItem>
                                     ))}
@@ -514,15 +671,27 @@ export default function LotShow({
                                     type="number"
                                     placeholder="Von"
                                     value={editForm.card_range_start}
-                                    onChange={(e) => setEditForm({ ...editForm, card_range_start: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            card_range_start: e.target.value,
+                                        })
+                                    }
                                     min={1}
                                 />
-                                <span className="text-muted-foreground">bis</span>
+                                <span className="text-muted-foreground">
+                                    bis
+                                </span>
                                 <Input
                                     type="number"
                                     placeholder="Bis"
                                     value={editForm.card_range_end}
-                                    onChange={(e) => setEditForm({ ...editForm, card_range_end: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditForm({
+                                            ...editForm,
+                                            card_range_end: e.target.value,
+                                        })
+                                    }
                                     min={1}
                                 />
                             </div>
@@ -531,14 +700,22 @@ export default function LotShow({
                             <Label>Notizen</Label>
                             <Textarea
                                 value={editForm.notes}
-                                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                onChange={(e) =>
+                                    setEditForm({
+                                        ...editForm,
+                                        notes: e.target.value,
+                                    })
+                                }
                                 placeholder="Optionale Notizen..."
                                 rows={3}
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditDialog(false)}
+                        >
                             Abbrechen
                         </Button>
                         <Button onClick={handleSave} disabled={saving}>
@@ -556,17 +733,25 @@ export default function LotShow({
                         <DialogDescription>
                             Möchtest du Lot #{lot.lot_number} wirklich löschen?
                             {stats.total > 0 && (
-                                <span className="text-destructive mt-2 block font-medium">
-                                    Achtung: {stats.total} Karten werden ebenfalls gelöscht!
+                                <span className="mt-2 block font-medium text-destructive">
+                                    Achtung: {stats.total} Karten werden
+                                    ebenfalls gelöscht!
                                 </span>
                             )}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteDialog(false)}
+                        >
                             Abbrechen
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                        >
                             {deleting ? 'Löschen...' : 'Löschen'}
                         </Button>
                     </DialogFooter>
@@ -574,23 +759,33 @@ export default function LotShow({
             </Dialog>
 
             {/* Change Lot Dialog */}
-            <Dialog open={showChangeLotDialog} onOpenChange={setShowChangeLotDialog}>
+            <Dialog
+                open={showChangeLotDialog}
+                onOpenChange={setShowChangeLotDialog}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Lot wechseln</DialogTitle>
                         <DialogDescription>
-                            Wähle das Ziel-Lot für die {selectedIds.length} ausgewählte(n) Karte(n).
+                            Wähle das Ziel-Lot für die {selectedIds.length}{' '}
+                            ausgewählte(n) Karte(n).
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="py-4">
-                        <Select value={targetLotId} onValueChange={setTargetLotId}>
+                        <Select
+                            value={targetLotId}
+                            onValueChange={setTargetLotId}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Ziel-Lot auswählen..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {otherLots.map((l) => (
-                                    <SelectItem key={l.id} value={l.id.toString()}>
+                                    <SelectItem
+                                        key={l.id}
+                                        value={l.id.toString()}
+                                    >
                                         {l.name}
                                     </SelectItem>
                                 ))}
@@ -599,10 +794,16 @@ export default function LotShow({
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowChangeLotDialog(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowChangeLotDialog(false)}
+                        >
                             Abbrechen
                         </Button>
-                        <Button onClick={handleChangeLot} disabled={!targetLotId}>
+                        <Button
+                            onClick={handleChangeLot}
+                            disabled={!targetLotId}
+                        >
                             Verschieben
                         </Button>
                     </DialogFooter>

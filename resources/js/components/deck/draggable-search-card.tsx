@@ -16,14 +16,20 @@ interface DraggableSearchCardProps {
 // Prefix for search card IDs to distinguish from deck card IDs
 export const SEARCH_CARD_ID_PREFIX = 'search-';
 
-export function DraggableSearchCard({ printing, onDirectAdd, className, size = 'md' }: DraggableSearchCardProps) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: `${SEARCH_CARD_ID_PREFIX}${printing.id}`,
-        data: {
-            type: 'search',
-            printing,
-        },
-    });
+export function DraggableSearchCard({
+    printing,
+    onDirectAdd,
+    className,
+    size = 'md',
+}: DraggableSearchCardProps) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
+        useDraggable({
+            id: `${SEARCH_CARD_ID_PREFIX}${printing.id}`,
+            data: {
+                type: 'search',
+                printing,
+            },
+        });
 
     // Track if user is dragging to distinguish from click
     const isDraggingRef = useRef(false);
@@ -62,30 +68,29 @@ export function DraggableSearchCard({ printing, onDirectAdd, className, size = '
             style={style}
             className={cn(
                 'group relative cursor-grab transition-all duration-200',
-                isDragging && 'opacity-50 scale-95',
-                className
+                isDragging && 'scale-95 opacity-50',
+                className,
             )}
             {...listeners}
             {...attributes}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
         >
-            <CardThumbnail
-                printing={printing}
-                size={size}
-            />
+            <CardThumbnail printing={printing} size={size} />
 
             {/* Drag Hint Overlay */}
             <div
                 className={cn(
                     'absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-black/60 transition-opacity duration-200',
                     'opacity-0 group-hover:opacity-100',
-                    isDragging && 'opacity-0'
+                    isDragging && 'opacity-0',
                 )}
             >
                 <GripVertical className="mb-1 h-5 w-5 text-white" />
-                <span className="text-center text-[10px] font-medium text-white">
-                    Ziehen oder<br />Klicken
+                <span className="text-center text-3xs font-medium text-white">
+                    Ziehen oder
+                    <br />
+                    Klicken
                 </span>
             </div>
         </div>

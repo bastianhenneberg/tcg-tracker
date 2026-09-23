@@ -14,11 +14,14 @@ interface CardThumbnailProps {
     onClick?: () => void;
 }
 
-const sizeClasses: Record<CardSize, { container: string; text: string; badge: string }> = {
+const sizeClasses: Record<
+    CardSize,
+    { container: string; text: string; badge: string }
+> = {
     sm: {
         container: 'w-16',
-        text: 'text-[10px]',
-        badge: 'text-[10px] h-4 min-w-4 px-1',
+        text: 'text-3xs',
+        badge: 'text-3xs h-4 min-w-4 px-1',
     },
     md: {
         container: 'w-24',
@@ -43,7 +46,13 @@ const sizeClasses: Record<CardSize, { container: string; text: string; badge: st
     },
 };
 
-export function CardThumbnail({ printing, size = 'md', showQuantity, className, onClick }: CardThumbnailProps) {
+export function CardThumbnail({
+    printing,
+    size = 'md',
+    showQuantity,
+    className,
+    onClick,
+}: CardThumbnailProps) {
     const [imageError, setImageError] = useState(false);
     const imageUrl = printing.image_url_small || printing.image_url;
     const cardName = printing.card?.name || 'Unknown Card';
@@ -54,10 +63,10 @@ export function CardThumbnail({ printing, size = 'md', showQuantity, className, 
             className={cn(
                 'group relative overflow-hidden rounded-lg transition-all duration-200',
                 'shadow-sm ring-1 ring-black/10 dark:ring-white/10',
-                'hover:scale-105 hover:shadow-lg hover:z-10',
+                'hover:z-10 hover:scale-105 hover:shadow-lg',
                 'cursor-pointer',
                 sizeConfig.container,
-                className
+                className,
             )}
             onClick={onClick}
         >
@@ -71,9 +80,14 @@ export function CardThumbnail({ printing, size = 'md', showQuantity, className, 
                     loading="lazy"
                 />
             ) : (
-                <div className="bg-muted flex aspect-[2.5/3.5] w-full flex-col items-center justify-center rounded-lg border border-dashed p-2">
-                    <ImageOff className="text-muted-foreground mb-1 h-4 w-4" />
-                    <span className={cn('text-muted-foreground line-clamp-3 text-center', sizeConfig.text)}>
+                <div className="flex aspect-[2.5/3.5] w-full flex-col items-center justify-center rounded-lg border border-dashed bg-muted p-2">
+                    <ImageOff className="mb-1 h-4 w-4 text-muted-foreground" />
+                    <span
+                        className={cn(
+                            'line-clamp-3 text-center text-muted-foreground',
+                            sizeConfig.text,
+                        )}
+                    >
                         {cardName}
                     </span>
                 </div>
@@ -83,8 +97,8 @@ export function CardThumbnail({ printing, size = 'md', showQuantity, className, 
             {showQuantity !== undefined && showQuantity > 0 && (
                 <Badge
                     className={cn(
-                        'absolute right-1 top-1 shadow-md',
-                        sizeConfig.badge
+                        'absolute top-1 right-1 shadow-md',
+                        sizeConfig.badge,
                     )}
                 >
                     x{showQuantity}
@@ -98,12 +112,18 @@ export function CardThumbnail({ printing, size = 'md', showQuantity, className, 
 }
 
 // Skeleton version for loading states
-export function CardThumbnailSkeleton({ size = 'md', className }: { size?: CardSize; className?: string }) {
+export function CardThumbnailSkeleton({
+    size = 'md',
+    className,
+}: {
+    size?: CardSize;
+    className?: string;
+}) {
     const sizeConfig = sizeClasses[size];
 
     return (
         <div className={cn('animate-pulse', sizeConfig.container, className)}>
-            <div className="bg-muted aspect-[2.5/3.5] w-full rounded-lg" />
+            <div className="aspect-[2.5/3.5] w-full rounded-lg bg-muted" />
         </div>
     );
 }

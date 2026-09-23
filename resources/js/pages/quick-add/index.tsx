@@ -1,5 +1,12 @@
 import { CardImage } from '@/components/card-image';
-import { type CardMatch, type Game, type Lot, type Box, type RecentCard, type QuickAddFlash } from '@/components/quick-add/types';
+import {
+    type Box,
+    type CardMatch,
+    type Game,
+    type Lot,
+    type QuickAddFlash,
+    type RecentCard,
+} from '@/components/quick-add/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -12,15 +19,21 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { cn } from '@/lib/utils';
+import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Keyboard, Layers, Plus, Search, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 import { toast } from 'sonner';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface Props {
     games: Game[];
@@ -68,24 +81,31 @@ export default function QuickAddIndex({
 
     // State
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-    const [searchResults, setSearchResults] = useState<CardMatch[]>(initialSearchResults);
+    const [searchResults, setSearchResults] =
+        useState<CardMatch[]>(initialSearchResults);
     const [searching, setSearching] = useState(false);
     const [selectedResultIndex, setSelectedResultIndex] = useState(0);
 
     const [selectedCard, setSelectedCard] = useState<CardMatch | null>(null);
-    const [selectedCondition, setSelectedCondition] = useState(defaultCondition);
-    const [selectedFoiling, setSelectedFoiling] = useState<string | null>(defaultFoiling);
+    const [selectedCondition, setSelectedCondition] =
+        useState(defaultCondition);
+    const [selectedFoiling, setSelectedFoiling] = useState<string | null>(
+        defaultFoiling,
+    );
     const [selectedLanguage, setSelectedLanguage] = useState(defaultLanguage);
 
     // Preset defaults that apply to all cards
     const [presetCondition, setPresetCondition] = useState(defaultCondition);
-    const [presetFoiling, setPresetFoiling] = useState<string | null>(defaultFoiling);
+    const [presetFoiling, setPresetFoiling] = useState<string | null>(
+        defaultFoiling,
+    );
     const [presetLanguage, setPresetLanguage] = useState(defaultLanguage);
 
     const [selectedLotId, setSelectedLotId] = useState<number | null>(
-        initialLotId ? Number(initialLotId) : null
+        initialLotId ? Number(initialLotId) : null,
     );
-    const [recentCards, setRecentCards] = useState<RecentCard[]>(initialRecentCards);
+    const [recentCards, setRecentCards] =
+        useState<RecentCard[]>(initialRecentCards);
     const [confirming, setConfirming] = useState(false);
 
     const [showCreateLot, setShowCreateLot] = useState(false);
@@ -111,7 +131,7 @@ export default function QuickAddIndex({
                 only: ['searchResults', 'searchQuery'],
                 onSuccess: () => setSearching(false),
                 onError: () => setSearching(false),
-            }
+            },
         );
     }, 200);
 
@@ -165,9 +185,17 @@ export default function QuickAddIndex({
                     setConfirming(false);
                     toast.error('Fehler beim Hinzufügen');
                 },
-            }
+            },
         );
-    }, [selectedCard, selectedLotId, selectedGame, selectedCondition, selectedFoiling, selectedLanguage, confirming]);
+    }, [
+        selectedCard,
+        selectedLotId,
+        selectedGame,
+        selectedCondition,
+        selectedFoiling,
+        selectedLanguage,
+        confirming,
+    ]);
 
     // Handle cancel
     const handleCancel = () => {
@@ -190,7 +218,7 @@ export default function QuickAddIndex({
         router.get(
             '/quick-add',
             { game: selectedGame.slug, lot_id: lotId },
-            { preserveState: true, only: ['recentCards', 'selectedLotId'] }
+            { preserveState: true, only: ['recentCards', 'selectedLotId'] },
         );
     };
 
@@ -205,7 +233,7 @@ export default function QuickAddIndex({
                     setShowCreateLot(false);
                     setNewLotBoxId('');
                 },
-            }
+            },
         );
     };
 
@@ -228,7 +256,9 @@ export default function QuickAddIndex({
                 is_custom: flash.confirmed.is_custom,
             };
             setRecentCards((prev) => [newCard, ...prev.slice(0, 9)]);
-            toast.success(`#${flash.confirmed.position} ${flash.confirmed.card_name} hinzugefügt`);
+            toast.success(
+                `#${flash.confirmed.position} ${flash.confirmed.card_name} hinzugefügt`,
+            );
         }
         if (flash?.newLot) {
             setSelectedLotId(flash.newLot.id);
@@ -246,7 +276,9 @@ export default function QuickAddIndex({
     const handleSearchKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedResultIndex((prev) => Math.min(prev + 1, searchResults.length - 1));
+            setSelectedResultIndex((prev) =>
+                Math.min(prev + 1, searchResults.length - 1),
+            );
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setSelectedResultIndex((prev) => Math.max(prev - 1, 0));
@@ -261,7 +293,8 @@ export default function QuickAddIndex({
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             const activeElement = document.activeElement;
             const isInSearchInput = activeElement === searchInputRef.current;
-            const isInSelect = activeElement?.closest('[role="combobox"]') !== null;
+            const isInSelect =
+                activeElement?.closest('[role="combobox"]') !== null;
 
             // Escape: Cancel selection or clear search
             if (e.key === 'Escape') {
@@ -298,7 +331,12 @@ export default function QuickAddIndex({
             if (isInSearchInput || isInSelect) return;
 
             // Ctrl+Enter: Quick confirm with defaults
-            if (e.ctrlKey && e.key === 'Enter' && searchResults[selectedResultIndex] && !selectedCard) {
+            if (
+                e.ctrlKey &&
+                e.key === 'Enter' &&
+                searchResults[selectedResultIndex] &&
+                !selectedCard
+            ) {
                 e.preventDefault();
                 const card = searchResults[selectedResultIndex];
                 setSelectedCard(card);
@@ -315,7 +353,15 @@ export default function QuickAddIndex({
 
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [selectedCard, searchQuery, searchResults, selectedResultIndex, confirming, conditionKeys, handleConfirm]);
+    }, [
+        selectedCard,
+        searchQuery,
+        searchResults,
+        selectedResultIndex,
+        confirming,
+        conditionKeys,
+        handleConfirm,
+    ]);
 
     const selectedLot = lots.find((l) => l.id === selectedLotId);
 
@@ -334,7 +380,10 @@ export default function QuickAddIndex({
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Game Switcher */}
-                        <Select value={selectedGame.slug} onValueChange={handleGameChange}>
+                        <Select
+                            value={selectedGame.slug}
+                            onValueChange={handleGameChange}
+                        >
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue />
                             </SelectTrigger>
@@ -356,7 +405,9 @@ export default function QuickAddIndex({
                                 <div className="flex items-center gap-2">
                                     <Layers className="h-4 w-4" />
                                     <span className="truncate">
-                                        {selectedLot ? `Lot #${selectedLot.lot_number}` : 'Lot wählen'}
+                                        {selectedLot
+                                            ? `Lot #${selectedLot.lot_number}`
+                                            : 'Lot wählen'}
                                     </span>
                                 </div>
                             </SelectTrigger>
@@ -368,7 +419,10 @@ export default function QuickAddIndex({
                                     </div>
                                 </SelectItem>
                                 {lots.map((lot) => (
-                                    <SelectItem key={lot.id} value={lot.id.toString()}>
+                                    <SelectItem
+                                        key={lot.id}
+                                        value={lot.id.toString()}
+                                    >
                                         Lot #{lot.lot_number}
                                         {lot.box && ` (${lot.box.name})`}
                                     </SelectItem>
@@ -386,7 +440,10 @@ export default function QuickAddIndex({
                             Voreinstellungen:
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <Select value={presetCondition} onValueChange={setPresetCondition}>
+                            <Select
+                                value={presetCondition}
+                                onValueChange={setPresetCondition}
+                            >
                                 <SelectTrigger className="h-8 w-[100px]">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -401,22 +458,36 @@ export default function QuickAddIndex({
                             {Object.keys(foilings).length > 0 && (
                                 <Select
                                     value={presetFoiling ?? '_none'}
-                                    onValueChange={(v) => setPresetFoiling(v === '_none' ? null : v)}
+                                    onValueChange={(v) =>
+                                        setPresetFoiling(
+                                            v === '_none' ? null : v,
+                                        )
+                                    }
                                 >
                                     <SelectTrigger className="h-8 w-[130px]">
                                         <SelectValue placeholder="Foiling" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="_none">Kein Foiling</SelectItem>
-                                        {Object.entries(foilings).map(([key, label]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {label}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectItem value="_none">
+                                            Kein Foiling
+                                        </SelectItem>
+                                        {Object.entries(foilings).map(
+                                            ([key, label]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={key}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                             )}
-                            <Select value={presetLanguage} onValueChange={setPresetLanguage}>
+                            <Select
+                                value={presetLanguage}
+                                onValueChange={setPresetLanguage}
+                            >
                                 <SelectTrigger className="h-8 w-[100px]">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -441,13 +512,15 @@ export default function QuickAddIndex({
                     <div className="space-y-4">
                         {/* Search Input */}
                         <div className="relative">
-                            <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 ref={searchInputRef}
                                 className="pl-9 text-lg"
                                 placeholder="Kartenname oder Nummer eingeben..."
                                 value={searchQuery}
-                                onChange={(e) => handleSearchChange(e.target.value)}
+                                onChange={(e) =>
+                                    handleSearchChange(e.target.value)
+                                }
                                 onKeyDown={handleSearchKeyDown}
                             />
                         </div>
@@ -462,9 +535,13 @@ export default function QuickAddIndex({
                                                 key={card.id}
                                                 className={cn(
                                                     'flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-accent',
-                                                    index === selectedResultIndex && 'bg-accent'
+                                                    index ===
+                                                        selectedResultIndex &&
+                                                        'bg-accent',
                                                 )}
-                                                onClick={() => handleSelectCard(card)}
+                                                onClick={() =>
+                                                    handleSelectCard(card)
+                                                }
                                             >
                                                 {card.image_url && (
                                                     <img
@@ -474,16 +551,19 @@ export default function QuickAddIndex({
                                                     />
                                                 )}
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="font-medium truncate">
+                                                    <div className="truncate font-medium">
                                                         {card.card_name}
                                                     </div>
-                                                    <div className="text-muted-foreground text-sm truncate">
-                                                        {card.collector_number} · {card.set_name}
-                                                        {card.foiling_label && ` · ${card.foiling_label}`}
+                                                    <div className="truncate text-sm text-muted-foreground">
+                                                        {card.collector_number}{' '}
+                                                        · {card.set_name}
+                                                        {card.foiling_label &&
+                                                            ` · ${card.foiling_label}`}
                                                     </div>
                                                 </div>
-                                                {index === selectedResultIndex && (
-                                                    <span className="text-muted-foreground text-xs">
+                                                {index ===
+                                                    selectedResultIndex && (
+                                                    <span className="text-xs text-muted-foreground">
                                                         Enter
                                                     </span>
                                                 )}
@@ -495,15 +575,18 @@ export default function QuickAddIndex({
                         )}
 
                         {/* Empty state */}
-                        {searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-                            <Card>
-                                <CardContent className="py-8 text-center">
-                                    <p className="text-muted-foreground">
-                                        Keine Karten gefunden für "{searchQuery}"
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
+                        {searchQuery.length >= 2 &&
+                            searchResults.length === 0 &&
+                            !searching && (
+                                <Card>
+                                    <CardContent className="py-8 text-center">
+                                        <p className="text-muted-foreground">
+                                            Keine Karten gefunden für "
+                                            {searchQuery}"
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
                     </div>
 
                     {/* Right: Selected Card & Recent */}
@@ -525,24 +608,40 @@ export default function QuickAddIndex({
                                                 <h3 className="text-lg font-semibold">
                                                     {selectedCard.card_name}
                                                 </h3>
-                                                <p className="text-muted-foreground text-sm">
-                                                    {selectedCard.collector_number} · {selectedCard.set_name}
+                                                <p className="text-sm text-muted-foreground">
+                                                    {
+                                                        selectedCard.collector_number
+                                                    }{' '}
+                                                    · {selectedCard.set_name}
                                                 </p>
                                             </div>
 
                                             {/* Condition Buttons */}
                                             <div className="space-y-2">
-                                                <Label className="text-xs">Condition</Label>
+                                                <Label className="text-xs">
+                                                    Condition
+                                                </Label>
                                                 <div className="flex flex-wrap gap-1">
-                                                    {Object.entries(conditions).map(([key], index) => (
+                                                    {Object.entries(
+                                                        conditions,
+                                                    ).map(([key], index) => (
                                                         <Button
                                                             key={key}
-                                                            variant={selectedCondition === key ? 'default' : 'outline'}
+                                                            variant={
+                                                                selectedCondition ===
+                                                                key
+                                                                    ? 'default'
+                                                                    : 'outline'
+                                                            }
                                                             size="sm"
-                                                            onClick={() => setSelectedCondition(key)}
+                                                            onClick={() =>
+                                                                setSelectedCondition(
+                                                                    key,
+                                                                )
+                                                            }
                                                             className="min-w-[60px]"
                                                         >
-                                                            <span className="text-muted-foreground mr-1 text-xs">
+                                                            <span className="mr-1 text-xs text-muted-foreground">
                                                                 {index + 1}
                                                             </span>
                                                             {key}
@@ -553,37 +652,72 @@ export default function QuickAddIndex({
 
                                             {/* Foiling & Language */}
                                             <div className="flex gap-2">
-                                                {Object.keys(foilings).length > 0 && (
+                                                {Object.keys(foilings).length >
+                                                    0 && (
                                                     <Select
-                                                        value={selectedFoiling ?? '_none'}
-                                                        onValueChange={(v) => setSelectedFoiling(v === '_none' ? null : v)}
+                                                        value={
+                                                            selectedFoiling ??
+                                                            '_none'
+                                                        }
+                                                        onValueChange={(v) =>
+                                                            setSelectedFoiling(
+                                                                v === '_none'
+                                                                    ? null
+                                                                    : v,
+                                                            )
+                                                        }
                                                     >
                                                         <SelectTrigger className="w-[140px]">
                                                             <SelectValue placeholder="Foiling" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="_none">Kein Foiling</SelectItem>
-                                                            {Object.entries(foilings).map(([key, label]) => (
-                                                                <SelectItem key={key} value={key}>
-                                                                    {label}
-                                                                </SelectItem>
-                                                            ))}
+                                                            <SelectItem value="_none">
+                                                                Kein Foiling
+                                                            </SelectItem>
+                                                            {Object.entries(
+                                                                foilings,
+                                                            ).map(
+                                                                ([
+                                                                    key,
+                                                                    label,
+                                                                ]) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            key
+                                                                        }
+                                                                        value={
+                                                                            key
+                                                                        }
+                                                                    >
+                                                                        {label}
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
                                                         </SelectContent>
                                                     </Select>
                                                 )}
                                                 <Select
                                                     value={selectedLanguage}
-                                                    onValueChange={setSelectedLanguage}
+                                                    onValueChange={
+                                                        setSelectedLanguage
+                                                    }
                                                 >
                                                     <SelectTrigger className="w-[120px]">
                                                         <SelectValue placeholder="Sprache" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {Object.entries(languages).map(([key, label]) => (
-                                                            <SelectItem key={key} value={key}>
-                                                                {label}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {Object.entries(
+                                                            languages,
+                                                        ).map(
+                                                            ([key, label]) => (
+                                                                <SelectItem
+                                                                    key={key}
+                                                                    value={key}
+                                                                >
+                                                                    {label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -593,15 +727,27 @@ export default function QuickAddIndex({
                                                 <Button
                                                     ref={confirmButtonRef}
                                                     onClick={handleConfirm}
-                                                    disabled={confirming || !selectedLotId}
+                                                    disabled={
+                                                        confirming ||
+                                                        !selectedLotId
+                                                    }
                                                     className="flex-1"
                                                 >
-                                                    {confirming ? 'Hinzufügen...' : 'Hinzufügen'}
-                                                    <span className="ml-2 text-xs opacity-70">Enter</span>
+                                                    {confirming
+                                                        ? 'Hinzufügen...'
+                                                        : 'Hinzufügen'}
+                                                    <span className="ml-2 text-xs opacity-70">
+                                                        Enter
+                                                    </span>
                                                 </Button>
-                                                <Button variant="outline" onClick={handleCancel}>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={handleCancel}
+                                                >
                                                     Abbrechen
-                                                    <span className="ml-2 text-xs opacity-70">Esc</span>
+                                                    <span className="ml-2 text-xs opacity-70">
+                                                        Esc
+                                                    </span>
                                                 </Button>
                                             </div>
                                         </div>
@@ -611,9 +757,10 @@ export default function QuickAddIndex({
                         ) : (
                             <Card>
                                 <CardContent className="py-8 text-center">
-                                    <Keyboard className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
+                                    <Keyboard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                                     <p className="text-muted-foreground">
-                                        Suche nach einer Karte und wähle sie mit Enter aus
+                                        Suche nach einer Karte und wähle sie mit
+                                        Enter aus
                                     </p>
                                 </CardContent>
                             </Card>
@@ -624,23 +771,32 @@ export default function QuickAddIndex({
                             <Card>
                                 <CardContent className="p-4">
                                     <h4 className="mb-3 text-sm font-medium">
-                                        Zuletzt hinzugefügt ({recentCards.length})
+                                        Zuletzt hinzugefügt (
+                                        {recentCards.length})
                                     </h4>
                                     <div className="space-y-2">
                                         {recentCards.map((card) => (
                                             <div
                                                 key={card.id}
-                                                className="bg-muted/50 flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+                                                className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <span className="text-muted-foreground mr-2">
+                                                    <span className="mr-2 text-muted-foreground">
                                                         #{card.position}
                                                     </span>
-                                                    <span className="font-medium">{card.card_name}</span>
+                                                    <span className="font-medium">
+                                                        {card.card_name}
+                                                    </span>
                                                 </div>
-                                                <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                                                    <span>{card.condition}</span>
-                                                    {card.foiling && <span>{card.foiling}</span>}
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <span>
+                                                        {card.condition}
+                                                    </span>
+                                                    {card.foiling && (
+                                                        <span>
+                                                            {card.foiling}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -652,21 +808,36 @@ export default function QuickAddIndex({
                 </div>
 
                 {/* Keyboard Hints */}
-                <div className="bg-muted/50 mt-auto flex flex-wrap items-center justify-center gap-4 rounded-lg p-3 text-xs">
+                <div className="mt-auto flex flex-wrap items-center justify-center gap-4 rounded-lg bg-muted/50 p-3 text-xs">
                     <span className="text-muted-foreground">
-                        <kbd className="bg-background rounded border px-1.5 py-0.5">↑↓</kbd> Navigation
+                        <kbd className="rounded border bg-background px-1.5 py-0.5">
+                            ↑↓
+                        </kbd>{' '}
+                        Navigation
                     </span>
                     <span className="text-muted-foreground">
-                        <kbd className="bg-background rounded border px-1.5 py-0.5">Enter</kbd> Auswählen/Bestätigen
+                        <kbd className="rounded border bg-background px-1.5 py-0.5">
+                            Enter
+                        </kbd>{' '}
+                        Auswählen/Bestätigen
                     </span>
                     <span className="text-muted-foreground">
-                        <kbd className="bg-background rounded border px-1.5 py-0.5">1-5</kbd> Condition
+                        <kbd className="rounded border bg-background px-1.5 py-0.5">
+                            1-5
+                        </kbd>{' '}
+                        Condition
                     </span>
                     <span className="text-muted-foreground">
-                        <kbd className="bg-background rounded border px-1.5 py-0.5">Esc</kbd> Abbrechen
+                        <kbd className="rounded border bg-background px-1.5 py-0.5">
+                            Esc
+                        </kbd>{' '}
+                        Abbrechen
                     </span>
                     <span className="text-muted-foreground">
-                        <kbd className="bg-background rounded border px-1.5 py-0.5">/</kbd> Suche fokussieren
+                        <kbd className="rounded border bg-background px-1.5 py-0.5">
+                            /
+                        </kbd>{' '}
+                        Suche fokussieren
                     </span>
                 </div>
             </div>
@@ -683,14 +854,22 @@ export default function QuickAddIndex({
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Karton (optional)</Label>
-                            <Select value={newLotBoxId} onValueChange={setNewLotBoxId}>
+                            <Select
+                                value={newLotBoxId}
+                                onValueChange={setNewLotBoxId}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Kein Karton" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Kein Karton</SelectItem>
+                                    <SelectItem value="">
+                                        Kein Karton
+                                    </SelectItem>
                                     {boxes.map((box) => (
-                                        <SelectItem key={box.id} value={box.id.toString()}>
+                                        <SelectItem
+                                            key={box.id}
+                                            value={box.id.toString()}
+                                        >
                                             {box.name}
                                         </SelectItem>
                                     ))}
@@ -699,7 +878,10 @@ export default function QuickAddIndex({
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCreateLot(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCreateLot(false)}
+                        >
                             Abbrechen
                         </Button>
                         <Button onClick={handleCreateLot}>Lot erstellen</Button>

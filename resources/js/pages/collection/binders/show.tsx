@@ -207,7 +207,7 @@ function DraggableFullCard({
                 <div className="pointer-events-none absolute right-1 bottom-1 left-1 z-[55]">
                     <Badge
                         variant="secondary"
-                        className="block max-w-full truncate bg-amber-500/90 px-1.5 py-0.5 text-[10px] text-white shadow"
+                        className="block max-w-full truncate bg-warning/90 px-1.5 py-0.5 text-3xs text-white shadow"
                     >
                         {deckNames.join(', ')}
                     </Badge>
@@ -233,7 +233,7 @@ function DraggableFullCard({
                             e.stopPropagation();
                             onRemove(card.id);
                         }}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-transform hover:scale-110"
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-white shadow-lg transition-transform hover:scale-110"
                     >
                         <Trash2 className="h-4 w-4" />
                     </button>
@@ -316,7 +316,7 @@ function StackedCards({
 
                 {/* Card count badge */}
                 {cards.length > 1 && (
-                    <div className="absolute top-0 right-0 z-[60] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
+                    <div className="absolute top-0 right-0 z-[60] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-3xs font-bold text-primary-foreground shadow">
                         {cards.length}
                     </div>
                 )}
@@ -901,7 +901,7 @@ export default function BinderShow({
                                             return (
                                                 <div
                                                     key={slot}
-                                                    className={`relative flex aspect-[2.5/3.5] flex-col overflow-hidden rounded-lg border-2 transition-all ${ts.owned ? 'border-green-500/70' : 'border-border'}`}
+                                                    className={`relative flex aspect-[2.5/3.5] flex-col overflow-hidden rounded-lg border-2 transition-all ${ts.owned ? 'border-success/70' : 'border-border'}`}
                                                     title={`#${ts.printing.collector_number} · ${ts.printing.name ?? ''}`}
                                                 >
                                                     {ts.printing.image_url ? (
@@ -935,7 +935,7 @@ export default function BinderShow({
                                                             </span>
                                                             {ts.printing
                                                                 .rarity_label && (
-                                                                <span className="text-[10px] text-muted-foreground uppercase">
+                                                                <span className="text-3xs text-muted-foreground uppercase">
                                                                     {
                                                                         ts
                                                                             .printing
@@ -945,7 +945,7 @@ export default function BinderShow({
                                                             )}
                                                         </div>
                                                     )}
-                                                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-3xs font-bold text-white">
                                                         #
                                                         {
                                                             ts.printing
@@ -953,14 +953,14 @@ export default function BinderShow({
                                                         }
                                                     </span>
                                                     {ts.owned ? (
-                                                        <span className="absolute top-1 right-1 flex items-center gap-0.5 rounded bg-green-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                        <span className="absolute top-1 right-1 flex items-center gap-0.5 rounded bg-success px-1.5 py-0.5 text-3xs font-bold text-white">
                                                             <Check className="h-3 w-3" />
                                                             {ts.quantity > 1
                                                                 ? `${ts.quantity}x`
                                                                 : ''}
                                                         </span>
                                                     ) : (
-                                                        <span className="absolute top-1 right-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                        <span className="absolute top-1 right-1 rounded bg-muted px-1.5 py-0.5 text-3xs font-medium text-muted-foreground">
                                                             fehlt
                                                         </span>
                                                     )}

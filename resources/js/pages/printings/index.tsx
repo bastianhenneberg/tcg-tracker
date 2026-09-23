@@ -1,5 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { DataTable, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
+import {
+    DataTable,
+    type ColumnDef,
+    type PaginatedData,
+} from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -49,7 +53,7 @@ export default function PrintingsIndex({
         router.get(
             `${baseUrl}/printings`,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -62,7 +66,7 @@ export default function PrintingsIndex({
         router.get(
             `${baseUrl}/printings`,
             { ...filters, [key]: value || undefined, page: undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     };
 
@@ -88,8 +92,10 @@ export default function PrintingsIndex({
                                 />
                             )}
                             <div>
-                                <p className="font-medium">{printing.card?.name}</p>
-                                <p className="text-muted-foreground text-sm">
+                                <p className="font-medium">
+                                    {printing.card?.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
                                     #{printing.collector_number}
                                 </p>
                             </div>
@@ -125,16 +131,19 @@ export default function PrintingsIndex({
                 accessorKey: 'finish',
                 header: 'Finish',
                 cell: ({ row }) =>
-                    row.original.finish_label && row.original.finish !== 'standard' ? (
+                    row.original.finish_label &&
+                    row.original.finish !== 'standard' ? (
                         <Badge variant="secondary" className="text-xs">
                             {row.original.finish_label}
                         </Badge>
                     ) : (
-                        <span className="text-muted-foreground text-sm">Standard</span>
+                        <span className="text-sm text-muted-foreground">
+                            Standard
+                        </span>
                     ),
             },
         ],
-        []
+        [],
     );
 
     return (
@@ -143,7 +152,9 @@ export default function PrintingsIndex({
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-2xl font-bold">{game.name} - Printings</h1>
+                    <h1 className="text-2xl font-bold">
+                        {game.name} - Printings
+                    </h1>
                 </div>
 
                 {/* Filters */}
@@ -162,16 +173,24 @@ export default function PrintingsIndex({
                             <Select
                                 value={filters.set ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('set', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'set',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[200px]">
                                     <SelectValue placeholder="Alle Sets" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Sets</SelectItem>
+                                    <SelectItem value="all">
+                                        Alle Sets
+                                    </SelectItem>
                                     {sets.map((set) => (
-                                        <SelectItem key={set.id} value={set.id.toString()}>
+                                        <SelectItem
+                                            key={set.id}
+                                            value={set.id.toString()}
+                                        >
                                             [{set.code}] {set.name}
                                         </SelectItem>
                                     ))}
@@ -183,19 +202,26 @@ export default function PrintingsIndex({
                             <Select
                                 value={filters.rarity ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('rarity', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'rarity',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Alle Seltenheiten" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Seltenheiten</SelectItem>
-                                    {Object.entries(rarities).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Seltenheiten
+                                    </SelectItem>
+                                    {Object.entries(rarities).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -204,19 +230,26 @@ export default function PrintingsIndex({
                             <Select
                                 value={filters.finish ?? 'all'}
                                 onValueChange={(value) =>
-                                    handleFilterChange('finish', value === 'all' ? undefined : value)
+                                    handleFilterChange(
+                                        'finish',
+                                        value === 'all' ? undefined : value,
+                                    )
                                 }
                             >
                                 <SelectTrigger className="w-[140px]">
                                     <SelectValue placeholder="Alle Finishes" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Alle Finishes</SelectItem>
-                                    {Object.entries(foilings).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="all">
+                                        Alle Finishes
+                                    </SelectItem>
+                                    {Object.entries(foilings).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}
@@ -230,7 +263,9 @@ export default function PrintingsIndex({
                     emptyState={
                         <div className="flex flex-col items-center justify-center py-12">
                             <Sparkles className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="mt-2 text-muted-foreground">Keine Printings gefunden</p>
+                            <p className="mt-2 text-muted-foreground">
+                                Keine Printings gefunden
+                            </p>
                         </div>
                     }
                 />

@@ -10,7 +10,11 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { type UnifiedInventory } from '@/types/unified';
@@ -26,7 +30,14 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Eye, GripVertical, Plus, Search, Trash2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    Eye,
+    GripVertical,
+    Plus,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDebouncedCallback } from 'use-debounce';
@@ -56,20 +67,15 @@ function DraggableHeaderStrip({
     onRemove: (id: number) => void;
     isDragging?: boolean;
 }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-    } = useSortable({
-        id: `card-${card.id}`,
-        data: {
-            type: 'card',
-            card,
-            slot: card.binder_slot,
-        },
-    });
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({
+            id: `card-${card.id}`,
+            data: {
+                type: 'card',
+                card,
+                slot: card.binder_slot,
+            },
+        });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -84,7 +90,7 @@ function DraggableHeaderStrip({
             ref={setNodeRef}
             style={style}
             className={`relative h-7 overflow-hidden rounded-t transition-all ${
-                isHovered ? 'ring-2 ring-primary z-10' : ''
+                isHovered ? 'z-10 ring-2 ring-primary' : ''
             } ${isInDeck ? 'opacity-50 grayscale' : ''}`}
             onMouseEnter={() => onHover(card.id)}
             onMouseLeave={() => {
@@ -101,8 +107,8 @@ function DraggableHeaderStrip({
                     style={{ height: '200px', marginTop: '0' }}
                 />
             ) : (
-                <div className="flex h-full w-full items-center justify-center bg-zinc-800 px-2">
-                    <span className="truncate text-[10px] font-medium text-white">
+                <div className="flex h-full w-full items-center justify-center bg-muted px-2">
+                    <span className="truncate text-3xs font-medium text-white">
                         {card.printing?.card?.name ?? 'Karte'}
                     </span>
                 </div>
@@ -131,7 +137,7 @@ function DraggableHeaderStrip({
                             e.stopPropagation();
                             onRemove(card.id);
                         }}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white shadow"
                     >
                         <Trash2 className="h-3 w-3" />
                     </button>
@@ -159,20 +165,15 @@ function DraggableMainCard({
     onRemove: (id: number) => void;
     isDragging?: boolean;
 }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-    } = useSortable({
-        id: `card-${card.id}`,
-        data: {
-            type: 'card',
-            card,
-            slot: card.binder_slot,
-        },
-    });
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({
+            id: `card-${card.id}`,
+            data: {
+                type: 'card',
+                card,
+                slot: card.binder_slot,
+            },
+        });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -187,7 +188,7 @@ function DraggableMainCard({
         <div
             ref={setNodeRef}
             style={style}
-            className="relative flex-1 min-h-0"
+            className="relative min-h-0 flex-1"
             onMouseEnter={() => onHover(card.id)}
             onMouseLeave={() => {
                 onHover(null);
@@ -203,9 +204,11 @@ function DraggableMainCard({
                     } ${isInDeck ? 'opacity-50 grayscale' : ''}`}
                 />
             ) : (
-                <div className={`bg-muted text-muted-foreground flex h-full w-full items-center justify-center rounded-lg text-center text-xs shadow-md ${
-                    isHovered ? 'shadow-xl ring-2 ring-primary' : ''
-                } ${isInDeck ? 'opacity-50 grayscale' : ''}`}>
+                <div
+                    className={`flex h-full w-full items-center justify-center rounded-lg bg-muted text-center text-xs text-muted-foreground shadow-md ${
+                        isHovered ? 'shadow-xl ring-2 ring-primary' : ''
+                    } ${isInDeck ? 'opacity-50 grayscale' : ''}`}
+                >
                     {card.printing?.card?.name}
                 </div>
             )}
@@ -215,7 +218,10 @@ function DraggableMainCard({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <div className="absolute bottom-1 left-1 z-[55]">
-                            <Badge variant="secondary" className="bg-amber-500/90 text-white text-[9px] px-1 py-0 shadow">
+                            <Badge
+                                variant="secondary"
+                                className="bg-warning/90 px-1 py-0 text-3xs text-white shadow"
+                            >
                                 Im Deck
                             </Badge>
                         </div>
@@ -228,7 +234,7 @@ function DraggableMainCard({
 
             {/* Hover overlay with controls */}
             {isHovered && !isDragging && (
-                <div className="absolute right-1 top-1 flex gap-1">
+                <div className="absolute top-1 right-1 flex gap-1">
                     <button
                         {...attributes}
                         {...listeners}
@@ -249,7 +255,7 @@ function DraggableMainCard({
                             e.stopPropagation();
                             onRemove(card.id);
                         }}
-                        className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-lg transition-transform hover:scale-110"
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-lg transition-transform hover:scale-110"
                     >
                         <Trash2 className="h-3 w-3" />
                     </button>
@@ -268,12 +274,18 @@ interface StackedCardsProps {
     activeCardId: number | null;
 }
 
-function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, activeCardId }: StackedCardsProps) {
+function StackedCards({
+    cards,
+    onRemoveCard,
+    isFull,
+    onSlotClick,
+    activeCardId,
+}: StackedCardsProps) {
     const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
     const [previewState, setPreviewState] = useState<PreviewState | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const calculatePreviewPosition = useCallback((card: UnifiedInventory) => {
+    const calculatePreviewPosition = useCallback(() => {
         if (!containerRef.current) return null;
 
         const rect = containerRef.current.getBoundingClientRect();
@@ -302,19 +314,22 @@ function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, ac
         return { left, top };
     }, []);
 
-    const handleShowPreview = useCallback((card: UnifiedInventory) => {
-        if (!card.printing?.image_url) return;
+    const handleShowPreview = useCallback(
+        (card: UnifiedInventory) => {
+            if (!card.printing?.image_url) return;
 
-        const position = calculatePreviewPosition(card);
-        if (position) {
-            setPreviewState({
-                cardId: card.id,
-                imageUrl: card.printing.image_url,
-                cardName: card.printing.card?.name ?? '',
-                position,
-            });
-        }
-    }, [calculatePreviewPosition]);
+            const position = calculatePreviewPosition();
+            if (position) {
+                setPreviewState({
+                    cardId: card.id,
+                    imageUrl: card.printing.image_url,
+                    cardName: card.printing.card?.name ?? '',
+                    position,
+                });
+            }
+        },
+        [calculatePreviewPosition],
+    );
 
     const handleHidePreview = useCallback(() => {
         setPreviewState(null);
@@ -325,10 +340,13 @@ function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, ac
     const extraCards = cards.slice(1);
 
     return (
-        <div ref={containerRef} className="group relative flex h-full w-full flex-col p-1.5">
+        <div
+            ref={containerRef}
+            className="group relative flex h-full w-full flex-col p-1.5"
+        >
             {/* Header strips for extra cards (stacked at top) */}
             {extraCards.length > 0 && (
-                <div className="flex flex-col gap-px mb-1">
+                <div className="mb-1 flex flex-col gap-px">
                     {extraCards.map((card) => (
                         <DraggableHeaderStrip
                             key={card.id}
@@ -359,7 +377,7 @@ function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, ac
 
             {/* Card Count Badge */}
             {cards.length > 1 && (
-                <div className="absolute left-1 top-1 z-[60] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
+                <div className="absolute top-1 left-1 z-[60] flex h-5 w-5 items-center justify-center rounded-full bg-primary text-3xs font-bold text-primary-foreground shadow">
                     {cards.length}
                 </div>
             )}
@@ -367,7 +385,7 @@ function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, ac
             {/* Add more button */}
             {!isFull && (
                 <button
-                    className="absolute bottom-1.5 right-1.5 z-[60] flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow transition-all hover:scale-110 group-hover:opacity-100"
+                    className="absolute right-1.5 bottom-1.5 z-[60] flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow transition-all group-hover:opacity-100 hover:scale-110"
                     onClick={(e) => {
                         e.stopPropagation();
                         onSlotClick();
@@ -378,24 +396,26 @@ function StackedCards({ cards, slotNumber, onRemoveCard, isFull, onSlotClick, ac
             )}
 
             {/* Hover preview - rendered via portal */}
-            {previewState && typeof document !== 'undefined' && createPortal(
-                <div
-                    className="pointer-events-none"
-                    style={{
-                        position: 'fixed',
-                        left: previewState.position.left,
-                        top: previewState.position.top,
-                        zIndex: 9999,
-                    }}
-                >
-                    <img
-                        src={previewState.imageUrl}
-                        alt={previewState.cardName}
-                        className="w-64 h-auto rounded-lg shadow-2xl ring-2 ring-white/20"
-                    />
-                </div>,
-                document.body
-            )}
+            {previewState &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                    <div
+                        className="pointer-events-none"
+                        style={{
+                            position: 'fixed',
+                            left: previewState.position.left,
+                            top: previewState.position.top,
+                            zIndex: 9999,
+                        }}
+                    >
+                        <img
+                            src={previewState.imageUrl}
+                            alt={previewState.cardName}
+                            className="h-auto w-64 rounded-lg shadow-2xl ring-2 ring-white/20"
+                        />
+                    </div>,
+                    document.body,
+                )}
         </div>
     );
 }
@@ -410,17 +430,20 @@ interface DroppableSlotProps {
     activeCardId: number | null;
 }
 
-function DroppableSlot({ slotNumber, cards, isFull, isOver, onSlotClick, onRemoveCard, activeCardId }: DroppableSlotProps) {
+function DroppableSlot({
+    slotNumber,
+    cards,
+    isFull,
+    isOver,
+    onSlotClick,
+    onRemoveCard,
+    activeCardId,
+}: DroppableSlotProps) {
     const hasCards = cards.length > 0;
 
     return (
         <div
-            className={`
-                relative aspect-[2.5/3.5] overflow-hidden rounded-lg border-2 transition-all
-                ${hasCards ? 'border-border bg-card' : 'border-dashed border-muted-foreground/30 bg-muted/20'}
-                ${!isFull ? 'cursor-pointer hover:border-primary hover:bg-muted/40' : ''}
-                ${isOver && !isFull ? 'border-primary bg-primary/10 ring-2 ring-primary' : ''}
-            `}
+            className={`relative aspect-[2.5/3.5] overflow-hidden rounded-lg border-2 transition-all ${hasCards ? 'border-border bg-card' : 'border-dashed border-muted-foreground/30 bg-muted/20'} ${!isFull ? 'cursor-pointer hover:border-primary hover:bg-muted/40' : ''} ${isOver && !isFull ? 'border-primary bg-primary/10 ring-2 ring-primary' : ''} `}
             onClick={() => !hasCards && onSlotClick()}
             data-slot={slotNumber}
         >
@@ -435,8 +458,10 @@ function DroppableSlot({ slotNumber, cards, isFull, isOver, onSlotClick, onRemov
                 />
             ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-                    <Plus className="text-muted-foreground/50 h-8 w-8" />
-                    <span className="text-muted-foreground/50 text-xs">Slot {slotNumber}</span>
+                    <Plus className="h-8 w-8 text-muted-foreground/50" />
+                    <span className="text-xs text-muted-foreground/50">
+                        Slot {slotNumber}
+                    </span>
                 </div>
             )}
         </div>
@@ -466,7 +491,9 @@ const MAX_CARDS_PER_SLOT = 4;
 export default function BinderPageShow({ binderPage, binder, slots }: Props) {
     const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
     const [showCardPicker, setShowCardPicker] = useState(false);
-    const [availableCards, setAvailableCards] = useState<UnifiedInventory[]>([]);
+    const [availableCards, setAvailableCards] = useState<UnifiedInventory[]>(
+        [],
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [activeCard, setActiveCard] = useState<UnifiedInventory | null>(null);
@@ -477,13 +504,16 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
             activationConstraint: {
                 distance: 8,
             },
-        })
+        }),
     );
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Ordner', href: '/binders' },
         { title: binder.name, href: `/binders/${binder.id}` },
-        { title: `Seite ${binderPage.page_number}`, href: `/binder-pages/${binderPage.id}` },
+        {
+            title: `Seite ${binderPage.page_number}`,
+            href: `/binder-pages/${binderPage.id}`,
+        },
     ];
 
     const gridSlots = Array.from({ length: 9 }, (_, i) => i + 1);
@@ -494,12 +524,15 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
             const params = new URLSearchParams();
             if (search) params.set('search', search);
 
-            const response = await fetch(`/binder-pages/${binderPage.id}/available-cards?${params.toString()}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
+            const response = await fetch(
+                `/binder-pages/${binderPage.id}/available-cards?${params.toString()}`,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
                 },
-            });
+            );
             const data = await response.json();
             setAvailableCards(data.cards.data);
         } catch (error) {
@@ -535,12 +568,14 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                     setSelectedSlot(null);
                     setSearchQuery('');
                 },
-            }
+            },
         );
     };
 
     const handleRemoveCard = (inventoryId: number) => {
-        router.post(`/binder-pages/${binderPage.id}/remove`, { inventory_id: inventoryId });
+        router.post(`/binder-pages/${binderPage.id}/remove`, {
+            inventory_id: inventoryId,
+        });
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -619,7 +654,9 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href={`/binders/${binder.id}?page=${binderPage.page_number}`}>
+                        <Link
+                            href={`/binders/${binder.id}?page=${binderPage.page_number}`}
+                        >
                             <Button variant="outline" size="icon">
                                 <ArrowLeft className="h-4 w-4" />
                             </Button>
@@ -628,8 +665,9 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                             <h1 className="text-2xl font-bold">
                                 {binder.name} - Seite {binderPage.page_number}
                             </h1>
-                            <p className="text-muted-foreground text-sm">
-                                Ziehe Karten zwischen Slots oder klicke um neue hinzuzufügen (max. 4 pro Slot)
+                            <p className="text-sm text-muted-foreground">
+                                Ziehe Karten zwischen Slots oder klicke um neue
+                                hinzuzufügen (max. 4 pro Slot)
                             </p>
                         </div>
                     </div>
@@ -647,7 +685,8 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                             <div className="grid grid-cols-3 gap-4">
                                 {gridSlots.map((slot) => {
                                     const slotCards = slots[slot] || [];
-                                    const isFull = slotCards.length >= MAX_CARDS_PER_SLOT;
+                                    const isFull =
+                                        slotCards.length >= MAX_CARDS_PER_SLOT;
 
                                     return (
                                         <DroppableSlot
@@ -656,9 +695,13 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                                             cards={slotCards}
                                             isFull={isFull}
                                             isOver={overSlot === slot}
-                                            onSlotClick={() => handleSlotClick(slot)}
+                                            onSlotClick={() =>
+                                                handleSlotClick(slot)
+                                            }
                                             onRemoveCard={handleRemoveCard}
-                                            activeCardId={activeCard?.id ?? null}
+                                            activeCardId={
+                                                activeCard?.id ?? null
+                                            }
                                         />
                                     );
                                 })}
@@ -670,13 +713,22 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                                     <div className="h-32 w-24 rounded-lg shadow-2xl ring-2 ring-primary">
                                         {activeCard.printing?.image_url ? (
                                             <img
-                                                src={activeCard.printing.image_url}
-                                                alt={activeCard.printing.card?.name ?? ''}
+                                                src={
+                                                    activeCard.printing
+                                                        .image_url
+                                                }
+                                                alt={
+                                                    activeCard.printing.card
+                                                        ?.name ?? ''
+                                                }
                                                 className="h-full w-full rounded-lg object-cover"
                                             />
                                         ) : (
-                                            <div className="bg-muted text-muted-foreground flex h-full w-full items-center justify-center rounded-lg text-xs">
-                                                {activeCard.printing?.card?.name}
+                                            <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+                                                {
+                                                    activeCard.printing?.card
+                                                        ?.name
+                                                }
                                             </div>
                                         )}
                                     </div>
@@ -691,19 +743,24 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
             <Dialog open={showCardPicker} onOpenChange={setShowCardPicker}>
                 <DialogContent className="max-h-[80vh] max-w-2xl overflow-hidden">
                     <DialogHeader>
-                        <DialogTitle>Karte für Slot {selectedSlot} auswählen</DialogTitle>
+                        <DialogTitle>
+                            Karte für Slot {selectedSlot} auswählen
+                        </DialogTitle>
                         <DialogDescription>
-                            Wähle eine Karte aus deiner Sammlung aus. (Max. 4 Karten pro Slot)
+                            Wähle eine Karte aus deiner Sammlung aus. (Max. 4
+                            Karten pro Slot)
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
                         <div className="relative">
-                            <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Karte suchen..."
                                 value={searchQuery}
-                                onChange={(e) => handleSearchChange(e.target.value)}
+                                onChange={(e) =>
+                                    handleSearchChange(e.target.value)
+                                }
                                 className="pl-9"
                             />
                         </div>
@@ -711,15 +768,18 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                         <div className="max-h-[400px] overflow-y-auto">
                             {loading ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="text-muted-foreground">Laden...</div>
+                                    <div className="text-muted-foreground">
+                                        Laden...
+                                    </div>
                                 </div>
                             ) : availableCards.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-8">
                                     <p className="text-muted-foreground">
                                         Keine verfügbaren Karten gefunden.
                                     </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        Füge zuerst Karten zu deiner Sammlung hinzu.
+                                    <p className="text-sm text-muted-foreground">
+                                        Füge zuerst Karten zu deiner Sammlung
+                                        hinzu.
                                     </p>
                                 </div>
                             ) : (
@@ -727,24 +787,34 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                                     {availableCards.map((card) => (
                                         <button
                                             key={card.id}
-                                            onClick={() => handleAssignCard(card.id)}
+                                            onClick={() =>
+                                                handleAssignCard(card.id)
+                                            }
                                             className="group relative rounded-lg border p-2 transition-colors hover:border-primary hover:bg-muted"
                                         >
                                             {card.printing?.image_url ? (
                                                 <img
-                                                    src={card.printing.image_url}
-                                                    alt={card.printing.card?.name ?? ''}
+                                                    src={
+                                                        card.printing.image_url
+                                                    }
+                                                    alt={
+                                                        card.printing.card
+                                                            ?.name ?? ''
+                                                    }
                                                     className="aspect-[2.5/3.5] w-full rounded object-cover"
                                                 />
                                             ) : (
-                                                <div className="bg-muted flex aspect-[2.5/3.5] items-center justify-center rounded">
-                                                    <span className="text-muted-foreground text-xs">
-                                                        {card.printing?.card?.name}
+                                                <div className="flex aspect-[2.5/3.5] items-center justify-center rounded bg-muted">
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {
+                                                            card.printing?.card
+                                                                ?.name
+                                                        }
                                                     </span>
                                                 </div>
                                             )}
                                             {card.quantity > 1 && (
-                                                <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
+                                                <span className="absolute top-1 right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
                                                     {card.quantity}x
                                                 </span>
                                             )}
@@ -759,7 +829,10 @@ export default function BinderPageShow({ binderPage, binder, slots }: Props) {
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCardPicker(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCardPicker(false)}
+                        >
                             Abbrechen
                         </Button>
                     </DialogFooter>

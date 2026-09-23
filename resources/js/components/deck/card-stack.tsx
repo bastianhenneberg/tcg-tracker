@@ -14,18 +14,6 @@ interface CardStackProps {
 }
 
 // Group cards by printing_id for stacking same cards
-function groupCardsByPrinting(cards: DeckCard[]): Map<number, DeckCard[]> {
-    const grouped = new Map<number, DeckCard[]>();
-    cards.forEach((card) => {
-        const existing = grouped.get(card.printing_id);
-        if (existing) {
-            existing.push(card);
-        } else {
-            grouped.set(card.printing_id, [card]);
-        }
-    });
-    return grouped;
-}
 
 interface SingleCardStackProps {
     card: DeckCard;
@@ -34,7 +22,12 @@ interface SingleCardStackProps {
     onQuantityChange?: (card: DeckCard, delta: number) => void;
 }
 
-function SingleCardStack({ card, totalQuantity, onRemove, onQuantityChange }: SingleCardStackProps) {
+function SingleCardStack({
+    card,
+    totalQuantity,
+    onRemove,
+    onQuantityChange,
+}: SingleCardStackProps) {
     const [isHovered, setIsHovered] = useState(false);
     const printing = card.printing;
     if (!printing) return null;
@@ -56,7 +49,7 @@ function SingleCardStack({ card, totalQuantity, onRemove, onQuantityChange }: Si
             <div
                 className={cn(
                     'absolute inset-0 flex flex-col items-center justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 transition-opacity duration-200',
-                    isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    isHovered ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
             >
                 {/* Card Name */}
@@ -110,7 +103,12 @@ function SingleCardStack({ card, totalQuantity, onRemove, onQuantityChange }: Si
     );
 }
 
-export function CardStack({ cards, onRemove, onQuantityChange, className }: CardStackProps) {
+export function CardStack({
+    cards,
+    onRemove,
+    onQuantityChange,
+    className,
+}: CardStackProps) {
     const [scrollIndex, setScrollIndex] = useState(0);
     const visibleCount = 8; // Number of visible cards before showing navigation
 
@@ -137,8 +135,10 @@ export function CardStack({ cards, onRemove, onQuantityChange, className }: Card
                 <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute -left-3 top-1/2 z-20 h-6 w-6 -translate-y-1/2 shadow-md"
-                    onClick={() => setScrollIndex((prev) => Math.max(0, prev - 4))}
+                    className="absolute top-1/2 -left-3 z-20 h-6 w-6 -translate-y-1/2 shadow-md"
+                    onClick={() =>
+                        setScrollIndex((prev) => Math.max(0, prev - 4))
+                    }
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -158,22 +158,35 @@ export function CardStack({ cards, onRemove, onQuantityChange, className }: Card
             </div>
 
             {/* Navigation - Next */}
-            {showNavigation && scrollIndex + visibleCount < sortedCards.length && (
-                <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute -right-3 top-1/2 z-20 h-6 w-6 -translate-y-1/2 shadow-md"
-                    onClick={() => setScrollIndex((prev) => Math.min(sortedCards.length - visibleCount, prev + 4))}
-                >
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            )}
+            {showNavigation &&
+                scrollIndex + visibleCount < sortedCards.length && (
+                    <Button
+                        variant="secondary"
+                        size="icon"
+                        className="absolute top-1/2 -right-3 z-20 h-6 w-6 -translate-y-1/2 shadow-md"
+                        onClick={() =>
+                            setScrollIndex((prev) =>
+                                Math.min(
+                                    sortedCards.length - visibleCount,
+                                    prev + 4,
+                                ),
+                            )
+                        }
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                )}
 
             {/* Scroll indicator */}
             {showNavigation && (
                 <div className="mt-2 flex justify-center gap-1">
-                    <span className="text-muted-foreground text-xs">
-                        {scrollIndex + 1}-{Math.min(scrollIndex + visibleCount, sortedCards.length)} von {sortedCards.length}
+                    <span className="text-xs text-muted-foreground">
+                        {scrollIndex + 1}-
+                        {Math.min(
+                            scrollIndex + visibleCount,
+                            sortedCards.length,
+                        )}{' '}
+                        von {sortedCards.length}
                     </span>
                 </div>
             )}
@@ -208,7 +221,9 @@ export function VerticalCardStack({
         return nameA.localeCompare(nameB);
     });
 
-    const displayCards = isExpanded ? sortedCards : sortedCards.slice(0, maxVisible);
+    const displayCards = isExpanded
+        ? sortedCards
+        : sortedCards.slice(0, maxVisible);
     const hiddenCount = sortedCards.length - maxVisible;
 
     // Card height for overlap calculation (roughly 30% visible)
@@ -237,7 +252,7 @@ export function VerticalCardStack({
                             key={card.id}
                             className={cn(
                                 'absolute left-0 w-24 transition-all duration-200',
-                                'hover:z-30'
+                                'hover:z-30',
                             )}
                             style={{
                                 top: `${index * overlapOffset}px`,

@@ -29,7 +29,9 @@ export function ScannerSearch({
     const handleSearchKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedResultIndex((prev) => Math.min(prev + 1, searchResults.length - 1));
+            setSelectedResultIndex((prev) =>
+                Math.min(prev + 1, searchResults.length - 1),
+            );
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setSelectedResultIndex((prev) => Math.max(prev - 1, 0));
@@ -59,7 +61,9 @@ export function ScannerSearch({
                         }}
                         onKeyDown={handleSearchKeyDown}
                     />
-                    {searching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin" />}
+                    {searching && (
+                        <Loader2 className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+                    )}
                 </div>
                 {searchResults.length > 0 && (
                     <div className="max-h-64 overflow-y-auto rounded-lg border">
@@ -79,17 +83,24 @@ export function ScannerSearch({
                                     <div className="flex items-center gap-1 font-medium">
                                         {result.card_name}
                                         {result.is_custom && (
-                                            <Badge variant="secondary" className="px-1 text-[10px]">
+                                            <Badge
+                                                variant="secondary"
+                                                className="px-1 text-3xs"
+                                            >
                                                 Custom
                                             </Badge>
                                         )}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        {result.set_name} - {result.collector_number}
+                                        {result.set_name} -{' '}
+                                        {result.collector_number}
                                     </div>
                                 </div>
                                 {result.rarity && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
                                         {getRarityLabel(result.rarity)}
                                     </Badge>
                                 )}

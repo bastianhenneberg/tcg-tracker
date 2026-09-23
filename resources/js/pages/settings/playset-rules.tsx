@@ -10,7 +10,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { index as playsetRulesIndex } from '@/routes/playset-rules';
 import { type BreadcrumbItem } from '@/types';
@@ -79,22 +85,33 @@ export default function PlaysetRulesSettings({
 
     const handleGameChange = (gameId: string) => {
         const game = games.find((g) => g.id === Number(gameId));
-        router.get(playsetRulesIndex().url, {
-            game: gameId,
-            format: game?.formats[0]?.id?.toString(),
-        }, { preserveState: true });
+        router.get(
+            playsetRulesIndex().url,
+            {
+                game: gameId,
+                format: game?.formats[0]?.id?.toString(),
+            },
+            { preserveState: true },
+        );
     };
 
     const handleFormatChange = (formatId: string) => {
-        router.get(playsetRulesIndex().url, {
-            game: selectedGameId?.toString(),
-            format: formatId,
-        }, { preserveState: true });
+        router.get(
+            playsetRulesIndex().url,
+            {
+                game: selectedGameId?.toString(),
+                format: formatId,
+            },
+            { preserveState: true },
+        );
     };
 
     const handleResetDefaults = () => {
         if (!selectedFormatId) return;
-        if (!confirm('Alle Regeln für dieses Format auf Standard zurücksetzen?')) return;
+        if (
+            !confirm('Alle Regeln für dieses Format auf Standard zurücksetzen?')
+        )
+            return;
 
         router.post('/settings/playset-rules/reset', {
             game_format_id: selectedFormatId,
@@ -110,7 +127,8 @@ export default function PlaysetRulesSettings({
                     <div>
                         <h1 className="text-2xl font-bold">Playset-Regeln</h1>
                         <p className="text-muted-foreground">
-                            Definiere wie viele Kopien einer Karte ein vollständiges Playset bilden
+                            Definiere wie viele Kopien einer Karte ein
+                            vollständiges Playset bilden
                         </p>
                     </div>
                 </div>
@@ -128,7 +146,10 @@ export default function PlaysetRulesSettings({
                             </SelectTrigger>
                             <SelectContent>
                                 {games.map((game) => (
-                                    <SelectItem key={game.id} value={game.id.toString()}>
+                                    <SelectItem
+                                        key={game.id}
+                                        value={game.id.toString()}
+                                    >
                                         {game.name}
                                     </SelectItem>
                                 ))}
@@ -148,7 +169,10 @@ export default function PlaysetRulesSettings({
                             </SelectTrigger>
                             <SelectContent>
                                 {selectedGame?.formats.map((format) => (
-                                    <SelectItem key={format.id} value={format.id.toString()}>
+                                    <SelectItem
+                                        key={format.id}
+                                        value={format.id.toString()}
+                                    >
                                         {format.name}
                                     </SelectItem>
                                 ))}
@@ -182,7 +206,8 @@ export default function PlaysetRulesSettings({
                         <div className="space-y-3">
                             {rules.length === 0 ? (
                                 <p className="py-8 text-center text-muted-foreground">
-                                    Keine Regeln definiert. Die Standard-Regel gilt.
+                                    Keine Regeln definiert. Die Standard-Regel
+                                    gilt.
                                 </p>
                             ) : (
                                 rules.map((rule) => (
@@ -193,8 +218,14 @@ export default function PlaysetRulesSettings({
                                         operators={operators}
                                         onEdit={() => setEditingRule(rule)}
                                         onDelete={() => {
-                                            if (confirm('Regel wirklich löschen?')) {
-                                                router.delete(`/settings/playset-rules/${rule.id}`);
+                                            if (
+                                                confirm(
+                                                    'Regel wirklich löschen?',
+                                                )
+                                            ) {
+                                                router.delete(
+                                                    `/settings/playset-rules/${rule.id}`,
+                                                );
                                             }
                                         }}
                                     />
@@ -204,13 +235,17 @@ export default function PlaysetRulesSettings({
 
                         <div className="rounded-lg border border-dashed p-4">
                             <p className="text-sm text-muted-foreground">
-                                <strong>Wie funktionieren Playset-Regeln?</strong>
+                                <strong>
+                                    Wie funktionieren Playset-Regeln?
+                                </strong>
                                 <br />
-                                Regeln werden nach Priorität (höchste zuerst) ausgewertet.
-                                Die erste passende Regel bestimmt die maximale Anzahl Kopien.
+                                Regeln werden nach Priorität (höchste zuerst)
+                                ausgewertet. Die erste passende Regel bestimmt
+                                die maximale Anzahl Kopien.
                                 <br />
-                                Beispiel: Eine Regel mit Priorität 10 für &quot;Legendary&quot; Karten (max 1)
-                                wird vor der Default-Regel (Priorität 0, max 3) geprüft.
+                                Beispiel: Eine Regel mit Priorität 10 für
+                                &quot;Legendary&quot; Karten (max 1) wird vor
+                                der Default-Regel (Priorität 0, max 3) geprüft.
                             </p>
                         </div>
                     </>
@@ -259,7 +294,11 @@ function RuleCard({
                 {conditions.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                         {conditions.map((cond, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
+                            <Badge
+                                key={i}
+                                variant="outline"
+                                className="text-xs"
+                            >
                                 {conditionFields[cond.field] ?? cond.field}{' '}
                                 {operators[cond.operator] ?? cond.operator}{' '}
                                 &quot;{cond.value}&quot;
@@ -330,18 +369,27 @@ function RuleDialog({
     };
 
     const addCondition = () => {
-        const newRules = [...(data.conditions.rules ?? []), { field: 'rarity', operator: 'equals', value: '' }];
+        const newRules = [
+            ...(data.conditions.rules ?? []),
+            { field: 'rarity', operator: 'equals', value: '' },
+        ];
         setData('conditions', { ...data.conditions, rules: newRules });
     };
 
-    const updateCondition = (index: number, field: keyof RuleCondition, value: string) => {
+    const updateCondition = (
+        index: number,
+        field: keyof RuleCondition,
+        value: string,
+    ) => {
         const newRules = [...(data.conditions.rules ?? [])];
         newRules[index] = { ...newRules[index], [field]: value };
         setData('conditions', { ...data.conditions, rules: newRules });
     };
 
     const removeCondition = (index: number) => {
-        const newRules = (data.conditions.rules ?? []).filter((_, i) => i !== index);
+        const newRules = (data.conditions.rules ?? []).filter(
+            (_, i) => i !== index,
+        );
         setData('conditions', { ...data.conditions, rules: newRules });
     };
 
@@ -349,9 +397,14 @@ function RuleDialog({
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Regel bearbeiten' : 'Neue Regel erstellen'}</DialogTitle>
+                    <DialogTitle>
+                        {isEditing
+                            ? 'Regel bearbeiten'
+                            : 'Neue Regel erstellen'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Definiere wann diese Regel angewendet wird und wie viele Kopien erlaubt sind.
+                        Definiere wann diese Regel angewendet wird und wie viele
+                        Kopien erlaubt sind.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -362,7 +415,9 @@ function RuleDialog({
                             <Input
                                 id="name"
                                 value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
+                                onChange={(e) =>
+                                    setData('name', e.target.value)
+                                }
                                 placeholder="z.B. Legendary Equipment"
                                 required
                             />
@@ -375,21 +430,30 @@ function RuleDialog({
                                 min={0}
                                 max={99}
                                 value={data.max_copies}
-                                onChange={(e) => setData('max_copies', Number(e.target.value))}
+                                onChange={(e) =>
+                                    setData(
+                                        'max_copies',
+                                        Number(e.target.value),
+                                    )
+                                }
                                 required
                             />
                         </div>
                     </div>
 
                     <div>
-                        <Label htmlFor="priority">Priorität (höher = wird zuerst geprüft)</Label>
+                        <Label htmlFor="priority">
+                            Priorität (höher = wird zuerst geprüft)
+                        </Label>
                         <Input
                             id="priority"
                             type="number"
                             min={0}
                             max={100}
                             value={data.priority}
-                            onChange={(e) => setData('priority', Number(e.target.value))}
+                            onChange={(e) =>
+                                setData('priority', Number(e.target.value))
+                            }
                         />
                     </div>
 
@@ -397,7 +461,12 @@ function RuleDialog({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <Label>Bedingungen</Label>
-                            <Button type="button" variant="outline" size="sm" onClick={addCondition}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={addCondition}
+                            >
                                 <Plus className="mr-1 h-3 w-3" />
                                 Bedingung
                             </Button>
@@ -405,70 +474,119 @@ function RuleDialog({
 
                         {(data.conditions.rules ?? []).length > 0 && (
                             <div className="space-y-2">
-                                {(data.conditions.rules ?? []).map((cond, index) => (
-                                    <div key={index} className="flex items-center gap-2">
-                                        <Select
-                                            value={cond.field}
-                                            onValueChange={(v) => updateCondition(index, 'field', v)}
+                                {(data.conditions.rules ?? []).map(
+                                    (cond, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center gap-2"
                                         >
-                                            <SelectTrigger className="w-[120px]">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(conditionFields).map(([key, label]) => (
-                                                    <SelectItem key={key} value={key}>
-                                                        {label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Select
-                                            value={cond.operator}
-                                            onValueChange={(v) => updateCondition(index, 'operator', v)}
-                                        >
-                                            <SelectTrigger className="w-[140px]">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(operators).map(([key, label]) => (
-                                                    <SelectItem key={key} value={key}>
-                                                        {label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Input
-                                            value={cond.value}
-                                            onChange={(e) => updateCondition(index, 'value', e.target.value)}
-                                            placeholder="Wert"
-                                            className="flex-1"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removeCondition(index)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                            <Select
+                                                value={cond.field}
+                                                onValueChange={(v) =>
+                                                    updateCondition(
+                                                        index,
+                                                        'field',
+                                                        v,
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.entries(
+                                                        conditionFields,
+                                                    ).map(([key, label]) => (
+                                                        <SelectItem
+                                                            key={key}
+                                                            value={key}
+                                                        >
+                                                            {label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Select
+                                                value={cond.operator}
+                                                onValueChange={(v) =>
+                                                    updateCondition(
+                                                        index,
+                                                        'operator',
+                                                        v,
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="w-[140px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.entries(
+                                                        operators,
+                                                    ).map(([key, label]) => (
+                                                        <SelectItem
+                                                            key={key}
+                                                            value={key}
+                                                        >
+                                                            {label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Input
+                                                value={cond.value}
+                                                onChange={(e) =>
+                                                    updateCondition(
+                                                        index,
+                                                        'value',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Wert"
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                    removeCondition(index)
+                                                }
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ),
+                                )}
 
                                 {(data.conditions.rules ?? []).length > 1 && (
                                     <div className="flex items-center gap-2">
-                                        <Label className="text-sm">Verknüpfung:</Label>
+                                        <Label className="text-sm">
+                                            Verknüpfung:
+                                        </Label>
                                         <Select
-                                            value={data.conditions.match_all === false ? 'or' : 'and'}
+                                            value={
+                                                data.conditions.match_all ===
+                                                false
+                                                    ? 'or'
+                                                    : 'and'
+                                            }
                                             onValueChange={(v) =>
-                                                setData('conditions', { ...data.conditions, match_all: v === 'and' })
+                                                setData('conditions', {
+                                                    ...data.conditions,
+                                                    match_all: v === 'and',
+                                                })
                                             }
                                         >
                                             <SelectTrigger className="w-[100px]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="and">UND</SelectItem>
-                                                <SelectItem value="or">ODER</SelectItem>
+                                                <SelectItem value="and">
+                                                    UND
+                                                </SelectItem>
+                                                <SelectItem value="or">
+                                                    ODER
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -478,13 +596,18 @@ function RuleDialog({
 
                         {(data.conditions.rules ?? []).length === 0 && (
                             <p className="text-sm text-muted-foreground">
-                                Ohne Bedingungen gilt diese Regel für alle Karten.
+                                Ohne Bedingungen gilt diese Regel für alle
+                                Karten.
                             </p>
                         )}
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>

@@ -11,15 +11,28 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { index as customCardsIndex } from '@/routes/custom-cards';
 import { type BreadcrumbItem } from '@/types';
-import { type PaginatedData } from '@/types/unified';
-import { getPitchColor } from '@/types/unified';
+import { getPitchColor, type PaginatedData } from '@/types/unified';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    ImagePlus,
+    Pencil,
+    Plus,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -81,18 +94,29 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CustomCardsIndex({ games, selectedGameId, cards, filters, rarities, foilings }: Props) {
+export default function CustomCardsIndex({
+    games,
+    selectedGameId,
+    cards,
+    filters,
+    rarities,
+    foilings,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingCard, setEditingCard] = useState<CustomCard | null>(null);
-    const [addPrintingToCard, setAddPrintingToCard] = useState<CustomCard | null>(null);
-    const [editingPrinting, setEditingPrinting] = useState<{ printing: CustomPrinting; card: CustomCard } | null>(null);
+    const [addPrintingToCard, setAddPrintingToCard] =
+        useState<CustomCard | null>(null);
+    const [editingPrinting, setEditingPrinting] = useState<{
+        printing: CustomPrinting;
+        card: CustomCard;
+    } | null>(null);
 
     const debouncedSearch = useDebouncedCallback((value: string) => {
         router.get(
             customCardsIndex().url,
             { game: selectedGameId?.toString(), search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -102,11 +126,20 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
     };
 
     const handleGameChange = (gameId: string) => {
-        router.get(customCardsIndex().url, { game: gameId }, { preserveState: true });
+        router.get(
+            customCardsIndex().url,
+            { game: gameId },
+            { preserveState: true },
+        );
     };
 
     const handleDeleteCard = (card: CustomCard) => {
-        if (!confirm(`"${card.name}" und alle zugehörigen Printings wirklich löschen?`)) return;
+        if (
+            !confirm(
+                `"${card.name}" und alle zugehörigen Printings wirklich löschen?`,
+            )
+        )
+            return;
         router.delete(`/custom-cards/${card.id}`);
     };
 
@@ -152,7 +185,10 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                         </SelectTrigger>
                         <SelectContent>
                             {games.map((game) => (
-                                <SelectItem key={game.id} value={game.id.toString()}>
+                                <SelectItem
+                                    key={game.id}
+                                    value={game.id.toString()}
+                                >
                                     {game.name}
                                 </SelectItem>
                             ))}
@@ -164,11 +200,17 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                 {cards.data.length === 0 ? (
                     <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed p-12">
                         <div className="text-center">
-                            <p className="text-lg font-medium">Keine eigenen Karten</p>
-                            <p className="text-muted-foreground">
-                                Du hast noch keine eigenen Karten für dieses Spiel erstellt.
+                            <p className="text-lg font-medium">
+                                Keine eigenen Karten
                             </p>
-                            <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+                            <p className="text-muted-foreground">
+                                Du hast noch keine eigenen Karten für dieses
+                                Spiel erstellt.
+                            </p>
+                            <Button
+                                className="mt-4"
+                                onClick={() => setIsCreateDialogOpen(true)}
+                            >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Erste Karte erstellen
                             </Button>
@@ -177,22 +219,36 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                 ) : (
                     <div className="space-y-4">
                         {cards.data.map((card) => (
-                            <div key={card.id} className="rounded-lg border p-4">
+                            <div
+                                key={card.id}
+                                className="rounded-lg border p-4"
+                            >
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold">{card.name}</h3>
-                                            <Badge variant="outline">{card.game.name}</Badge>
+                                            <h3 className="font-semibold">
+                                                {card.name}
+                                            </h3>
+                                            <Badge variant="outline">
+                                                {card.game.name}
+                                            </Badge>
                                         </div>
-                                        {card.types && card.types.length > 0 && (
-                                            <div className="mt-1 flex flex-wrap gap-1">
-                                                {card.types.map((type, i) => (
-                                                    <Badge key={i} variant="secondary" className="text-xs">
-                                                        {type}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        )}
+                                        {card.types &&
+                                            card.types.length > 0 && (
+                                                <div className="mt-1 flex flex-wrap gap-1">
+                                                    {card.types.map(
+                                                        (type, i) => (
+                                                            <Badge
+                                                                key={i}
+                                                                variant="secondary"
+                                                                className="text-xs"
+                                                            >
+                                                                {type}
+                                                            </Badge>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            )}
                                         {card.functional_text && (
                                             <p className="mt-2 text-sm text-muted-foreground">
                                                 {card.functional_text}
@@ -210,7 +266,9 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDeleteCard(card)}
+                                            onClick={() =>
+                                                handleDeleteCard(card)
+                                            }
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -221,11 +279,15 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                 {card.printings.length > 0 && (
                                     <div className="mt-4 border-t pt-4">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-sm font-medium">Printings</span>
+                                            <span className="text-sm font-medium">
+                                                Printings
+                                            </span>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => setAddPrintingToCard(card)}
+                                                onClick={() =>
+                                                    setAddPrintingToCard(card)
+                                                }
                                             >
                                                 <Plus className="mr-1 h-3 w-3" />
                                                 Printing
@@ -234,9 +296,12 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                         <div className="space-y-2">
                                             {card.printings.map((printing) => {
                                                 // Image priority: custom > parent > placeholder
-                                                const imageUrl = printing.image_url
-                                                    ?? card.linked_fab_card?.printings?.[0]?.image_url
-                                                    ?? null;
+                                                const imageUrl =
+                                                    printing.image_url ??
+                                                    card.linked_fab_card
+                                                        ?.printings?.[0]
+                                                        ?.image_url ??
+                                                    null;
 
                                                 return (
                                                     <div
@@ -251,25 +316,51 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                                         />
                                                         <div className="flex flex-1 items-center gap-2 text-sm">
                                                             {printing.set_name && (
-                                                                <span>{printing.set_name}</span>
+                                                                <span>
+                                                                    {
+                                                                        printing.set_name
+                                                                    }
+                                                                </span>
                                                             )}
                                                             {printing.collector_number && (
                                                                 <span className="text-muted-foreground">
-                                                                    #{printing.collector_number}
+                                                                    #
+                                                                    {
+                                                                        printing.collector_number
+                                                                    }
                                                                 </span>
                                                             )}
                                                             {printing.rarity && (
-                                                                <Badge variant="outline" className="text-xs">
-                                                                    {rarities[printing.rarity] ?? printing.rarity}
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs"
+                                                                >
+                                                                    {rarities[
+                                                                        printing
+                                                                            .rarity
+                                                                    ] ??
+                                                                        printing.rarity}
                                                                 </Badge>
                                                             )}
-                                                            {printing.foiling && printing.foiling !== 'S' && (
-                                                                <Badge variant="secondary" className="text-xs">
-                                                                    {foilings[printing.foiling] ?? printing.foiling}
-                                                                </Badge>
-                                                            )}
+                                                            {printing.foiling &&
+                                                                printing.foiling !==
+                                                                    'S' && (
+                                                                    <Badge
+                                                                        variant="secondary"
+                                                                        className="text-xs"
+                                                                    >
+                                                                        {foilings[
+                                                                            printing
+                                                                                .foiling
+                                                                        ] ??
+                                                                            printing.foiling}
+                                                                    </Badge>
+                                                                )}
                                                             {printing.image_url && (
-                                                                <Badge variant="default" className="text-xs">
+                                                                <Badge
+                                                                    variant="default"
+                                                                    className="text-xs"
+                                                                >
                                                                     Eigenes Bild
                                                                 </Badge>
                                                             )}
@@ -279,7 +370,14 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-6 w-6"
-                                                                onClick={() => setEditingPrinting({ printing, card })}
+                                                                onClick={() =>
+                                                                    setEditingPrinting(
+                                                                        {
+                                                                            printing,
+                                                                            card,
+                                                                        },
+                                                                    )
+                                                                }
                                                             >
                                                                 <Pencil className="h-3 w-3" />
                                                             </Button>
@@ -287,7 +385,11 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-6 w-6"
-                                                                onClick={() => handleDeletePrinting(printing)}
+                                                                onClick={() =>
+                                                                    handleDeletePrinting(
+                                                                        printing,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Trash2 className="h-3 w-3" />
                                                             </Button>
@@ -304,7 +406,9 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => setAddPrintingToCard(card)}
+                                            onClick={() =>
+                                                setAddPrintingToCard(card)
+                                            }
                                         >
                                             <Plus className="mr-1 h-3 w-3" />
                                             Printing hinzufügen
@@ -328,11 +432,14 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                             <ChevronLeft className="h-4 w-4" />
                                         </Link>
                                     ) : (
-                                        <span><ChevronLeft className="h-4 w-4" /></span>
+                                        <span>
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </span>
                                     )}
                                 </Button>
                                 <span className="text-sm">
-                                    Seite {cards.current_page} von {cards.last_page}
+                                    Seite {cards.current_page} von{' '}
+                                    {cards.last_page}
                                 </span>
                                 <Button
                                     variant="outline"
@@ -345,7 +452,9 @@ export default function CustomCardsIndex({ games, selectedGameId, cards, filters
                                             <ChevronRight className="h-4 w-4" />
                                         </Link>
                                     ) : (
-                                        <span><ChevronRight className="h-4 w-4" /></span>
+                                        <span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </span>
                                     )}
                                 </Button>
                             </div>
@@ -410,34 +519,39 @@ function CreateCardDialog({
     foilings: Record<string, string>;
 }) {
     const [fabCardSearch, setFabCardSearch] = useState('');
-    const [fabCardResults, setFabCardResults] = useState<{
-        id: number;
-        name: string;
-        pitch: number | null;
-        collector_number: string | null;
-        image_url: string | null;
-    }[]>([]);
+    const [fabCardResults, setFabCardResults] = useState<
+        {
+            id: number;
+            name: string;
+            pitch: number | null;
+            collector_number: string | null;
+            image_url: string | null;
+        }[]
+    >([]);
     const [linkedFabCard, setLinkedFabCard] = useState<{
         id: number;
         name: string;
         pitch?: number | null;
         collector_number?: string | null;
     } | null>(null);
-    const [hoveredCard, setHoveredCard] = useState<{ image_url: string | null } | null>(null);
+    const [hoveredCard, setHoveredCard] = useState<{
+        image_url: string | null;
+    } | null>(null);
 
-    const { data, setData, post, processing, reset, errors, transform } = useForm({
-        game_id: selectedGameId ?? games[0]?.id ?? 0,
-        name: '',
-        linked_fab_card_id: null as number | null,
-        types: '',
-        traits: '',
-        functional_text: '',
-        notes: '',
-        set_name: '',
-        collector_number: '',
-        rarity: '',
-        foiling: '',
-    });
+    const { data, setData, post, processing, reset, errors, transform } =
+        useForm({
+            game_id: selectedGameId ?? games[0]?.id ?? 0,
+            name: '',
+            linked_fab_card_id: null as number | null,
+            types: '',
+            traits: '',
+            functional_text: '',
+            notes: '',
+            set_name: '',
+            collector_number: '',
+            rarity: '',
+            foiling: '',
+        });
 
     const debouncedFabSearch = useDebouncedCallback(async (query: string) => {
         if (query.length < 2) {
@@ -445,7 +559,9 @@ function CreateCardDialog({
             return;
         }
         try {
-            const response = await fetch(`/custom-cards/fab-cards/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(
+                `/custom-cards/fab-cards/search?q=${encodeURIComponent(query)}`,
+            );
             const results = await response.json();
             setFabCardResults(results);
         } catch (error) {
@@ -458,7 +574,12 @@ function CreateCardDialog({
         debouncedFabSearch(query);
     };
 
-    const selectLinkedCard = (fabCard: { id: number; name: string; pitch?: number | null; collector_number?: string | null }) => {
+    const selectLinkedCard = (fabCard: {
+        id: number;
+        name: string;
+        pitch?: number | null;
+        collector_number?: string | null;
+    }) => {
         setLinkedFabCard(fabCard);
         setData('linked_fab_card_id', fabCard.id);
         setFabCardSearch('');
@@ -475,8 +596,12 @@ function CreateCardDialog({
         e.preventDefault();
         transform((data) => ({
             ...data,
-            types: data.types ? data.types.split(',').map((t: string) => t.trim()) : null,
-            traits: data.traits ? data.traits.split(',').map((t: string) => t.trim()) : null,
+            types: data.types
+                ? data.types.split(',').map((t: string) => t.trim())
+                : null,
+            traits: data.traits
+                ? data.traits.split(',').map((t: string) => t.trim())
+                : null,
         }));
         post('/custom-cards/create', {
             onSuccess: () => {
@@ -495,7 +620,8 @@ function CreateCardDialog({
                 <DialogHeader>
                     <DialogTitle>Neue Karte erstellen</DialogTitle>
                     <DialogDescription>
-                        Erstelle eine eigene Karte, die nicht in der Datenbank vorhanden ist.
+                        Erstelle eine eigene Karte, die nicht in der Datenbank
+                        vorhanden ist.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -505,14 +631,19 @@ function CreateCardDialog({
                             <Label htmlFor="game_id">Spiel</Label>
                             <Select
                                 value={data.game_id.toString()}
-                                onValueChange={(v) => setData('game_id', Number(v))}
+                                onValueChange={(v) =>
+                                    setData('game_id', Number(v))
+                                }
                             >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {games.map((game) => (
-                                        <SelectItem key={game.id} value={game.id.toString()}>
+                                        <SelectItem
+                                            key={game.id}
+                                            value={game.id.toString()}
+                                        >
                                             {game.name}
                                         </SelectItem>
                                     ))}
@@ -525,33 +656,49 @@ function CreateCardDialog({
                             <Input
                                 id="name"
                                 value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
+                                onChange={(e) =>
+                                    setData('name', e.target.value)
+                                }
                                 required
                             />
-                            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                            {errors.name && (
+                                <p className="text-sm text-destructive">
+                                    {errors.name}
+                                </p>
+                            )}
                         </div>
 
                         {/* Linked FAB Card */}
                         <div className="sm:col-span-2">
                             <Label>Verknüpfte FAB Karte (für Bild)</Label>
                             {linkedFabCard ? (
-                                <div className="flex items-center gap-2 mt-1 p-2 border rounded-md bg-muted/50">
+                                <div className="mt-1 flex items-center gap-2 rounded-md border bg-muted/50 p-2">
                                     <span
-                                        className={`inline-block h-3 w-3 rounded-full shrink-0 ${
-                                            getPitchColor(linkedFabCard.pitch ?? null) === 'red'
-                                                ? 'bg-red-500'
-                                                : getPitchColor(linkedFabCard.pitch ?? null) === 'yellow'
-                                                  ? 'bg-yellow-500'
-                                                  : getPitchColor(linkedFabCard.pitch ?? null) === 'blue'
-                                                    ? 'bg-blue-500'
-                                                    : 'bg-gray-400'
+                                        className={`inline-block h-3 w-3 shrink-0 rounded-full ${
+                                            getPitchColor(
+                                                linkedFabCard.pitch ?? null,
+                                            ) === 'red'
+                                                ? 'bg-destructive'
+                                                : getPitchColor(
+                                                        linkedFabCard.pitch ??
+                                                            null,
+                                                    ) === 'yellow'
+                                                  ? 'bg-warning'
+                                                  : getPitchColor(
+                                                          linkedFabCard.pitch ??
+                                                              null,
+                                                      ) === 'blue'
+                                                    ? 'bg-info'
+                                                    : 'bg-muted-foreground'
                                         }`}
                                     />
                                     <span className="flex-1 text-sm">
                                         {linkedFabCard.name}
                                         {linkedFabCard.collector_number && (
-                                            <span className="text-muted-foreground ml-1">
-                                                ({linkedFabCard.collector_number})
+                                            <span className="ml-1 text-muted-foreground">
+                                                (
+                                                {linkedFabCard.collector_number}
+                                                )
                                             </span>
                                         )}
                                     </span>
@@ -570,36 +717,56 @@ function CreateCardDialog({
                                     <Input
                                         placeholder="FAB Karte suchen..."
                                         value={fabCardSearch}
-                                        onChange={(e) => handleFabCardSearch(e.target.value)}
+                                        onChange={(e) =>
+                                            handleFabCardSearch(e.target.value)
+                                        }
                                     />
                                     {fabCardResults.length > 0 && (
-                                        <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover shadow-lg">
                                             {fabCardResults.map((result) => {
-                                                const pitchColor = getPitchColor(result.pitch);
+                                                const pitchColor =
+                                                    getPitchColor(result.pitch);
                                                 return (
                                                     <button
                                                         key={result.id}
                                                         type="button"
-                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
-                                                        onClick={() => selectLinkedCard(result)}
-                                                        onMouseEnter={() => setHoveredCard(result)}
-                                                        onMouseLeave={() => setHoveredCard(null)}
+                                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                                        onClick={() =>
+                                                            selectLinkedCard(
+                                                                result,
+                                                            )
+                                                        }
+                                                        onMouseEnter={() =>
+                                                            setHoveredCard(
+                                                                result,
+                                                            )
+                                                        }
+                                                        onMouseLeave={() =>
+                                                            setHoveredCard(null)
+                                                        }
                                                     >
                                                         <span
-                                                            className={`inline-block h-3 w-3 rounded-full shrink-0 ${
-                                                                pitchColor === 'red'
-                                                                    ? 'bg-red-500'
-                                                                    : pitchColor === 'yellow'
-                                                                      ? 'bg-yellow-500'
-                                                                      : pitchColor === 'blue'
-                                                                        ? 'bg-blue-500'
-                                                                        : 'bg-gray-400'
+                                                            className={`inline-block h-3 w-3 shrink-0 rounded-full ${
+                                                                pitchColor ===
+                                                                'red'
+                                                                    ? 'bg-destructive'
+                                                                    : pitchColor ===
+                                                                        'yellow'
+                                                                      ? 'bg-warning'
+                                                                      : pitchColor ===
+                                                                          'blue'
+                                                                        ? 'bg-info'
+                                                                        : 'bg-muted-foreground'
                                                             }`}
                                                         />
-                                                        <span className="flex-1">{result.name}</span>
+                                                        <span className="flex-1">
+                                                            {result.name}
+                                                        </span>
                                                         {result.collector_number && (
-                                                            <span className="text-muted-foreground text-xs">
-                                                                {result.collector_number}
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {
+                                                                    result.collector_number
+                                                                }
                                                             </span>
                                                         )}
                                                     </button>
@@ -609,11 +776,11 @@ function CreateCardDialog({
                                     )}
                                     {/* Image preview on hover */}
                                     {hoveredCard?.image_url && (
-                                        <div className="absolute right-0 top-full mt-1 z-20 pointer-events-none">
+                                        <div className="pointer-events-none absolute top-full right-0 z-20 mt-1">
                                             <img
                                                 src={hoveredCard.image_url}
                                                 alt="Vorschau"
-                                                className="h-48 w-auto rounded-lg shadow-xl border"
+                                                className="h-48 w-auto rounded-lg border shadow-xl"
                                             />
                                         </div>
                                     )}
@@ -626,17 +793,23 @@ function CreateCardDialog({
                             <Input
                                 id="types"
                                 value={data.types}
-                                onChange={(e) => setData('types', e.target.value)}
+                                onChange={(e) =>
+                                    setData('types', e.target.value)
+                                }
                                 placeholder="Action, Attack"
                             />
                         </div>
 
                         <div>
-                            <Label htmlFor="traits">Merkmale (kommagetrennt)</Label>
+                            <Label htmlFor="traits">
+                                Merkmale (kommagetrennt)
+                            </Label>
                             <Input
                                 id="traits"
                                 value={data.traits}
-                                onChange={(e) => setData('traits', e.target.value)}
+                                onChange={(e) =>
+                                    setData('traits', e.target.value)
+                                }
                                 placeholder="Ninja, Shadow"
                             />
                         </div>
@@ -646,21 +819,27 @@ function CreateCardDialog({
                             <Textarea
                                 id="functional_text"
                                 value={data.functional_text}
-                                onChange={(e) => setData('functional_text', e.target.value)}
+                                onChange={(e) =>
+                                    setData('functional_text', e.target.value)
+                                }
                                 rows={3}
                             />
                         </div>
                     </div>
 
                     <div className="border-t pt-4">
-                        <p className="mb-3 text-sm font-medium">Erstes Printing (optional)</p>
+                        <p className="mb-3 text-sm font-medium">
+                            Erstes Printing (optional)
+                        </p>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <Label htmlFor="set_name">Set</Label>
                                 <Input
                                     id="set_name"
                                     value={data.set_name}
-                                    onChange={(e) => setData('set_name', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('set_name', e.target.value)
+                                    }
                                     placeholder="Welcome to Rathe"
                                 />
                             </div>
@@ -669,7 +848,12 @@ function CreateCardDialog({
                                 <Input
                                     id="collector_number"
                                     value={data.collector_number}
-                                    onChange={(e) => setData('collector_number', e.target.value)}
+                                    onChange={(e) =>
+                                        setData(
+                                            'collector_number',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="WTR001"
                                 />
                             </div>
@@ -683,11 +867,16 @@ function CreateCardDialog({
                                         <SelectValue placeholder="Wählen..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(rarities).map(([key, label]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {label}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(rarities).map(
+                                            ([key, label]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={key}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -701,11 +890,16 @@ function CreateCardDialog({
                                         <SelectValue placeholder="Wählen..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(foilings).map(([key, label]) => (
-                                            <SelectItem key={key} value={key}>
-                                                {label}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(foilings).map(
+                                            ([key, label]) => (
+                                                <SelectItem
+                                                    key={key}
+                                                    value={key}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -713,7 +907,11 @@ function CreateCardDialog({
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>
@@ -736,20 +934,24 @@ function EditCardDialog({
     card: CustomCard | null;
 }) {
     const [fabCardSearch, setFabCardSearch] = useState('');
-    const [fabCardResults, setFabCardResults] = useState<{
-        id: number;
-        name: string;
-        pitch: number | null;
-        collector_number: string | null;
-        image_url: string | null;
-    }[]>([]);
+    const [fabCardResults, setFabCardResults] = useState<
+        {
+            id: number;
+            name: string;
+            pitch: number | null;
+            collector_number: string | null;
+            image_url: string | null;
+        }[]
+    >([]);
     const [linkedFabCard, setLinkedFabCard] = useState<{
         id: number;
         name: string;
         pitch?: number | null;
         collector_number?: string | null;
     } | null>(null);
-    const [hoveredCard, setHoveredCard] = useState<{ image_url: string | null } | null>(null);
+    const [hoveredCard, setHoveredCard] = useState<{
+        image_url: string | null;
+    } | null>(null);
 
     const { data, setData, patch, processing, reset, transform } = useForm({
         name: '',
@@ -773,8 +975,11 @@ function EditCardDialog({
             });
             setLinkedFabCard(
                 card.linked_fab_card
-                    ? { id: card.linked_fab_card.id, name: card.linked_fab_card.name }
-                    : null
+                    ? {
+                          id: card.linked_fab_card.id,
+                          name: card.linked_fab_card.name,
+                      }
+                    : null,
             );
             setFabCardSearch('');
             setFabCardResults([]);
@@ -788,7 +993,9 @@ function EditCardDialog({
             return;
         }
         try {
-            const response = await fetch(`/custom-cards/fab-cards/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(
+                `/custom-cards/fab-cards/search?q=${encodeURIComponent(query)}`,
+            );
             const results = await response.json();
             setFabCardResults(results);
         } catch (error) {
@@ -801,7 +1008,12 @@ function EditCardDialog({
         debouncedFabSearch(query);
     };
 
-    const selectLinkedCard = (fabCard: { id: number; name: string; pitch?: number | null; collector_number?: string | null }) => {
+    const selectLinkedCard = (fabCard: {
+        id: number;
+        name: string;
+        pitch?: number | null;
+        collector_number?: string | null;
+    }) => {
         setLinkedFabCard(fabCard);
         setData('linked_fab_card_id', fabCard.id);
         setFabCardSearch('');
@@ -819,8 +1031,12 @@ function EditCardDialog({
         if (!card) return;
         transform((data) => ({
             ...data,
-            types: data.types ? data.types.split(',').map((t: string) => t.trim()) : null,
-            traits: data.traits ? data.traits.split(',').map((t: string) => t.trim()) : null,
+            types: data.types
+                ? data.types.split(',').map((t: string) => t.trim())
+                : null,
+            traits: data.traits
+                ? data.traits.split(',').map((t: string) => t.trim())
+                : null,
         }));
         patch(`/custom-cards/${card.id}`, {
             onSuccess: () => {
@@ -857,22 +1073,29 @@ function EditCardDialog({
                     <div>
                         <Label>Verknüpfte Karte (für Bild)</Label>
                         {linkedFabCard ? (
-                            <div className="flex items-center gap-2 mt-1 p-2 border rounded-md bg-muted/50">
+                            <div className="mt-1 flex items-center gap-2 rounded-md border bg-muted/50 p-2">
                                 <span
-                                    className={`inline-block h-3 w-3 rounded-full shrink-0 ${
-                                        getPitchColor(linkedFabCard.pitch ?? null) === 'red'
-                                            ? 'bg-red-500'
-                                            : getPitchColor(linkedFabCard.pitch ?? null) === 'yellow'
-                                              ? 'bg-yellow-500'
-                                              : getPitchColor(linkedFabCard.pitch ?? null) === 'blue'
-                                                ? 'bg-blue-500'
-                                                : 'bg-gray-400'
+                                    className={`inline-block h-3 w-3 shrink-0 rounded-full ${
+                                        getPitchColor(
+                                            linkedFabCard.pitch ?? null,
+                                        ) === 'red'
+                                            ? 'bg-destructive'
+                                            : getPitchColor(
+                                                    linkedFabCard.pitch ?? null,
+                                                ) === 'yellow'
+                                              ? 'bg-warning'
+                                              : getPitchColor(
+                                                      linkedFabCard.pitch ??
+                                                          null,
+                                                  ) === 'blue'
+                                                ? 'bg-info'
+                                                : 'bg-muted-foreground'
                                     }`}
                                 />
                                 <span className="flex-1 text-sm">
                                     {linkedFabCard.name}
                                     {linkedFabCard.collector_number && (
-                                        <span className="text-muted-foreground ml-1">
+                                        <span className="ml-1 text-muted-foreground">
                                             ({linkedFabCard.collector_number})
                                         </span>
                                     )}
@@ -892,36 +1115,52 @@ function EditCardDialog({
                                 <Input
                                     placeholder="FAB Karte suchen..."
                                     value={fabCardSearch}
-                                    onChange={(e) => handleFabCardSearch(e.target.value)}
+                                    onChange={(e) =>
+                                        handleFabCardSearch(e.target.value)
+                                    }
                                 />
                                 {fabCardResults.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover shadow-lg">
                                         {fabCardResults.map((result) => {
-                                            const pitchColor = getPitchColor(result.pitch);
+                                            const pitchColor = getPitchColor(
+                                                result.pitch,
+                                            );
                                             return (
                                                 <button
                                                     key={result.id}
                                                     type="button"
-                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
-                                                    onClick={() => selectLinkedCard(result)}
-                                                    onMouseEnter={() => setHoveredCard(result)}
-                                                    onMouseLeave={() => setHoveredCard(null)}
+                                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                                    onClick={() =>
+                                                        selectLinkedCard(result)
+                                                    }
+                                                    onMouseEnter={() =>
+                                                        setHoveredCard(result)
+                                                    }
+                                                    onMouseLeave={() =>
+                                                        setHoveredCard(null)
+                                                    }
                                                 >
                                                     <span
-                                                        className={`inline-block h-3 w-3 rounded-full shrink-0 ${
+                                                        className={`inline-block h-3 w-3 shrink-0 rounded-full ${
                                                             pitchColor === 'red'
-                                                                ? 'bg-red-500'
-                                                                : pitchColor === 'yellow'
-                                                                  ? 'bg-yellow-500'
-                                                                  : pitchColor === 'blue'
-                                                                    ? 'bg-blue-500'
-                                                                    : 'bg-gray-400'
+                                                                ? 'bg-destructive'
+                                                                : pitchColor ===
+                                                                    'yellow'
+                                                                  ? 'bg-warning'
+                                                                  : pitchColor ===
+                                                                      'blue'
+                                                                    ? 'bg-info'
+                                                                    : 'bg-muted-foreground'
                                                         }`}
                                                     />
-                                                    <span className="flex-1">{result.name}</span>
+                                                    <span className="flex-1">
+                                                        {result.name}
+                                                    </span>
                                                     {result.collector_number && (
-                                                        <span className="text-muted-foreground text-xs">
-                                                            {result.collector_number}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {
+                                                                result.collector_number
+                                                            }
                                                         </span>
                                                     )}
                                                 </button>
@@ -931,36 +1170,45 @@ function EditCardDialog({
                                 )}
                                 {/* Image preview on hover */}
                                 {hoveredCard?.image_url && (
-                                    <div className="absolute right-0 top-full mt-1 z-20 pointer-events-none">
+                                    <div className="pointer-events-none absolute top-full right-0 z-20 mt-1">
                                         <img
                                             src={hoveredCard.image_url}
                                             alt="Vorschau"
-                                            className="h-48 w-auto rounded-lg shadow-xl border"
+                                            className="h-48 w-auto rounded-lg border shadow-xl"
                                         />
                                     </div>
                                 )}
                             </div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Das Bild der verknüpften Karte wird verwendet, wenn kein eigenes Bild hochgeladen wurde.
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Das Bild der verknüpften Karte wird verwendet, wenn
+                            kein eigenes Bild hochgeladen wurde.
                         </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <Label htmlFor="edit-types">Typen (kommagetrennt)</Label>
+                            <Label htmlFor="edit-types">
+                                Typen (kommagetrennt)
+                            </Label>
                             <Input
                                 id="edit-types"
                                 value={data.types}
-                                onChange={(e) => setData('types', e.target.value)}
+                                onChange={(e) =>
+                                    setData('types', e.target.value)
+                                }
                             />
                         </div>
                         <div>
-                            <Label htmlFor="edit-traits">Merkmale (kommagetrennt)</Label>
+                            <Label htmlFor="edit-traits">
+                                Merkmale (kommagetrennt)
+                            </Label>
                             <Input
                                 id="edit-traits"
                                 value={data.traits}
-                                onChange={(e) => setData('traits', e.target.value)}
+                                onChange={(e) =>
+                                    setData('traits', e.target.value)
+                                }
                             />
                         </div>
                     </div>
@@ -970,7 +1218,9 @@ function EditCardDialog({
                         <Textarea
                             id="edit-text"
                             value={data.functional_text}
-                            onChange={(e) => setData('functional_text', e.target.value)}
+                            onChange={(e) =>
+                                setData('functional_text', e.target.value)
+                            }
                             rows={3}
                         />
                     </div>
@@ -986,7 +1236,11 @@ function EditCardDialog({
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>
@@ -1039,7 +1293,8 @@ function AddPrintingDialog({
                 <DialogHeader>
                     <DialogTitle>Printing hinzufügen</DialogTitle>
                     <DialogDescription>
-                        Füge ein neues Printing zu &quot;{card.name}&quot; hinzu.
+                        Füge ein neues Printing zu &quot;{card.name}&quot;
+                        hinzu.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -1050,7 +1305,9 @@ function AddPrintingDialog({
                             <Input
                                 id="print-set"
                                 value={data.set_name}
-                                onChange={(e) => setData('set_name', e.target.value)}
+                                onChange={(e) =>
+                                    setData('set_name', e.target.value)
+                                }
                             />
                         </div>
                         <div>
@@ -1058,7 +1315,9 @@ function AddPrintingDialog({
                             <Input
                                 id="print-number"
                                 value={data.collector_number}
-                                onChange={(e) => setData('collector_number', e.target.value)}
+                                onChange={(e) =>
+                                    setData('collector_number', e.target.value)
+                                }
                             />
                         </div>
                         <div>
@@ -1071,11 +1330,13 @@ function AddPrintingDialog({
                                     <SelectValue placeholder="Wählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(rarities).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    {Object.entries(rarities).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1089,18 +1350,24 @@ function AddPrintingDialog({
                                     <SelectValue placeholder="Wählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(foilings).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    {Object.entries(foilings).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>
@@ -1198,10 +1465,11 @@ function EditPrintingDialog({
     if (!printing || !card) return null;
 
     // Image priority for preview: selected > current custom > parent > placeholder
-    const currentImageUrl = previewUrl
-        ?? (removeImage ? null : printing.image_url)
-        ?? card.linked_fab_card?.printings?.[0]?.image_url
-        ?? null;
+    const currentImageUrl =
+        previewUrl ??
+        (removeImage ? null : printing.image_url) ??
+        card.linked_fab_card?.printings?.[0]?.image_url ??
+        null;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -1222,20 +1490,21 @@ function EditPrintingDialog({
                                 <CardImage
                                     src={currentImageUrl}
                                     alt={card.name}
-                                    className="h-32 w-24 rounded-lg object-cover border"
+                                    className="h-32 w-24 rounded-lg border object-cover"
                                     placeholderClassName="h-32 w-24 rounded-lg border"
                                 />
-                                {(printing.image_url || previewUrl) && !removeImage && (
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="icon"
-                                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                        onClick={handleRemoveImage}
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </Button>
-                                )}
+                                {(printing.image_url || previewUrl) &&
+                                    !removeImage && (
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                            onClick={handleRemoveImage}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    )}
                             </div>
                             <div className="flex-1 space-y-2">
                                 <input
@@ -1248,7 +1517,9 @@ function EditPrintingDialog({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                     className="w-full"
                                 >
                                     <ImagePlus className="mr-2 h-4 w-4" />
@@ -1257,13 +1528,21 @@ function EditPrintingDialog({
                                 <p className="text-xs text-muted-foreground">
                                     Max. 5MB. JPG, PNG oder WebP.
                                 </p>
-                                {printing.image_url && !removeImage && !previewUrl && (
-                                    <Badge variant="secondary" className="text-xs">
-                                        Eigenes Bild vorhanden
-                                    </Badge>
-                                )}
+                                {printing.image_url &&
+                                    !removeImage &&
+                                    !previewUrl && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                        >
+                                            Eigenes Bild vorhanden
+                                        </Badge>
+                                    )}
                                 {removeImage && (
-                                    <Badge variant="destructive" className="text-xs">
+                                    <Badge
+                                        variant="destructive"
+                                        className="text-xs"
+                                    >
                                         Bild wird entfernt
                                     </Badge>
                                 )}
@@ -1277,7 +1556,12 @@ function EditPrintingDialog({
                             <Input
                                 id="edit-print-set"
                                 value={formData.set_name}
-                                onChange={(e) => setFormData({ ...formData, set_name: e.target.value })}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        set_name: e.target.value,
+                                    })
+                                }
                             />
                         </div>
                         <div>
@@ -1285,24 +1569,35 @@ function EditPrintingDialog({
                             <Input
                                 id="edit-print-number"
                                 value={formData.collector_number}
-                                onChange={(e) => setFormData({ ...formData, collector_number: e.target.value })}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        collector_number: e.target.value,
+                                    })
+                                }
                             />
                         </div>
                         <div>
-                            <Label htmlFor="edit-print-rarity">Seltenheit</Label>
+                            <Label htmlFor="edit-print-rarity">
+                                Seltenheit
+                            </Label>
                             <Select
                                 value={formData.rarity}
-                                onValueChange={(v) => setFormData({ ...formData, rarity: v })}
+                                onValueChange={(v) =>
+                                    setFormData({ ...formData, rarity: v })
+                                }
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Wählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(rarities).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    {Object.entries(rarities).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1310,24 +1605,32 @@ function EditPrintingDialog({
                             <Label htmlFor="edit-print-foiling">Foiling</Label>
                             <Select
                                 value={formData.foiling}
-                                onValueChange={(v) => setFormData({ ...formData, foiling: v })}
+                                onValueChange={(v) =>
+                                    setFormData({ ...formData, foiling: v })
+                                }
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Wählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(foilings).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
+                                    {Object.entries(foilings).map(
+                                        ([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={submitting}>

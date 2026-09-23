@@ -8,7 +8,12 @@ interface CardImageProps {
     placeholderClassName?: string;
 }
 
-export function CardImage({ src, alt, className = '', placeholderClassName = '' }: CardImageProps) {
+export function CardImage({
+    src,
+    alt,
+    className = '',
+    placeholderClassName = '',
+}: CardImageProps) {
     const [error, setError] = useState(false);
 
     if (!src || error) {

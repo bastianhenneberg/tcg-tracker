@@ -33,18 +33,18 @@ export default function CardShow({ game, card }: Props) {
                             &larr; Zurück
                         </Button>
                     </Link>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold">
                         {card.name}
                         {pitch && (
                             <span
                                 className={`inline-block h-4 w-4 rounded-full ${
                                     pitchColor === 'red'
-                                        ? 'bg-red-500'
+                                        ? 'bg-destructive'
                                         : pitchColor === 'yellow'
-                                          ? 'bg-yellow-500'
+                                          ? 'bg-warning'
                                           : pitchColor === 'blue'
-                                            ? 'bg-blue-500'
-                                            : 'bg-gray-300'
+                                            ? 'bg-info'
+                                            : 'bg-muted'
                                 }`}
                             />
                         )}
@@ -62,8 +62,10 @@ export default function CardShow({ game, card }: Props) {
                                     className="w-full rounded-lg"
                                 />
                             ) : (
-                                <div className="bg-muted flex aspect-[2.5/3.5] items-center justify-center rounded-lg">
-                                    <span className="text-muted-foreground">Kein Bild</span>
+                                <div className="flex aspect-[2.5/3.5] items-center justify-center rounded-lg bg-muted">
+                                    <span className="text-muted-foreground">
+                                        Kein Bild
+                                    </span>
                                 </div>
                             )}
                         </CardContent>
@@ -77,48 +79,79 @@ export default function CardShow({ game, card }: Props) {
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Typ</span>
-                                    <p className="font-medium">{card.type_line ?? card.types?.join(' ') ?? '-'}</p>
+                                    <span className="text-sm text-muted-foreground">
+                                        Typ
+                                    </span>
+                                    <p className="font-medium">
+                                        {card.type_line ??
+                                            card.types?.join(' ') ??
+                                            '-'}
+                                    </p>
                                 </div>
                                 {card.cost && (
                                     <div>
-                                        <span className="text-muted-foreground text-sm">Kosten</span>
-                                        <p className="font-medium">{card.cost}</p>
+                                        <span className="text-sm text-muted-foreground">
+                                            Kosten
+                                        </span>
+                                        <p className="font-medium">
+                                            {card.cost}
+                                        </p>
                                     </div>
                                 )}
                                 {card.power && (
                                     <div>
-                                        <span className="text-muted-foreground text-sm">Power</span>
-                                        <p className="font-medium">{card.power}</p>
+                                        <span className="text-sm text-muted-foreground">
+                                            Power
+                                        </span>
+                                        <p className="font-medium">
+                                            {card.power}
+                                        </p>
                                     </div>
                                 )}
                                 {card.defense && (
                                     <div>
-                                        <span className="text-muted-foreground text-sm">Defense</span>
-                                        <p className="font-medium">{card.defense}</p>
+                                        <span className="text-sm text-muted-foreground">
+                                            Defense
+                                        </span>
+                                        <p className="font-medium">
+                                            {card.defense}
+                                        </p>
                                     </div>
                                 )}
                                 {card.health && (
                                     <div>
-                                        <span className="text-muted-foreground text-sm">Health</span>
-                                        <p className="font-medium">{card.health}</p>
+                                        <span className="text-sm text-muted-foreground">
+                                            Health
+                                        </span>
+                                        <p className="font-medium">
+                                            {card.health}
+                                        </p>
                                     </div>
                                 )}
                             </div>
 
                             {card.text && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Text</span>
-                                    <p className="mt-1 whitespace-pre-line">{card.text}</p>
+                                    <span className="text-sm text-muted-foreground">
+                                        Text
+                                    </span>
+                                    <p className="mt-1 whitespace-pre-line">
+                                        {card.text}
+                                    </p>
                                 </div>
                             )}
 
                             {card.colors.length > 0 && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Farben</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        Farben
+                                    </span>
                                     <div className="mt-1 flex gap-1">
                                         {card.colors.map((color) => (
-                                            <Badge key={color} variant="secondary">
+                                            <Badge
+                                                key={color}
+                                                variant="secondary"
+                                            >
                                                 {color}
                                             </Badge>
                                         ))}
@@ -128,10 +161,15 @@ export default function CardShow({ game, card }: Props) {
 
                             {card.keywords.length > 0 && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Keywords</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        Keywords
+                                    </span>
                                     <div className="mt-1 flex flex-wrap gap-1">
                                         {card.keywords.map((keyword) => (
-                                            <Badge key={keyword} variant="outline">
+                                            <Badge
+                                                key={keyword}
+                                                variant="outline"
+                                            >
                                                 {keyword}
                                             </Badge>
                                         ))}
@@ -141,16 +179,24 @@ export default function CardShow({ game, card }: Props) {
 
                             {Object.keys(card.legalities).length > 0 && (
                                 <div>
-                                    <span className="text-muted-foreground text-sm">Legalität</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        Legalität
+                                    </span>
                                     <div className="mt-1 flex flex-wrap gap-1">
-                                        {Object.entries(card.legalities).map(([format, status]) => (
-                                            <Badge
-                                                key={format}
-                                                variant={status === 'legal' ? 'default' : 'destructive'}
-                                            >
-                                                {format}: {status}
-                                            </Badge>
-                                        ))}
+                                        {Object.entries(card.legalities).map(
+                                            ([format, status]) => (
+                                                <Badge
+                                                    key={format}
+                                                    variant={
+                                                        status === 'legal'
+                                                            ? 'default'
+                                                            : 'destructive'
+                                                    }
+                                                >
+                                                    {format}: {status}
+                                                </Badge>
+                                            ),
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -162,7 +208,9 @@ export default function CardShow({ game, card }: Props) {
                 {card.printings && card.printings.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Drucke ({card.printings.length})</CardTitle>
+                            <CardTitle>
+                                Drucke ({card.printings.length})
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -180,23 +228,34 @@ export default function CardShow({ game, card }: Props) {
                                             />
                                         )}
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-medium truncate">
-                                                {printing.set_name ?? printing.set_code}
+                                            <p className="truncate font-medium">
+                                                {printing.set_name ??
+                                                    printing.set_code}
                                             </p>
-                                            <p className="text-muted-foreground text-sm">
+                                            <p className="text-sm text-muted-foreground">
                                                 #{printing.collector_number}
                                             </p>
                                             <div className="mt-1 flex gap-1">
                                                 {printing.rarity_label && (
-                                                    <Badge variant="outline" className="text-xs">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-xs"
+                                                    >
                                                         {printing.rarity_label}
                                                     </Badge>
                                                 )}
-                                                {printing.finish_label && printing.finish !== 'standard' && (
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        {printing.finish_label}
-                                                    </Badge>
-                                                )}
+                                                {printing.finish_label &&
+                                                    printing.finish !==
+                                                        'standard' && (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-xs"
+                                                        >
+                                                            {
+                                                                printing.finish_label
+                                                            }
+                                                        </Badge>
+                                                    )}
                                             </div>
                                         </div>
                                     </Link>

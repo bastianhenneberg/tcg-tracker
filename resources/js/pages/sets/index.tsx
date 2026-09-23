@@ -1,4 +1,8 @@
-import { DataTable, type ColumnDef, type PaginatedData } from '@/components/ui/data-table';
+import {
+    DataTable,
+    type ColumnDef,
+    type PaginatedData,
+} from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -31,7 +35,7 @@ export default function SetsIndex({ game, sets, filters }: Props) {
         router.get(
             `${baseUrl}/sets`,
             { ...filters, search: value || undefined },
-            { preserveState: true, preserveScroll: true }
+            { preserveState: true, preserveScroll: true },
         );
     }, 300);
 
@@ -65,7 +69,9 @@ export default function SetsIndex({ game, sets, filters }: Props) {
                             )}
                             <div>
                                 <p className="font-medium">{set.name}</p>
-                                <p className="text-muted-foreground text-sm">[{set.code}]</p>
+                                <p className="text-sm text-muted-foreground">
+                                    [{set.code}]
+                                </p>
                             </div>
                         </div>
                     );
@@ -76,7 +82,9 @@ export default function SetsIndex({ game, sets, filters }: Props) {
                 accessorKey: 'printings_count',
                 header: 'Karten',
                 cell: ({ row }) => (
-                    <span className="text-muted-foreground">{row.original.printings_count}</span>
+                    <span className="text-muted-foreground">
+                        {row.original.printings_count}
+                    </span>
                 ),
             },
             {
@@ -85,7 +93,7 @@ export default function SetsIndex({ game, sets, filters }: Props) {
                 header: 'Typ',
                 cell: ({ row }) =>
                     row.original.set_type ? (
-                        <span className="text-muted-foreground text-sm capitalize">
+                        <span className="text-sm text-muted-foreground capitalize">
                             {row.original.set_type}
                         </span>
                     ) : (
@@ -98,15 +106,17 @@ export default function SetsIndex({ game, sets, filters }: Props) {
                 header: 'Erschienen',
                 cell: ({ row }) =>
                     row.original.released_at ? (
-                        <span className="text-muted-foreground text-sm">
-                            {new Date(row.original.released_at).toLocaleDateString('de-DE')}
+                        <span className="text-sm text-muted-foreground">
+                            {new Date(
+                                row.original.released_at,
+                            ).toLocaleDateString('de-DE')}
                         </span>
                     ) : (
                         '-'
                     ),
             },
         ],
-        []
+        [],
     );
 
     return (
@@ -137,7 +147,9 @@ export default function SetsIndex({ game, sets, filters }: Props) {
                     emptyState={
                         <div className="flex flex-col items-center justify-center py-12">
                             <Library className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="mt-2 text-muted-foreground">Keine Sets gefunden</p>
+                            <p className="mt-2 text-muted-foreground">
+                                Keine Sets gefunden
+                            </p>
                         </div>
                     }
                 />

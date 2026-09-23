@@ -229,10 +229,10 @@ export function getPitchColor(pitch?: number | string | null): string {
 // Helper to get the game's unified slug
 export function getUnifiedSlug(gameSlug: string): string {
     const map: Record<string, string> = {
-        'fab': 'fab',
+        fab: 'fab',
         'magic-the-gathering': 'mtg',
-        'onepiece': 'onepiece',
-        'riftbound': 'riftbound',
+        onepiece: 'onepiece',
+        riftbound: 'riftbound',
     };
     return map[gameSlug] ?? gameSlug;
 }

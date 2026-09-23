@@ -1,7 +1,13 @@
 import { CardImage } from '@/components/card-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Camera, Plus, Search, XCircle } from 'lucide-react';
 import type { PendingCard, RecognitionResult } from './types';
@@ -45,7 +51,9 @@ export function ScannerCardEditor({
         <Card>
             <CardHeader>
                 <CardTitle>Karte bearbeiten</CardTitle>
-                <CardDescription>Klicke auf eine Karte in der Warteschlange zum Bearbeiten</CardDescription>
+                <CardDescription>
+                    Klicke auf eine Karte in der Warteschlange zum Bearbeiten
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 {editingPendingCard ? (
@@ -61,19 +69,31 @@ export function ScannerCardEditor({
                                 <h3 className="flex items-center gap-2 text-xl font-bold">
                                     {editingPendingCard.card.card_name}
                                     {editingPendingCard.card.is_custom && (
-                                        <Badge variant="secondary" className="text-xs">
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                        >
                                             Custom
                                         </Badge>
                                     )}
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {editingPendingCard.card.set_name} - {editingPendingCard.card.collector_number}
+                                    {editingPendingCard.card.set_name} -{' '}
+                                    {editingPendingCard.card.collector_number}
                                 </p>
                                 <div className="flex gap-2">
                                     {editingPendingCard.card.rarity && (
-                                        <Badge variant="outline">{getRarityLabel(editingPendingCard.card.rarity)}</Badge>
+                                        <Badge variant="outline">
+                                            {getRarityLabel(
+                                                editingPendingCard.card.rarity,
+                                            )}
+                                        </Badge>
                                     )}
-                                    <Badge variant="secondary">{getFoilingLabel(editingPendingCard.card.foiling)}</Badge>
+                                    <Badge variant="secondary">
+                                        {getFoilingLabel(
+                                            editingPendingCard.card.foiling,
+                                        )}
+                                    </Badge>
                                 </div>
                             </div>
                         </div>
@@ -81,44 +101,61 @@ export function ScannerCardEditor({
                         <div className="space-y-2">
                             <Label>Zustand</Label>
                             <div className="flex flex-wrap gap-2">
-                                {Object.entries(conditions).map(([key, label]) => (
-                                    <Button
-                                        key={key}
-                                        variant={editingPendingCard.condition === key ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onUpdateCondition(editingPendingCard.id, key);
-                                        }}
-                                        className="flex-1"
-                                    >
-                                        {label}
-                                    </Button>
-                                ))}
+                                {Object.entries(conditions).map(
+                                    ([key, label]) => (
+                                        <Button
+                                            key={key}
+                                            variant={
+                                                editingPendingCard.condition ===
+                                                key
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onUpdateCondition(
+                                                    editingPendingCard.id,
+                                                    key,
+                                                );
+                                            }}
+                                            className="flex-1"
+                                        >
+                                            {label}
+                                        </Button>
+                                    ),
+                                )}
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <Label>Foiling</Label>
                             <div className="flex flex-wrap gap-2">
-                                {Object.entries(foilings).map(([key, label]) => (
-                                    <Button
-                                        key={key}
-                                        variant={
-                                            (editingPendingCard.foiling ?? editingPendingCard.card.foiling) === key
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onUpdateFoiling(editingPendingCard.id, key);
-                                        }}
-                                        className="flex-1"
-                                    >
-                                        {label}
-                                    </Button>
-                                ))}
+                                {Object.entries(foilings).map(
+                                    ([key, label]) => (
+                                        <Button
+                                            key={key}
+                                            variant={
+                                                (editingPendingCard.foiling ??
+                                                    editingPendingCard.card
+                                                        .foiling) === key
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onUpdateFoiling(
+                                                    editingPendingCard.id,
+                                                    key,
+                                                );
+                                            }}
+                                            className="flex-1"
+                                        >
+                                            {label}
+                                        </Button>
+                                    ),
+                                )}
                             </div>
                         </div>
 
@@ -128,11 +165,18 @@ export function ScannerCardEditor({
                                 {Object.entries(languages).map(([key]) => (
                                     <Button
                                         key={key}
-                                        variant={editingPendingCard.language === key ? 'default' : 'outline'}
+                                        variant={
+                                            editingPendingCard.language === key
+                                                ? 'default'
+                                                : 'outline'
+                                        }
                                         size="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onUpdateLanguage(editingPendingCard.id, key);
+                                            onUpdateLanguage(
+                                                editingPendingCard.id,
+                                                key,
+                                            );
                                         }}
                                     >
                                         {key}
@@ -142,7 +186,11 @@ export function ScannerCardEditor({
                         </div>
 
                         <div className="flex gap-2 pt-2">
-                            <Button variant="outline" className="flex-1" onClick={onFinishEditing}>
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={onFinishEditing}
+                            >
                                 Fertig
                             </Button>
                             <Button
@@ -159,43 +207,67 @@ export function ScannerCardEditor({
                     </div>
                 ) : notFoundRecognition ? (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
+                        <div className="rounded-lg border border-warning bg-warning-subtle p-4">
                             <div className="flex items-start gap-3">
-                                <XCircle className="mt-0.5 h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                                <XCircle className="mt-0.5 h-5 w-5 text-warning" />
                                 <div className="flex-1">
-                                    <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Karte nicht in Datenbank</h4>
-                                    <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                                        Die KI hat die Karte erkannt, aber sie wurde nicht in der Kartendatenbank gefunden.
+                                    <h4 className="font-medium text-warning-subtle-foreground">
+                                        Karte nicht in Datenbank
+                                    </h4>
+                                    <p className="mt-1 text-sm text-warning">
+                                        Die KI hat die Karte erkannt, aber sie
+                                        wurde nicht in der Kartendatenbank
+                                        gefunden.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <h4 className="text-sm font-medium">Erkannte Daten:</h4>
+                            <h4 className="text-sm font-medium">
+                                Erkannte Daten:
+                            </h4>
                             <div className="space-y-1.5 rounded-lg border bg-muted/30 p-3">
                                 {notFoundRecognition.card_name && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Kartenname:</span>
-                                        <span className="font-medium">{notFoundRecognition.card_name}</span>
+                                        <span className="text-muted-foreground">
+                                            Kartenname:
+                                        </span>
+                                        <span className="font-medium">
+                                            {notFoundRecognition.card_name}
+                                        </span>
                                     </div>
                                 )}
                                 {notFoundRecognition.set_code && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Set-Code:</span>
-                                        <span className="font-mono font-medium">{notFoundRecognition.set_code}</span>
+                                        <span className="text-muted-foreground">
+                                            Set-Code:
+                                        </span>
+                                        <span className="font-mono font-medium">
+                                            {notFoundRecognition.set_code}
+                                        </span>
                                     </div>
                                 )}
                                 {notFoundRecognition.collector_number && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Nummer:</span>
-                                        <span className="font-mono font-medium">{notFoundRecognition.collector_number}</span>
+                                        <span className="text-muted-foreground">
+                                            Nummer:
+                                        </span>
+                                        <span className="font-mono font-medium">
+                                            {
+                                                notFoundRecognition.collector_number
+                                            }
+                                        </span>
                                     </div>
                                 )}
                                 {notFoundRecognition.foiling && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Foiling:</span>
-                                        <span className="font-medium">{notFoundRecognition.foiling}</span>
+                                        <span className="text-muted-foreground">
+                                            Foiling:
+                                        </span>
+                                        <span className="font-medium">
+                                            {notFoundRecognition.foiling}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -203,14 +275,18 @@ export function ScannerCardEditor({
 
                         <div className="space-y-2">
                             <p className="text-sm text-muted-foreground">
-                                Versuche die Karte manuell zu suchen oder lege sie als eigene Karte an.
+                                Versuche die Karte manuell zu suchen oder lege
+                                sie als eigene Karte an.
                             </p>
                             <div className="flex gap-2">
                                 <Button
                                     variant="outline"
                                     className="flex-1"
                                     onClick={() => {
-                                        const query = notFoundRecognition.card_name ?? notFoundRecognition.collector_number ?? '';
+                                        const query =
+                                            notFoundRecognition.card_name ??
+                                            notFoundRecognition.collector_number ??
+                                            '';
                                         onManualSearch(query);
                                     }}
                                 >
@@ -220,13 +296,20 @@ export function ScannerCardEditor({
                                 <Button
                                     variant="secondary"
                                     className="flex-1"
-                                    onClick={() => onCreateCustomCard(notFoundRecognition)}
+                                    onClick={() =>
+                                        onCreateCustomCard(notFoundRecognition)
+                                    }
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     Als eigene Karte
                                 </Button>
                             </div>
-                            <Button variant="ghost" size="sm" className="w-full" onClick={onCloseNotFound}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full"
+                                onClick={onCloseNotFound}
+                            >
                                 Schließen
                             </Button>
                         </div>

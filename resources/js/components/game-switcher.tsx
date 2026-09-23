@@ -22,7 +22,11 @@ interface CustomGame {
 
 const OFFICIAL_GAMES: GameOption[] = [
     { slug: 'fab', name: 'Flesh and Blood', isOfficial: true },
-    { slug: 'magic-the-gathering', name: 'Magic: The Gathering', isOfficial: true },
+    {
+        slug: 'magic-the-gathering',
+        name: 'Magic: The Gathering',
+        isOfficial: true,
+    },
     { slug: 'riftbound', name: 'Riftbound', isOfficial: true },
     { slug: 'onepiece', name: 'One Piece', isOfficial: true },
 ];
@@ -34,7 +38,11 @@ export function useSelectedGame() {
 
     const allGames: GameOption[] = [
         ...OFFICIAL_GAMES,
-        ...(customGames?.map(g => ({ slug: g.slug, name: g.name, isOfficial: false })) ?? []),
+        ...(customGames?.map((g) => ({
+            slug: g.slug,
+            name: g.name,
+            isOfficial: false,
+        })) ?? []),
     ];
 
     const [selectedSlug, setSelectedSlug] = useState<string>(() => {
@@ -42,7 +50,8 @@ export function useSelectedGame() {
         return localStorage.getItem(STORAGE_KEY) ?? 'fab';
     });
 
-    const selectedGame = allGames.find(g => g.slug === selectedSlug) ?? allGames[0];
+    const selectedGame =
+        allGames.find((g) => g.slug === selectedSlug) ?? allGames[0];
 
     const setSelectedGame = (slug: string) => {
         setSelectedSlug(slug);
@@ -65,14 +74,18 @@ interface GameSwitcherProps {
     games: GameOption[];
 }
 
-export function GameSwitcher({ selectedSlug, onSelect, games }: GameSwitcherProps) {
-    const selectedGame = games.find(g => g.slug === selectedSlug);
+export function GameSwitcher({
+    selectedSlug,
+    onSelect,
+    games,
+}: GameSwitcherProps) {
+    const selectedGame = games.find((g) => g.slug === selectedSlug);
 
     return (
-        <div className="px-2 py-2 overflow-hidden">
+        <div className="overflow-hidden px-2 py-2">
             <Select value={selectedSlug} onValueChange={onSelect}>
                 <SelectTrigger className="w-full min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
                         <Gamepad2 className="h-4 w-4 shrink-0" />
                         <span className="truncate">
                             {selectedGame?.name ?? 'Spiel wählen'}
@@ -80,28 +93,38 @@ export function GameSwitcher({ selectedSlug, onSelect, games }: GameSwitcherProp
                     </div>
                 </SelectTrigger>
                 <SelectContent>
-                    {games.filter(g => g.isOfficial).length > 0 && (
+                    {games.filter((g) => g.isOfficial).length > 0 && (
                         <>
                             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                                 Offizielle Spiele
                             </div>
-                            {games.filter(g => g.isOfficial).map((game) => (
-                                <SelectItem key={game.slug} value={game.slug}>
-                                    {game.name}
-                                </SelectItem>
-                            ))}
+                            {games
+                                .filter((g) => g.isOfficial)
+                                .map((game) => (
+                                    <SelectItem
+                                        key={game.slug}
+                                        value={game.slug}
+                                    >
+                                        {game.name}
+                                    </SelectItem>
+                                ))}
                         </>
                     )}
-                    {games.filter(g => !g.isOfficial).length > 0 && (
+                    {games.filter((g) => !g.isOfficial).length > 0 && (
                         <>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-1">
+                            <div className="mt-1 px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                                 Eigene Spiele
                             </div>
-                            {games.filter(g => !g.isOfficial).map((game) => (
-                                <SelectItem key={game.slug} value={game.slug}>
-                                    {game.name}
-                                </SelectItem>
-                            ))}
+                            {games
+                                .filter((g) => !g.isOfficial)
+                                .map((game) => (
+                                    <SelectItem
+                                        key={game.slug}
+                                        value={game.slug}
+                                    >
+                                        {game.name}
+                                    </SelectItem>
+                                ))}
                         </>
                     )}
                 </SelectContent>

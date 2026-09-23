@@ -69,9 +69,12 @@ export default function GamesSettings({ games }: Props) {
                 {games.length === 0 && (
                     <div className="rounded-lg border border-dashed p-8 text-center">
                         <Gamepad2 className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">Keine Spiele</h3>
+                        <h3 className="mt-4 text-lg font-medium">
+                            Keine Spiele
+                        </h3>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Erstelle dein erstes eigenes Kartenspiel oder warte auf offizielle Spiele.
+                            Erstelle dein erstes eigenes Kartenspiel oder warte
+                            auf offizielle Spiele.
                         </p>
                     </div>
                 )}
@@ -104,7 +107,7 @@ function GameCard({ game }: { game: Game }) {
                             )}
                         </div>
                         {game.description && (
-                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                                 {game.description}
                             </p>
                         )}
@@ -157,7 +160,8 @@ function CreateGameDialog({
                 <DialogHeader>
                     <DialogTitle>Neues Spiel erstellen</DialogTitle>
                     <DialogDescription>
-                        Erstelle ein eigenes Kartenspiel mit individuellen Attributen und Formaten.
+                        Erstelle ein eigenes Kartenspiel mit individuellen
+                        Attributen und Formaten.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -172,23 +176,33 @@ function CreateGameDialog({
                             required
                         />
                         {errors.name && (
-                            <p className="mt-1 text-sm text-destructive">{errors.name}</p>
+                            <p className="mt-1 text-sm text-destructive">
+                                {errors.name}
+                            </p>
                         )}
                     </div>
 
                     <div>
-                        <Label htmlFor="description">Beschreibung (optional)</Label>
+                        <Label htmlFor="description">
+                            Beschreibung (optional)
+                        </Label>
                         <Textarea
                             id="description"
                             value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
+                            onChange={(e) =>
+                                setData('description', e.target.value)
+                            }
                             placeholder="Beschreibe dein Kartenspiel..."
                             rows={3}
                         />
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
                             Abbrechen
                         </Button>
                         <Button type="submit" disabled={processing}>

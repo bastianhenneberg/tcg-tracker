@@ -74,7 +74,11 @@ export interface DeckStatistics {
 }
 
 export interface ValidationError {
-    type: 'zone_minimum' | 'zone_maximum' | 'playset_exceeded' | 'collection_shortage';
+    type:
+        | 'zone_minimum'
+        | 'zone_maximum'
+        | 'playset_exceeded'
+        | 'collection_shortage';
     message: string;
     zone?: string;
     card?: string;

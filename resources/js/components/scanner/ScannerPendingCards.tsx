@@ -1,8 +1,20 @@
 import { CardImage } from '@/components/card-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Camera, CheckCircle, Loader2, XCircle } from 'lucide-react';
 import type { PendingCard } from './types';
 
@@ -54,7 +66,9 @@ export function ScannerPendingCards({
                     <span>Warteschlange</span>
                     <Badge variant="secondary">{pendingCards.length}</Badge>
                 </CardTitle>
-                <CardDescription>Karten vor dem Hinzufügen prüfen</CardDescription>
+                <CardDescription>
+                    Karten vor dem Hinzufügen prüfen
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
                 <div className="max-h-64 space-y-2 overflow-y-auto">
@@ -62,9 +76,17 @@ export function ScannerPendingCards({
                         <div
                             key={pending.id}
                             className={`flex cursor-pointer items-start gap-3 rounded-lg border p-2 transition-colors hover:bg-muted/50 ${
-                                replacingCardId === pending.id ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : ''
+                                replacingCardId === pending.id
+                                    ? 'border-warning bg-warning-subtle'
+                                    : ''
                             } ${editingPendingId === pending.id ? 'border-primary bg-primary/5' : ''}`}
-                            onClick={() => onEditPending(editingPendingId === pending.id ? null : pending.id)}
+                            onClick={() =>
+                                onEditPending(
+                                    editingPendingId === pending.id
+                                        ? null
+                                        : pending.id,
+                                )
+                            }
                         >
                             <CardImage
                                 src={pending.card.image_url}
@@ -76,13 +98,17 @@ export function ScannerPendingCards({
                                 <p className="flex items-center gap-1 truncate font-medium">
                                     {pending.card.card_name}
                                     {pending.card.is_custom && (
-                                        <Badge variant="secondary" className="shrink-0 px-1 text-[10px]">
+                                        <Badge
+                                            variant="secondary"
+                                            className="shrink-0 px-1 text-3xs"
+                                        >
                                             Custom
                                         </Badge>
                                     )}
                                 </p>
                                 <p className="truncate text-xs text-muted-foreground">
-                                    {pending.card.set_name} - {pending.card.collector_number}
+                                    {pending.card.set_name} -{' '}
+                                    {pending.card.collector_number}
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                     <Select
@@ -91,32 +117,53 @@ export function ScannerPendingCards({
                                             onUpdateCondition(pending.id, v);
                                         }}
                                     >
-                                        <SelectTrigger className="h-6 w-16 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <SelectTrigger
+                                            className="h-6 w-16 text-xs"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {Object.entries(conditions).map(([key]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {key}
-                                                </SelectItem>
-                                            ))}
+                                            {Object.entries(conditions).map(
+                                                ([key]) => (
+                                                    <SelectItem
+                                                        key={key}
+                                                        value={key}
+                                                    >
+                                                        {key}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <Select
-                                        value={pending.foiling ?? pending.card.foiling ?? Object.keys(foilings)[0] ?? 'S'}
+                                        value={
+                                            pending.foiling ??
+                                            pending.card.foiling ??
+                                            Object.keys(foilings)[0] ??
+                                            'S'
+                                        }
                                         onValueChange={(v) => {
                                             onUpdateFoiling(pending.id, v);
                                         }}
                                     >
-                                        <SelectTrigger className="h-6 w-20 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <SelectTrigger
+                                            className="h-6 w-20 text-xs"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {Object.entries(foilings).map(([key, label]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {label}
-                                                </SelectItem>
-                                            ))}
+                                            {Object.entries(foilings).map(
+                                                ([key, label]) => (
+                                                    <SelectItem
+                                                        key={key}
+                                                        value={key}
+                                                    >
+                                                        {label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <Select
@@ -125,15 +172,23 @@ export function ScannerPendingCards({
                                             onUpdateLanguage(pending.id, v);
                                         }}
                                     >
-                                        <SelectTrigger className="h-6 w-14 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <SelectTrigger
+                                            className="h-6 w-14 text-xs"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {Object.entries(languages).map(([key]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {key}
-                                                </SelectItem>
-                                            ))}
+                                            {Object.entries(languages).map(
+                                                ([key]) => (
+                                                    <SelectItem
+                                                        key={key}
+                                                        value={key}
+                                                    >
+                                                        {key}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -168,7 +223,11 @@ export function ScannerPendingCards({
                     ))}
                 </div>
                 <div className="flex gap-2 border-t pt-2">
-                    <Button onClick={onConfirmAll} disabled={confirmingAll || !selectedLotId} className="flex-1">
+                    <Button
+                        onClick={onConfirmAll}
+                        disabled={confirmingAll || !selectedLotId}
+                        className="flex-1"
+                    >
                         {confirmingAll ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -176,7 +235,11 @@ export function ScannerPendingCards({
                         )}
                         An Inventar senden ({pendingCards.length})
                     </Button>
-                    <Button variant="outline" onClick={onClear} disabled={confirmingAll}>
+                    <Button
+                        variant="outline"
+                        onClick={onClear}
+                        disabled={confirmingAll}
+                    >
                         Leeren
                     </Button>
                 </div>
