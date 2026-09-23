@@ -6,6 +6,7 @@ use App\Models\Game;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Peppermint\Changelog\Services\ChangelogService;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -43,6 +44,7 @@ class HandleInertiaRequests extends Middleware
         $notifications = [];
         $unreadCount = 0;
         $customGames = [];
+        $pendingChangelog = null;
 
         if ($user) {
             $notifications = $user->notifications()
@@ -73,6 +75,8 @@ class HandleInertiaRequests extends Middleware
                     'name' => $game->name,
                     'slug' => $game->slug,
                 ]);
+
+            $pendingChangelog = app(ChangelogService::class)->getPendingModalChangelog($user);
         }
 
         return [
@@ -87,6 +91,7 @@ class HandleInertiaRequests extends Middleware
                 'unread_count' => $unreadCount,
             ],
             'customGames' => $customGames,
+            'pendingChangelog' => $pendingChangelog,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
                 'success' => $request->session()->get('success'),
