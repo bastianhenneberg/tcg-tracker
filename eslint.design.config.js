@@ -1,4 +1,5 @@
 import shadcn from '@shadcn/lint';
+import keinePalettenklassen from './eslint-rules/keine-palettenklassen.js';
 import tsParser from '@typescript-eslint/parser';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
@@ -7,6 +8,15 @@ import tseslint from 'typescript-eslint';
  * Der Design-Waechter. Laeuft ueber `npm run lint:design` und haengt an
  * `npm run lint` mit dran. Jede Ausnahme hat einen Grund.
  */
+/**
+ * Eigene Regeln. `no-raw-colors` prueft nur Farbliterale — `bg-green-500`
+ * rutscht durch. Nachgewiesen am 24.09.2026; Begruendung in der Regel selbst.
+ *
+ * Dieses Projekt hat null Fundstellen. Die Regel steht hier, damit das so
+ * bleibt — ein Waechter lohnt sich am meisten, solange es nichts zu melden gibt.
+ */
+const peppermint = { rules: { 'keine-palettenklassen': keinePalettenklassen } };
+
 export default [
     {
         files: ['**/*.{ts,tsx}'],
@@ -21,6 +31,7 @@ export default [
            und ohne die Registrierung meldet jeder davon „Definition for rule
            ... was not found" und deckt die echten Befunde zu. */
         plugins: {
+            peppermint,
             shadcn,
             '@typescript-eslint': tseslint.plugin,
             'react-hooks': reactHooks,
@@ -34,6 +45,7 @@ export default [
             'shadcn/no-restyle': 'off',
 
             'shadcn/no-raw-colors': 'error',
+            'peppermint/keine-palettenklassen': 'error',
 
             /**
              * Masse sind Layout-Entscheidungen und gehoeren nicht ins Theme.
