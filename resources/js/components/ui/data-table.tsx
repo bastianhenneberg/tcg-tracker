@@ -95,6 +95,26 @@ export function DataTable<TData, TValue>({
         return [selectionColumn, ...columns];
     }, [columns, enableRowSelection]);
 
+    /**
+     * Hier ist nichts zu beheben — die Regel beschreibt TanStack Table, nicht
+     * unseren Code.
+     *
+     * `useReactTable()` gibt Funktionen zurueck, die sich nicht sicher
+     * memoisieren lassen; der React-Compiler ueberspringt diese Komponente
+     * deshalb. Das ist keine entgangene Korrektheit, sondern eine entgangene
+     * Optimierung — und der Compiler laeuft in keinem unserer Projekte im Bau
+     * (geprueft: kein `babel-plugin-react-compiler`).
+     *
+     * Der Vorbehalt in der Meldung („issues if values are passed to other
+     * memoized components") ist nachgeprueft: Das `table` in der
+     * Auswahl-Spalte oben ist TanStacks eigener Render-Parameter, keine
+     * eingefangene aeussere Bindung. Kein veralteter Zustand.
+     *
+     * Stillgelegt, weil eine dauerhaft unbehebbare Meldung echte Warnungen
+     * unsichtbar macht. Wird der Compiler einmal eingeschaltet, gehoert diese
+     * Zeile wieder heraus.
+     */
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: data.data,
         columns: tableColumns,
