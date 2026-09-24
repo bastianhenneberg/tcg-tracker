@@ -604,11 +604,21 @@ function SidebarMenuSkeleton({
 
   // wrapping in useState to ensure the width is stable across renders
   // also ensures we have a stable reference to the style object
-  const [skeletonStyle] = React.useState(() => (
-      {
-        "--skeleton-width": `${Math.floor(Math.random() * 40) + 50}%` // Random width between 50 to 90%.
-    } as React.CSSProperties
-  ))
+  // Breite zwischen 50 und 90%, abgeleitet aus der React-Id.
+  //
+  // Bewusste Abweichung vom shadcn-Register: dort steht `Math.random()` im
+  // Bilddurchlauf — auch ein `useState`-Initialisierer laeuft dort. Server und
+  // Client wuerfeln damit verschiedene Breiten, das Markup weicht beim
+  // Hydrieren ab. Die Id ist pro Element stabil und unterscheidet sich
+  // zwischen den Elementen, das Platzhalter-Muster bleibt also ungleichmaessig.
+  const id = React.useId()
+  const skeletonStyle = React.useMemo(() => {
+    let summe = 0
+    for (const zeichen of id) {
+      summe += zeichen.charCodeAt(0)
+    }
+    return { "--skeleton-width": `${(summe % 40) + 50}%` } as React.CSSProperties
+  }, [id])
 
   return (
     <div

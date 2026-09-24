@@ -9,6 +9,34 @@ import typescript from 'typescript-eslint';
 export default [
     js.configs.recommended,
     reactHooks.configs.flat.recommended,
+    {
+        rules: {
+            /**
+             * Sichtbar, aber nicht blockierend.
+             *
+             * Die Regel trifft zwei verschiedene Dinge. Das eine ist echter
+             * Zustand, der sich ableiten liesse — das gehoert behoben. Das
+             * andere ist das Laden von Daten beim Oeffnen eines Dialogs: Der
+             * Ladezustand MUSS dabei gesetzt werden, und einen Ersatz hat
+             * dieser Stapel nicht (keine Query-Bibliothek, Inertia laedt pro
+             * Seite). Beides als Fehler zu fuehren hiesse, die restlichen
+             * fuenfzehn Regeln nicht einschalten zu koennen.
+             *
+             * Nicht abgeschaltet, sondern herabgestuft: Die Fundstellen
+             * bleiben bei jedem Lauf sichtbar und zaehlbar.
+             */
+            'react-hooks/set-state-in-effect': 'warn',
+
+            /**
+             * Meldet keinen Defekt, sondern eine entgangene Optimierung: Der
+             * React-Compiler kann diese Komponente nicht uebernehmen, weil er
+             * die von Hand gesetzte Memoisierung nicht nachweisen kann. In
+             * keinem unserer Projekte laeuft der Compiler im Bau — die
+             * Optimierung, die hier ausfaellt, gibt es also gar nicht.
+             */
+            'react-hooks/preserve-manual-memoization': 'warn',
+        },
+    },
     ...typescript.configs.recommended,
     {
         ...react.configs.flat.recommended,
