@@ -50,7 +50,14 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  // Bewusste Abweichung vom shadcn-Register: dort steht seit der Umstellung
+  // `item-aligned`. Damit richtet Radix das Menue am gewaehlten Eintrag aus —
+  // in der Seitenleiste landete es dadurch bei y=1287 und damit ausserhalb des
+  // sichtbaren Bereichs. Es oeffnete also, war nur nicht zu sehen.
+  //
+  // `popper` haengt das Menue an den Ausloeser und war bis vor kurzem auch im
+  // Register die Vorgabe. Beim Auffrischen kommt `item-aligned` zurueck.
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {

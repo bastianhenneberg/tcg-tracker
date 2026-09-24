@@ -360,7 +360,18 @@ function SidebarSeparator({
     <Separator
       data-slot="sidebar-separator"
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      // `data-[orientation=horizontal]:w-auto` statt nur `w-auto`: Die
+      // Basis-Klasse in `Separator` traegt dieselbe Variante
+      // (`data-[orientation=horizontal]:w-full`) und gewinnt sonst, weil
+      // eine Variante spezifischer ist als eine blanke Klasse. Der Trenner
+      // war dadurch volle 240px breit PLUS die 2x8px Rand — 16px Ueberstand,
+      // sichtbar als waagerechte Bildlaufleiste unter der Seitenleiste.
+      // Mit derselben Variante erkennt tailwind-merge den Konflikt und
+      // wirft die Basis-Klasse weg. Bewusste Abweichung vom Register.
+      className={cn(
+        "mx-2 w-auto bg-sidebar-border data-[orientation=horizontal]:w-auto",
+        className
+      )}
       {...props}
     />
   )
