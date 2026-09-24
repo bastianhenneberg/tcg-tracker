@@ -98,6 +98,17 @@ function NavigationMenuContent({
   )
 }
 
+/**
+ * `origin-top` statt `origin-top-center` — ein Registerfehler.
+ *
+ * `origin-top-center` gibt es in Tailwind nicht; die Klasse erzeugt kein CSS
+ * und die Aufklapp-Animation lief nie. Gefunden in 10 von 10 Projekten
+ * (22.09.2026), behoben — und von der Auffrischung am 24.09. ueberall wieder
+ * hereingetragen.
+ *
+ * `npm run lint:design` faengt es (`shadcn/no-unknown-classes`). Nach jedem
+ * Auffrischen laufen lassen.
+ */
 function NavigationMenuViewport({
   className,
   ...props
@@ -111,7 +122,7 @@ function NavigationMenuViewport({
       <NavigationMenuPrimitive.Viewport
         data-slot="navigation-menu-viewport"
         className={cn(
-          "origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
+          "origin-top relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]",
           className
         )}
         {...props}

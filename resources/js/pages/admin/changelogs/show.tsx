@@ -151,7 +151,7 @@ export default function AdminChangelogShow({ changelog }: Props) {
                                     ) : !changelog.is_published ? (
                                         <Badge variant="outline">Geplant</Badge>
                                     ) : (
-                                        <Badge variant="default" className="bg-green-500">
+                                        <Badge variant="default" className="bg-success text-success-foreground">
                                             Aktiv
                                         </Badge>
                                     )}
@@ -213,15 +213,15 @@ export default function AdminChangelogShow({ changelog }: Props) {
                                     <div
                                         className={`flex h-8 w-8 items-center justify-center rounded-full ${
                                             changelog.show_modal
-                                                ? 'bg-green-100 dark:bg-green-900'
-                                                : 'bg-gray-100 dark:bg-gray-800'
+                                                ? 'bg-success-subtle'
+                                                : 'bg-muted'
                                         }`}
                                     >
                                         <MessageSquare
                                             className={`h-4 w-4 ${
                                                 changelog.show_modal
-                                                    ? 'text-green-600 dark:text-green-400'
-                                                    : 'text-gray-400'
+                                                    ? 'text-success-subtle-foreground'
+                                                    : 'text-muted-foreground'
                                             }`}
                                         />
                                     </div>
@@ -241,8 +241,8 @@ export default function AdminChangelogShow({ changelog }: Props) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-                                        <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info-subtle">
+                                        <Calendar className="h-4 w-4 text-info-subtle-foreground" />
                                     </div>
                                     <div>
                                         <div className="text-sm font-medium">Veröffentlichung</div>

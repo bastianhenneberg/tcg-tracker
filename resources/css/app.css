@@ -2,6 +2,11 @@
 
 @import 'tw-animate-css';
 
+/* Die Changelog-Seiten setzen `prose`, `prose-sm` und `dark:prose-invert`.
+   Ohne dieses Plugin erzeugen die Klassen kein CSS — der Text stand dort
+   unformatiert. Fuenf andere Projekte fuehren es laengst. */
+@plugin '@tailwindcss/typography';
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 

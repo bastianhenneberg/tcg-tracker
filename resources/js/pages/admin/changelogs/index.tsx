@@ -100,7 +100,7 @@ export default function AdminChangelogIndex({ changelogs }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Aktiv</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-success" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{activeCount}</div>
@@ -109,7 +109,7 @@ export default function AdminChangelogIndex({ changelogs }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Mit Modal</CardTitle>
-                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <Calendar className="h-4 w-4 text-info" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{modalCount}</div>
@@ -160,7 +160,7 @@ export default function AdminChangelogIndex({ changelogs }: Props) {
                                                     ) : !changelog.is_published ? (
                                                         <Badge variant="outline">Geplant</Badge>
                                                     ) : (
-                                                        <Badge variant="default" className="bg-green-500">
+                                                        <Badge variant="default" className="bg-success text-success-foreground">
                                                             Aktiv
                                                         </Badge>
                                                     )}
