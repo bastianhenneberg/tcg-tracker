@@ -52,6 +52,43 @@ const ABWEICHUNGEN = [
      */
     'dark.sidebar-primary' => 'Registerwert ist ein Diagramm-Blau, 2,63:1 gegen die Seitenleiste — Entscheidung vom 24.09.2026',
     'dark.sidebar-primary-foreground' => 'Muss zum geaenderten Kasten passen, sonst hell auf hell — Entscheidung vom 24.09.2026',
+
+    /*
+     * Die Diagramm-Palette.
+     *
+     * Die Fixture ist `colors/neutral.json` — die GRUNDFARBEN-Datei. Die
+     * monochromatisiert per Konstruktion alles, `chart-*` eingeschlossen, und
+     * setzt hell und dunkel auf dieselben fuenf Graustufen. Fuer Flaechen und
+     * Schrift ist das richtig. Fuer ein Diagramm ist es ein Defekt, und zwar
+     * ein gemessener: weil beide Bloecke gleich sind, faellt in jedem Modus ein
+     * Ende der Skala in den Untergrund.
+     *
+     *     --chart-1: oklch(0.87 0 0)   gegen die helle Karte   1,48:1
+     *     --chart-5: oklch(0.269 0 0)  gegen die dunkle Karte  1,19:1
+     *
+     * Aufgefallen am 24.09.2026 an „Events nach Status" in peppermint-connect:
+     * Der Kreis war da — zwei Sektoren mit echten Pfaddaten, keine
+     * Konsolenfehler —, nur hellgrau auf Weiss. Sichtbar blieb allein die
+     * handgebaute Legende darunter, weshalb es wie ein kaputtes recharts
+     * aussah. War es nicht.
+     *
+     * Uebernommen ist shadcn' eigene Diagramm-Palette, die jedes Theme ausser
+     * der neutralen Grundfarbe mitbringt — also kein eigener Entwurf, nur die
+     * richtige Quelle. Schwaechster Wert: 3,59:1 hell, 2,63:1 dunkel.
+     *
+     * Die Eigenschaft selbst bewacht der Test unten: hell und dunkel duerfen
+     * nicht gleich sein. Der haelt auch, wenn shadcn die Palette aendert.
+     */
+    'light.chart-1' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'light.chart-2' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'light.chart-3' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'light.chart-4' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'light.chart-5' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'dark.chart-1' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'dark.chart-2' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'dark.chart-3' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'dark.chart-4' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
+    'dark.chart-5' => 'Neutral-Fixture ist monochrom und hell=dunkel — Entscheidung vom 24.09.2026',
     // Leer: Das Theme steht vollstaendig auf dem shadcn-Standard, es gibt
     // nichts zu begruenden.
     //
@@ -207,3 +244,26 @@ it('fuehrt kein Token, das weder Standard noch ausdruecklich eigenes ist', funct
         ['', 'Entweder entfernen — oder in EIGENE_TOKENS eintragen, mit vollem', 'Namen. Ein Token, das niemand kennt, wird auch von niemandem gepflegt.']
     )));
 })->with(['light', 'dark']);
+
+/**
+ * Die Eigenschaft hinter der Ausnahme oben, unabhaengig von Farbwerten: Eine
+ * Diagramm-Palette, die in beiden Bloecken dieselbe ist, hat gar keine fuer den
+ * Dunkelmodus. Dann faellt zwangslaeufig ein Ende der Skala in den Untergrund —
+ * das hellste auf der hellen Karte, das dunkelste auf der dunklen.
+ */
+it('fuehrt getrennte Diagrammfarben fuer hell und dunkel', function () {
+    $hell = themeWerte('light');
+    $dunkel = themeWerte('dark');
+
+    $gleich = collect(range(1, 5))
+        ->map(fn (int $n) => "chart-{$n}")
+        ->filter(fn (string $name) => ($hell[$name] ?? null) === ($dunkel[$name] ?? null))
+        ->values()
+        ->all();
+
+    expect($gleich)->toBe([], implode("\n  ", array_merge(
+        ['Diese Diagrammfarben sind in hell und dunkel identisch:'],
+        $gleich,
+        ['', 'Damit hat der Dunkelmodus keine eigene Palette. Die Werte aus der', 'neutralen Grundfarbe sind dafuer nicht zu gebrauchen — siehe ABWEICHUNGEN.']
+    )));
+});
