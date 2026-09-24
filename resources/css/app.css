@@ -182,7 +182,7 @@
        Seitenleiste, und das dunkle Logo darauf bei 3,08:1. Im hellen Modus ist
        derselbe Kasten fast schwarz — die Asymmetrie war der Fehler, nicht der
        Farbton.
-    
+
        Jetzt spiegelt er --primary/--primary-foreground: hell im Dunkelmodus,
        dunkel im hellen. 14,22:1 in beide Richtungen. Bewacht von
        LogoKastenBleibtLesbarTest. */
@@ -225,3 +225,4 @@
         @apply bg-background text-foreground;
     }
 }
+
