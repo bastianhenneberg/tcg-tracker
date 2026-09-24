@@ -26,6 +26,7 @@
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "peppermint/dev-login": "^0.1",
         "pestphp/pest": "^4.3",
         "pestphp/pest-plugin-laravel": "^4.0"
     },
@@ -100,6 +101,11 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "repositories": [
+        {
+            "name": "dev-login",
+            "type": "vcs",
+            "url": "git@github.com:peppermint-digital/dev-login.git"
+        },
         {
             "type": "vcs",
             "url": "https://github.com/peppermint-digital/peppermint-changelog.git"

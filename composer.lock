@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f75e55e8af2a08a473c95c3143eb6078",
+    "content-hash": "3fb8d4725755afe824f9802e14782fbd",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -7953,6 +7953,71 @@
                 }
             ],
             "time": "2026-02-17T17:33:08+00:00"
+        },
+        {
+            "name": "peppermint/dev-login",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:peppermint-digital/dev-login.git",
+                "reference": "6d3c537a6120c0451ade9c6a92cb89c3be427658"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/peppermint-digital/dev-login/zipball/6d3c537a6120c0451ade9c6a92cb89c3be427658",
+                "reference": "6d3c537a6120c0451ade9c6a92cb89c3be427658",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^11.0 || ^12.0 || ^13.0",
+                "illuminate/routing": "^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^11.0 || ^12.0 || ^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^11.2",
+                "pestphp/pest": "^5.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Peppermint\\DevLogin\\DevLoginServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Peppermint\\DevLogin\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Peppermint\\DevLogin\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/pest"
+                ]
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Peppermint Digital"
+                }
+            ],
+            "description": "Passwordless signed login links for Peppermint Laravel apps — development and testing environments only, off by default.",
+            "keywords": [
+                "development",
+                "laravel",
+                "login",
+                "peppermint",
+                "signed-url"
+            ],
+            "time": "2026-08-14T12:51:52+00:00"
         },
         {
             "name": "pestphp/pest",
