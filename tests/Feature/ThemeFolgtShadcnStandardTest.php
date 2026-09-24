@@ -35,6 +35,23 @@
  * nur auf den Naechsten.
  */
 const ABWEICHUNGEN = [
+    /*
+     * Der Kasten mit dem Logo oben links.
+     *
+     * Der Registerwert fuer den Dunkelmodus ist ein Blau
+     * (oklch(0.488 0.243 264.376)) — ein Rest aus der Diagramm-Palette. Im
+     * hellen Modus ist derselbe Token fast schwarz. Daraus folgten zwei Fehler:
+     * Der Kasten hob sich nur mit 2,63:1 von der Seitenleiste ab, und die
+     * Komponenten legten ein dunkles Logo darauf, weil sie einen hellen Kasten
+     * erwarteten (3,08:1). Betroffen waren zehn von elf Projekten.
+     *
+     * Jetzt spiegelt der Kasten --primary: hell im Dunkelmodus, dunkel im
+     * hellen. 14,22:1 in beide Richtungen. Die Eigenschaft selbst bewacht
+     * LogoKastenBleibtLesbarTest — der prueft Kontraste, nicht Farbwerte, und
+     * haelt damit auch, wenn der Standard sich aendert.
+     */
+    'dark.sidebar-primary' => 'Registerwert ist ein Diagramm-Blau, 2,63:1 gegen die Seitenleiste — Entscheidung vom 24.09.2026',
+    'dark.sidebar-primary-foreground' => 'Muss zum geaenderten Kasten passen, sonst hell auf hell — Entscheidung vom 24.09.2026',
     // Leer: Das Theme steht vollstaendig auf dem shadcn-Standard, es gibt
     // nichts zu begruenden.
     //
@@ -45,6 +62,21 @@ const ABWEICHUNGEN = [
 function themeWerte(string $block): array
 {
     $css = file_get_contents(resource_path('css/app.css'));
+
+    /**
+     * Kommentare zuerst heraus.
+     *
+     * Ohne das frisst der Ausdruck unten sich an einem Kommentar fest, der
+     * selbst einen Token-Namen mit Doppelpunkt enthaelt: `[^;]+` laeuft dann
+     * bis zum naechsten Semikolon — und das steht hinter der ECHTEN
+     * Deklaration, die damit aus der Liste verschwindet. Ein Token, das der
+     * Parser nicht sieht, prueft dieser Test auch nicht.
+     *
+     * Aufgefallen am 24.09.2026: Der Kommentar, der die Abweichung bei
+     * `--sidebar-primary` begruendet, nennt darin `--primary-foreground:` —
+     * und liess damit die Deklaration direkt darunter verschwinden.
+     */
+    $css = preg_replace('#/\\*.*?\\*/#s', '', $css);
 
     $muster = $block === 'light'
         ? '/^:root \{(.*?)^\}/ms'
