@@ -1,5 +1,5 @@
 import shadcn from '@shadcn/lint';
-import keinePalettenklassen from './eslint-rules/keine-palettenklassen.js';
+import { plugin as peppermint, bausteinAusnahme, NO_RESTYLE_AUS } from '@peppermint-digital/eslint-design';
 import tsParser from '@typescript-eslint/parser';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
@@ -8,15 +8,6 @@ import tseslint from 'typescript-eslint';
  * Der Design-Waechter. Laeuft ueber `npm run lint:design` und haengt an
  * `npm run lint` mit dran. Jede Ausnahme hat einen Grund.
  */
-/**
- * Eigene Regeln. `no-raw-colors` prueft nur Farbliterale — `bg-green-500`
- * rutscht durch. Nachgewiesen am 24.09.2026; Begruendung in der Regel selbst.
- *
- * Dieses Projekt hat null Fundstellen. Die Regel steht hier, damit das so
- * bleibt — ein Waechter lohnt sich am meisten, solange es nichts zu melden gibt.
- */
-const peppermint = { rules: { 'keine-palettenklassen': keinePalettenklassen } };
-
 export default [
     {
         files: ['**/*.{ts,tsx}'],
@@ -37,12 +28,7 @@ export default [
             'react-hooks': reactHooks,
         },
         rules: {
-            /**
-             * AUS. Gemessen am 23.09.2026: **681** Befunde. Die Regel
-             * meldet jedes Umstylen einer shadcn-Komponente — das ist kein
-             * Pruefer mehr, sondern Rauschen.
-             */
-            'shadcn/no-restyle': 'off',
+            ...NO_RESTYLE_AUS,
 
             'shadcn/no-raw-colors': 'error',
             'peppermint/keine-palettenklassen': 'error',
@@ -91,20 +77,7 @@ export default [
             'shadcn/no-unknown-classes': 'error',
         },
     },
-    {
-        /**
-         * Die shadcn-Komponenten selbst bringen Masse, dynamische Klassen und
-         * Inline-Styles von Haus aus mit — das ist ihr Bauplan. `no-raw-colors`
-         * bleibt hier ABSICHTLICH an: eine rohe Farbe in einer Basiskomponente
-         * wirkt sich auf die ganze Anwendung aus.
-         */
-        files: ['resources/js/components/ui/**/*.{ts,tsx}'],
-        rules: {
-            'shadcn/no-arbitrary-values': 'off',
-            'shadcn/require-static-classes': 'off',
-            'shadcn/no-inline-styles': 'off',
-        },
-    },
+    bausteinAusnahme(),
     {
         /*
          * Klassen, die nicht von Tailwind kommen: `toaster` ist die Markierung
