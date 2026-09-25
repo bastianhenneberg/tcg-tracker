@@ -45,12 +45,59 @@ const NAHELIEGEND = {
     gray: 'muted', slate: 'muted', zinc: 'muted', neutral: 'muted', stone: 'muted',
 };
 
+/**
+ * Handgebaute Modusfarben.
+ *
+ * `text-black dark:text-white` ist `text-foreground`, von Hand nachgebaut.
+ * `bg-white ... dark:bg-muted` ist `bg-background` mit Umweg. Beides sieht
+ * weder `no-raw-colors` (kein Farbliteral) noch das Muster oben (keine
+ * Palettenklasse mit Zahl) — gezaehlt am 25.09.2026: 487 solcher Stellen quer
+ * durch acht Projekte.
+ *
+ * Gemeldet wird NUR die Paarung: eine deckende Schwarz-/Weiss-Klasse, die im
+ * selben Klassenstring eine `dark:`-Entsprechung derselben Eigenschaft hat.
+ * Genau das ist der Fall, in dem ein Token existiert und umgangen wurde.
+ *
+ * Bewusst NICHT gemeldet, weil dort richtig:
+ * - `text-white` allein auf gesaettigter Flaeche (`bg-purple-600 text-white`)
+ * - Ueberlagerungen mit Deckkraft (`bg-black/60`) und Verlaufsstopps
+ *   (`from-black/70`) — die sollen in beiden Modi gleich aussehen
+ */
+const EIGENSCHAFTEN = ['bg', 'text', 'border'];
+
+/**
+ * Die Varianten-Kette wird mitgefangen, damit die `dark:`-Haelfte des Paares
+ * uebersprungen werden kann. Sonst meldet die Regel dieselbe Stelle zweimal —
+ * einmal fuer `text-black`, einmal fuer `dark:text-white`.
+ */
+const DECKEND = new RegExp(
+    `(?<![\\w/-])((?:[a-z-]+:)*)(${EIGENSCHAFTEN.join('|')})-(black|white)(?![\\w/-])`,
+    'g',
+);
+
+/** Gibt es zu dieser Eigenschaft eine `dark:`-Angabe im selben String? */
+function hatDunkelGegenstueck(text, eigenschaft) {
+    return new RegExp(`\\bdark:(?:hover:|focus:|active:|group-hover:)?${eigenschaft}-`).test(text);
+}
+
+const TOKENVORSCHLAG = {
+    text: 'text-foreground',
+    bg: 'bg-background (oder bg-card)',
+    border: 'border',
+};
+
 export default {
     meta: {
         type: 'problem',
         docs: { description: 'Keine rohen Tailwind-Palettenklassen — Farben kommen aus dem Theme.' },
         schema: [],
         messages: {
+            modusfarbe:
+                '`{{klasse}}` ist zusammen mit seiner `dark:`-Entsprechung ein von Hand '
+                + 'nachgebautes `{{token}}`. Das Token dreht in beiden Modi mit, ohne dass '
+                + 'jemand an zwei Stellen daran denken muss. (Allein stehendes '
+                + '`text-white` auf gesaettigter Flaeche und Ueberlagerungen mit '
+                + 'Deckkraft meldet diese Regel nicht.)',
             palette:
                 '`{{klasse}}` greift an der Token-Schicht vorbei: bleibt im Dunkelmodus hell '
                 + 'und faellt aus jeder Theme-Anpassung heraus.{{hinweis}} Ist es eine '
@@ -61,6 +108,24 @@ export default {
 
     create(kontext) {
         const pruefe = (knoten, text) => {
+            for (const treffer of text.matchAll(DECKEND)) {
+                const [klasse, varianten, eigenschaft] = treffer;
+
+                if (varianten.includes('dark:')) {
+                    continue;
+                }
+
+                if (!hatDunkelGegenstueck(text, eigenschaft)) {
+                    continue;
+                }
+
+                kontext.report({
+                    node: knoten,
+                    messageId: 'modusfarbe',
+                    data: { klasse, token: TOKENVORSCHLAG[eigenschaft] },
+                });
+            }
+
             for (const treffer of text.matchAll(MUSTER)) {
                 const [klasse, , farbe] = treffer;
                 const token = NAHELIEGEND[farbe];

@@ -30,8 +30,8 @@ export default function AppearanceToggleTab({
                     className={cn(
                         'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
                         appearance === value
-                            ? 'bg-white shadow-xs dark:bg-muted dark:text-muted-foreground'
-                            : 'text-muted-foreground hover:bg-muted/60 hover:text-black dark:text-muted-foreground dark:hover:bg-muted/60',
+                            ? 'bg-background text-foreground shadow-xs dark:bg-input/30'
+                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted/60',
                     )}
                 >
                     <Icon className="-ml-1 h-4 w-4" />

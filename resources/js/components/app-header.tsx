@@ -93,7 +93,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     Navigation Menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    <AppLogoIcon className="h-6 w-6 fill-current text-foreground" />
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
@@ -177,7 +177,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                             {item.title}
                                         </Link>
                                         {isSameUrl(page.url, item.href) && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
+                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-foreground"></div>
                                         )}
                                     </NavigationMenuItem>
                                 ))}
@@ -239,7 +239,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                             src={auth.user.avatar}
                                             alt={auth.user.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-muted text-black dark:text-white">
+                                        <AvatarFallback className="rounded-lg bg-muted text-foreground">
                                             {getInitials(auth.user.name)}
                                         </AvatarFallback>
                                     </Avatar>
